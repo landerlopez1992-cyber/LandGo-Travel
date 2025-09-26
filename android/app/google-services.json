@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "585042333882",
+    "project_id": "land-go-travel-khmzio",
+    "storage_bucket": "land-go-travel-khmzio.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:585042333882:android:6f9f2d63c6db940c62f283",
+        "android_client_info": {
+          "package_name": "com.landinstallationservice.landgotravel"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA2LJIRhaiO8SAUc_HAtpVPdtSN8Q4fVsA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

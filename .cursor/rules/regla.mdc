@@ -1,0 +1,53 @@
+---
+description: |
+  **REGLAS OPERATIVAS OBLIGATORIAS - LANDGO TRAVEL FLUTTERFLOW**
+  
+  **PROTECCIÓN ABSOLUTA:**
+  - NO eliminar pantallas existentes sin autorización explícita del usuario
+  - NO eliminar archivos de datos sin autorización explícita del usuario
+  - NO restaurar archivos desde Git sin autorización explícita del usuario
+  - NO hacer `git restore` sin autorización explícita del usuario
+  - NO eliminar funcionalidades implementadas sin autorización explícita del usuario
+  - NO crear archivos duplicados sin verificar primero
+  - NO crear pantallas duplicadas sin autorización
+  
+  **OBLIGATORIO SIEMPRE:**
+  - Antes de eliminar CUALQUIER archivo, preguntar al usuario
+  - Antes de restaurar CUALQUIER archivo, preguntar al usuario
+  - Antes de hacer `git restore`, preguntar al usuario
+  - Antes de eliminar CUALQUIER funcionalidad, preguntar al usuario
+  - Antes de crear CUALQUIER archivo duplicado, preguntar al usuario
+  - Preservar TODO el trabajo existente
+  - Solo modificar/mejorar, nunca eliminar sin autorización
+  - Verificar que NO existe un archivo similar antes de crear uno nuevo
+  
+  **PROTECCIÓN ESPECIAL PARA:**
+  - Pantallas de vuelos (flight_*)
+  - Pantallas de favoritos (favorite_*)
+  - Pantallas de órdenes (order_*)
+  - Archivos de modelos (models/*)
+  - Archivos de servicios (services/*)
+  - Pantallas de reservas (booking_*)
+  - Pantallas de pagos (payment_*)
+  - Panel de administración (admin_*)
+  - Sistema de membresías (membership_*)
+  
+  **COLORES OFICIALES LANDGO TRAVEL:**
+  - Primary: Color(0xFF007BFF) // Azul vibrante
+  - Secondary: Color(0xFF6C757D) // Gris medio
+  - Tertiary: Color(0xFF28A745) // Verde brillante
+  - Alternate: Color(0xFFFFC107) // Amarillo/Naranja brillante
+  - Primary Text: Color(0xFF11191F) // Gris muy oscuro/negro
+  - Primary Background: Color(0xFFF8F9FA) // Blanco muy claro
+  
+  **OBJETIVO:**
+  - Preservar TODO el trabajo realizado
+  - No perder horas de desarrollo
+  - Mantener funcionalidades implementadas
+  - Solo agregar/mejorar, nunca eliminar sin autorización
+  - Trabajar exclusivamente en FlutterFlow/Dart
+  - Respetar la paleta de colores oficial establecida
+globs:
+  - "**/*"
+alwaysApply: true
+---

@@ -1,0 +1,166 @@
+---
+alwaysApply: true
+---
+# 🎨 REGLA CRÍTICA DE DISEÑO - LANDGO TRAVEL
+
+🚫 **NUNCA usar Theme.of(context).colorScheme - SIEMPRE usar colores específicos**
+✅ **OBLIGATORIO usar estos colores exactos en TODAS las pantallas:**
+
+**COLORES OFICIALES LANDGO TRAVEL:**
+- Header/AppBar: Color(0xFF37474F) // Azul gris oscuro
+- Verde Secciones: Color(0xFF4CAF50) // Verde vibrante  
+- Botones Principales: Color(0xFFFF9800) // Naranja energético
+- Cards/Fondos: Color(0xFFF8FAFC) // Gris elegante
+- Texto Principal: Color(0xFF1F2937) // Negro para títulos
+- Texto Secundario: Color(0xFF6B7280) // Gris para subtítulos
+- Éxito/Confirmación: Color(0xFF4CAF50) // Verde para totales
+- Error/Cancelar: Color(0xFFDC2626) // Rojo para errores
+- Fondo General: Color(0xFFF1F5F9) // Gris muy claro
+- Gradientes: Color(0xFF4c669f), Color(0xFF3b5998), Color(0xFF192f6a)
+
+**CÓDIGO TEMPLATE OBLIGATORIO:**
+```dart
+// COLORES LANDGO TRAVEL - USAR SIEMPRE
+AppBar(backgroundColor: Color(0xFF37474F))
+ElevatedButton(backgroundColor: Color(0xFFFF9800))  
+Card(color: Color(0xFFF8FAFC))
+Text(style: TextStyle(color: Color(0xFF1F2937))) // Principal
+Text(style: TextStyle(color: Color(0xFF6B7280))) // Secundario
+```
+
+**PROHIBIDO:**
+- Theme.of(context).colorScheme.primary
+- Colors.blue, Colors.green (usar códigos específicos)
+- Cualquier color que no esté en esta lista
+
+**OBLIGATORIO:** Cada pantalla nueva DEBE usar exactamente estos colores para mantener identidad visual consistente de LandGo Travel.
+
+---
+
+# 🛡️ REGLA DE PROTECCIÓN ABSOLUTA
+
+🚫 **PROHIBIDO ABSOLUTAMENTE:**
+- Eliminar pantallas existentes sin autorización explícita del usuario
+- Eliminar archivos de datos sin autorización explícita del usuario
+- Restaurar archivos desde Git sin autorización explícita del usuario
+- Hacer `git restore` sin autorización explícita del usuario
+- Eliminar funcionalidades implementadas sin autorización explícita del usuario
+- Crear archivos duplicados (ej: flight_detail_simple_2.dart, flight_detail_simple_fixed.dart)
+- Crear pantallas duplicadas sin autorización explícita del usuario
+
+✅ **OBLIGATORIO SIEMPRE:**
+- Antes de eliminar CUALQUIER archivo, preguntar al usuario
+- Antes de restaurar CUALQUIER archivo, preguntar al usuario
+- Antes de hacer `git restore`, preguntar al usuario
+- Antes de eliminar CUALQUIER funcionalidad, preguntar al usuario
+- Antes de crear CUALQUIER archivo duplicado, preguntar al usuario
+- Preservar TODO el trabajo existente
+- Solo modificar/mejorar, nunca eliminar sin autorización
+- Verificar que NO existe un archivo similar antes de crear uno nuevo
+
+🛡️ **PROTECCIÓN ESPECIAL PARA:**
+- Pantallas de vuelos (flight_*)
+- Pantallas de favoritos (favorite_*)
+- Pantallas de órdenes (order_*)
+- Archivos de modelos (models/*)
+- Archivos de servicios (services/*)
+- Cualquier archivo con funcionalidad implementada
+
+⚠️ **EXCEPCIÓN:**
+- Solo se puede eliminar si el usuario dice EXPLÍCITAMENTE "elimina", "borra", "quita"
+- NUNCA asumir que se puede eliminar
+- SIEMPRE preguntar antes de eliminar
+
+🎯 **OBJETIVO:**
+- Preservar TODO el trabajo realizado
+- No perder horas de desarrollo
+- Mantener funcionalidades implementadas
+- Solo agregar/mejorar, nunca eliminar sin autorización
+
+---
+
+# 📱 REGLA DE COMPILACIÓN Y TESTING
+
+📱 **COMPILACIÓN OBLIGATORIA:**
+- Cada vez que se solicite compilar → Crear NUEVA APK
+- NUNCA usar APK existente para testing
+- SIEMPRE generar nueva APK para probar implementaciones
+- Verificar que la nueva APK incluye todos los cambios
+- Testing solo con APK recién compilada
+
+🚫 **PROHIBIDO:**
+- Usar APK anterior para testing
+- Asumir que cambios están en APK existente
+- Testing sin compilar nueva APK
+
+✅ **FLUJO CORRECTO:**
+1. Implementar cambios
+2. Compilar nueva APK
+3. Probar con nueva APK
+4. Verificar funcionalidades
+
+---
+
+# 🎯 REGLA DE DESARROLLO SEGURO
+
+🔒 **DESARROLLO PROTEGIDO:**
+- NUNCA dañar funcionalidades existentes
+- NUNCA eliminar lógica implementada
+- NUNCA romper pantallas funcionando
+- SIEMPRE hacer backup antes de cambios grandes
+- SIEMPRE probar en entorno seguro
+
+📋 **CHECKLIST ANTES DE MODIFICAR:**
+- [ ] ¿Preserva funcionalidades existentes?
+- [ ] ¿Usa colores oficiales LandGo Travel?
+- [ ] ¿No elimina código importante?
+- [ ] ¿Mantiene consistencia visual?
+- [ ] ¿Funciona con el resto del sistema?
+
+🎯 **PRINCIPIO FUNDAMENTAL:**
+"MEJORAR SIN DESTRUIR - AGREGAR SIN ELIMINAR"
+
+---
+
+# 💬 REGLA DE COMUNICACIÓN
+
+💬 **COMUNICACIÓN OBLIGATORIA:**
+- SIEMPRE preguntar antes de eliminar/modificar pantallas
+- SIEMPRE explicar qué se va a hacer antes de hacerlo
+- SIEMPRE confirmar con usuario antes de cambios grandes
+- SIEMPRE reportar qué se implementó exitosamente
+
+🚫 **NUNCA:**
+- Hacer cambios sin explicar
+- Eliminar sin preguntar
+- Asumir que algo se puede eliminar
+- Trabajar en silencio sin comunicación
+
+---
+
+# 🚀 REGLA DE IMPLEMENTACIÓN LANDGO TRAVEL
+
+🎯 **FUNCIONALIDADES PRIORITARIAS A IMPLEMENTAR:**
+- Sistema de puntos con expiración (365 días)
+- Sistema de referidos en pirámide (3 niveles)
+- Membresías ($29-$79/mes) con descuentos progresivos
+- Integración Duffel API para vuelos y hoteles
+- Sistema de pagos con Square API
+- Cashback automático según membresía
+- Descuentos máximos del 50% con puntos
+- Modelo de negocio sin pérdidas garantizadas
+
+📊 **BASE DE DATOS SUPABASE:**
+- 12 tablas principales implementadas
+- Sistema de seguridad RLS activo
+- Funciones y triggers automáticos
+- Vistas optimizadas para rendimiento
+
+🎨 **DISEÑO CONSISTENTE:**
+- Usar SOLO colores oficiales LandGo Travel
+- Gradientes lineales en fondos
+- Cards elegantes con sombras
+- Animaciones suaves (300ms)
+- Responsive design para móviles
+
+**OBLIGATORIO:** Mantener identidad visual 100% consistente en toda la app LandGo Travel.
