@@ -391,7 +391,7 @@ class _FlightBookingPageWidgetState extends State<FlightBookingPageWidget> {
           Expanded(
             child: _tripOption(
               label: 'Solo ida',
-              icon: Icons.one_way,
+              icon: Icons.arrow_forward,
               selected: !_model.isRoundTrip,
               onTap: () => setState(() {
                 _model.isRoundTrip = false;

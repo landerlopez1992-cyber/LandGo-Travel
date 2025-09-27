@@ -75,63 +75,61 @@ class _OnboardingPage1WidgetState extends State<OnboardingPage1Widget> {
           child: Padding(
             padding: EdgeInsetsDirectional.fromSTEB(24.0, 40.0, 24.0, 40.0),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisSize: MainAxisSize.max,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Align(
-                      alignment: AlignmentDirectional(0.0, 0.0),
-                      child: Container(
-                        width: 200.0,
-                        height: 200.0,
-                        decoration: BoxDecoration(
-                          color: Colors.transparent,
-                        ),
-                        child: Padding(
-                          padding: EdgeInsetsDirectional.fromSTEB(
-                              16.0, 0.0, 16.0, 40.0),
-                          child: Image.network(
-                            'https://storage.googleapis.com/flutterflow-io-6f20.appspot.com/projects/land-go-travel-khmzio/assets/72g91s54bkzj/1.png',
-                            width: 230.9,
-                            height: 177.2,
-                            fit: BoxFit.contain,
-                          ),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.max,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Padding(
+                        padding: EdgeInsetsDirectional.fromSTEB(
+                            16.0, 0.0, 16.0, 40.0),
+                        child: Image.network(
+                          'https://storage.googleapis.com/flutterflow-io-6f20.appspot.com/projects/land-go-travel-khmzio/assets/72g91s54bkzj/1.png',
+                          width: 230.9,
+                          height: 177.2,
+                          fit: BoxFit.contain,
                         ),
                       ),
-                    ),
-                    Text(
-                      'Welcome to \nLandGo Travel',
-                      textAlign: TextAlign.center,
-                      style: FlutterFlowTheme.of(context).bodyMedium.override(
-                            font: GoogleFonts.inter(
-                              fontWeight: FontWeight.w600,
-                              fontStyle: FlutterFlowTheme.of(context)
-                                  .bodyMedium
-                                  .fontStyle,
-                            ),
-                            fontSize: 28.0,
-                            letterSpacing: 0.0,
-                            fontWeight: FontWeight.w600,
-                            fontStyle: FlutterFlowTheme.of(context)
-                                .bodyMedium
-                                .fontStyle,
-                          ),
-                    ),
-                    Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Text(
+                      Padding(
+                        padding: EdgeInsetsDirectional.fromSTEB(
+                            16.0, 0.0, 16.0, 16.0),
+                        child: Text(
+                          'Welcome to \nLandGo Travel',
+                          textAlign: TextAlign.center,
+                          style: FlutterFlowTheme.of(context)
+                              .headlineLarge
+                              .override(
+                                font: GoogleFonts.interTight(
+                                  fontWeight: FontWeight.bold,
+                                  fontStyle: FlutterFlowTheme.of(context)
+                                      .headlineLarge
+                                      .fontStyle,
+                                ),
+                                color: Color(0xFF023047),
+                                fontSize: 28.0,
+                                letterSpacing: 0.0,
+                                fontWeight: FontWeight.bold,
+                                fontStyle: FlutterFlowTheme.of(context)
+                                    .headlineLarge
+                                    .fontStyle,
+                              ),
+                        ),
+                      ),
+                      Padding(
+                        padding: EdgeInsetsDirectional.fromSTEB(
+                            16.0, 0.0, 16.0, 0.0),
+                        child: Text(
                           'Discover the world with exclusive travel discounts. Travel more, spend less.',
                           textAlign: TextAlign.center,
                           style:
                               FlutterFlowTheme.of(context).bodyLarge.override(
                                     font: GoogleFonts.inter(
-                                      fontWeight: FontWeight.normal,
+                                      fontWeight: FlutterFlowTheme.of(context)
+                                          .bodyLarge
+                                          .fontWeight,
                                       fontStyle: FlutterFlowTheme.of(context)
                                           .bodyLarge
                                           .fontStyle,
@@ -139,19 +137,21 @@ class _OnboardingPage1WidgetState extends State<OnboardingPage1Widget> {
                                     color: Color(0xFF023047),
                                     fontSize: 16.0,
                                     letterSpacing: 0.0,
-                                    fontWeight: FontWeight.normal,
+                                    fontWeight: FlutterFlowTheme.of(context)
+                                        .bodyLarge
+                                        .fontWeight,
                                     fontStyle: FlutterFlowTheme.of(context)
                                         .bodyLarge
                                         .fontStyle,
+                                    lineHeight: 1.5,
                                   ),
                         ),
-                      ].divide(SizedBox(height: 16.0)),
-                    ),
-                  ].divide(SizedBox(height: 24.0)),
+                      ),
+                    ],
+                  ),
                 ),
                 Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.max,
                   children: [
                     FFButtonWidget(
                       onPressed: () async {
@@ -160,7 +160,7 @@ class _OnboardingPage1WidgetState extends State<OnboardingPage1Widget> {
                       text: 'Next',
                       options: FFButtonOptions(
                         width: double.infinity,
-                        height: 56.0,
+                        height: 52.0,
                         padding: EdgeInsets.all(8.0),
                         iconPadding:
                             EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 0.0),
@@ -174,7 +174,7 @@ class _OnboardingPage1WidgetState extends State<OnboardingPage1Widget> {
                                         .fontStyle,
                                   ),
                                   color: Colors.white,
-                                  fontSize: 18.0,
+                                  fontSize: 16.0,
                                   letterSpacing: 0.0,
                                   fontWeight: FontWeight.w600,
                                   fontStyle: FlutterFlowTheme.of(context)
@@ -182,12 +182,58 @@ class _OnboardingPage1WidgetState extends State<OnboardingPage1Widget> {
                                       .fontStyle,
                                 ),
                         elevation: 0.0,
+                        borderSide: BorderSide(
+                          color: Colors.transparent,
+                          width: 1.0,
+                        ),
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                     ),
+                    Row(
+                      mainAxisSize: MainAxisSize.max,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Padding(
+                          padding: EdgeInsetsDirectional.fromSTEB(
+                              4.0, 0.0, 4.0, 0.0),
+                          child: Container(
+                            width: 12.0,
+                            height: 8.0,
+                            decoration: BoxDecoration(
+                              color: Color(0xFF0077B6),
+                              borderRadius: BorderRadius.circular(4.0),
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: EdgeInsetsDirectional.fromSTEB(
+                              4.0, 0.0, 4.0, 0.0),
+                          child: Container(
+                            width: 8.0,
+                            height: 8.0,
+                            decoration: BoxDecoration(
+                              color: Color(0xFF00B4D8),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: EdgeInsetsDirectional.fromSTEB(
+                              4.0, 0.0, 4.0, 0.0),
+                          child: Container(
+                            width: 8.0,
+                            height: 8.0,
+                            decoration: BoxDecoration(
+                              color: Color(0xFF00B4D8),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ].divide(SizedBox(height: 16.0)),
                 ),
-              ].divide(SizedBox(height: 32.0)),
+              ],
             ),
           ),
         ),

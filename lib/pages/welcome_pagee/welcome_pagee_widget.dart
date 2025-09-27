@@ -180,7 +180,7 @@ class _WelcomePageeWidgetState extends State<WelcomePageeWidget> {
                                 padding: EdgeInsets.all(8.0),
                                 iconPadding: EdgeInsetsDirectional.fromSTEB(
                                     0.0, 0.0, 0.0, 0.0),
-                                color: FlutterFlowTheme.of(context).info,
+                                color: Color(0xFFFF9800), // COLORES LANDGO TRAVEL - Botones Principales
                                 textStyle: FlutterFlowTheme.of(context)
                                     .titleMedium
                                     .override(
@@ -226,7 +226,7 @@ class _WelcomePageeWidgetState extends State<WelcomePageeWidget> {
                                             .titleMedium
                                             .fontStyle,
                                       ),
-                                      color: FlutterFlowTheme.of(context).info,
+                                      color: Colors.white,
                                       letterSpacing: 0.0,
                                       fontWeight: FontWeight.w600,
                                       fontStyle: FlutterFlowTheme.of(context)
@@ -235,7 +235,7 @@ class _WelcomePageeWidgetState extends State<WelcomePageeWidget> {
                                     ),
                                 elevation: 0.0,
                                 borderSide: BorderSide(
-                                  color: FlutterFlowTheme.of(context).info,
+                                  color: Colors.white,
                                   width: 2.0,
                                 ),
                                 borderRadius: BorderRadius.circular(25.0),
@@ -260,7 +260,7 @@ class _WelcomePageeWidgetState extends State<WelcomePageeWidget> {
                                             .bodyMedium
                                             .fontStyle,
                                       ),
-                                      color: FlutterFlowTheme.of(context).info,
+                                      color: Colors.white,
                                       letterSpacing: 0.0,
                                       fontWeight: FontWeight.w500,
                                       fontStyle: FlutterFlowTheme.of(context)

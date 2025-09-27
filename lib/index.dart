@@ -88,6 +88,14 @@ export '/force_update_page/force_update_page_widget.dart'
 export '/phone_verification_page/phone_verification_page_widget.dart'
     show PhoneVerificationPageWidget;
 export '/bookingsflihs/bookingsflihs_widget.dart' show BookingsflihsWidget;
+export '/pages/email_confirmation_page/email_confirmation_page_widget.dart'
+    show EmailConfirmationPageWidget;
+export '/pages/forgot_password_page/forgot_password_page_widget.dart'
+    show ForgotPasswordPageWidget;
+export '/pages/reset_password_page/reset_password_page_widget.dart'
+    show ResetPasswordPageWidget;
+export '/pages/verification_code_page/verification_code_page_widget.dart'
+    show VerificationCodePageWidget;
 export '/booking_home_page/flight_booking_page/flight_booking_page_widget.dart'
     show FlightBookingPageWidget;
 export '/booking_home_page/hotel_booking_page/hotel_booking_page_widget.dart'

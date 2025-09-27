@@ -1,6 +1,7 @@
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
+import '/auth/supabase_auth/auth_util.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -65,7 +66,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
       },
       child: Scaffold(
         key: scaffoldKey,
-        backgroundColor: Color(0xFFF8FBFF),
+        backgroundColor: Color(0xFFF1F5F9), // COLORES LANDGO TRAVEL - Fondo General
         body: SafeArea(
           top: true,
           child: Padding(
@@ -97,6 +98,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                                     .headlineMedium
                                     .fontStyle,
                               ),
+                              color: Color(0xFF1F2937), // COLORES LANDGO TRAVEL - Texto Principal
                               letterSpacing: 0.0,
                               fontWeight: FontWeight.w600,
                               fontStyle: FlutterFlowTheme.of(context)
@@ -116,7 +118,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                                     .bodyMedium
                                     .fontStyle,
                               ),
-                              color: FlutterFlowTheme.of(context).secondaryText,
+                              color: Color(0xFF6B7280), // COLORES LANDGO TRAVEL - Texto Secundario
                               letterSpacing: 0.0,
                               fontWeight: FlutterFlowTheme.of(context)
                                   .bodyMedium
@@ -132,8 +134,14 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                     mainAxisSize: MainAxisSize.max,
                     children: [
                       FFButtonWidget(
-                        onPressed: () {
-                          print('Button pressed ...');
+                        onPressed: () async {
+                          // TODO: Implementar autenticación con Google
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Autenticación con Google en desarrollo'),
+                              backgroundColor: Color(0xFF37474F),
+                            ),
+                          );
                         },
                         text: 'Continue with Google',
                         icon: FaIcon(
@@ -174,8 +182,9 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                         ),
                       ),
                       FFButtonWidget(
-                        onPressed: () {
-                          print('Button pressed ...');
+                        onPressed: () async {
+                          // TODO: Implementar autenticación con teléfono
+                          context.pushNamed('PhoneVerificationPage');
                         },
                         text: 'Continue with Phone Number',
                         icon: Icon(
@@ -460,24 +469,29 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                           mainAxisSize: MainAxisSize.max,
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            Text(
-                              'Forgot Password?',
-                              style: FlutterFlowTheme.of(context)
-                                  .bodySmall
-                                  .override(
-                                    font: GoogleFonts.inter(
+                            InkWell(
+                              onTap: () {
+                                context.pushNamed('ForgotPasswordPage');
+                              },
+                              child: Text(
+                                'Forgot Password?',
+                                style: FlutterFlowTheme.of(context)
+                                    .bodySmall
+                                    .override(
+                                      font: GoogleFonts.inter(
+                                        fontWeight: FontWeight.w500,
+                                        fontStyle: FlutterFlowTheme.of(context)
+                                            .bodySmall
+                                            .fontStyle,
+                                      ),
+                                      color: Color(0xFF37474F), // COLORES LANDGO TRAVEL - Header
+                                      letterSpacing: 0.0,
                                       fontWeight: FontWeight.w500,
                                       fontStyle: FlutterFlowTheme.of(context)
                                           .bodySmall
                                           .fontStyle,
                                     ),
-                                    color: Colors.blue,
-                                    letterSpacing: 0.0,
-                                    fontWeight: FontWeight.w500,
-                                    fontStyle: FlutterFlowTheme.of(context)
-                                        .bodySmall
-                                        .fontStyle,
-                                  ),
+                              ),
                             ),
                           ],
                         ),
@@ -485,8 +499,20 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                     ),
                   ),
                   FFButtonWidget(
-                    onPressed: () {
-                      print('Button pressed ...');
+                    onPressed: () async {
+                      if (_model.formKey.currentState == null ||
+                          !_model.formKey.currentState!.validate()) {
+                        return;
+                      }
+
+                      final user = await authManager.signInWithEmail(
+                        context,
+                        _model.textController1.text,
+                        _model.textController2.text,
+                      );
+                      if (user != null) {
+                        context.goNamedAuth('MainPage', context.mounted);
+                      }
                     },
                     text: 'Log In',
                     options: FFButtonOptions(
@@ -495,7 +521,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                       padding: EdgeInsets.all(8.0),
                       iconPadding:
                           EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 0.0),
-                      color: Colors.blue,
+                      color: Color(0xFFFF9800), // COLORES LANDGO TRAVEL - Botones Principales
                       textStyle:
                           FlutterFlowTheme.of(context).titleSmall.override(
                                 font: GoogleFonts.interTight(
@@ -550,44 +576,50 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                                       .fontStyle,
                                 ),
                           ),
-                          Text(
-                            'Sign Up',
-                            style: FlutterFlowTheme.of(context)
-                                .bodyMedium
-                                .override(
-                                  font: GoogleFonts.inter(
+                          InkWell(
+                            onTap: () => context.pushNamed('SignUpPage'),
+                            child: Text(
+                              'Sign Up',
+                              style: FlutterFlowTheme.of(context)
+                                  .bodyMedium
+                                  .override(
+                                    font: GoogleFonts.inter(
+                                      fontWeight: FontWeight.w600,
+                                      fontStyle: FlutterFlowTheme.of(context)
+                                          .bodyMedium
+                                          .fontStyle,
+                                    ),
+                                    color: Color(0xFF37474F), // COLORES LANDGO TRAVEL - Header
+                                    letterSpacing: 0.0,
                                     fontWeight: FontWeight.w600,
                                     fontStyle: FlutterFlowTheme.of(context)
                                         .bodyMedium
                                         .fontStyle,
                                   ),
-                                  color: Colors.blue,
-                                  letterSpacing: 0.0,
-                                  fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ].divide(SizedBox(width: 4.0)),
+                      ),
+                      InkWell(
+                        onTap: () => context.goNamed('MainPage'),
+                        child: Text(
+                          'Continue as guest',
+                          textAlign: TextAlign.center,
+                          style: FlutterFlowTheme.of(context).bodyMedium.override(
+                                font: GoogleFonts.inter(
+                                  fontWeight: FontWeight.w500,
                                   fontStyle: FlutterFlowTheme.of(context)
                                       .bodyMedium
                                       .fontStyle,
                                 ),
-                          ),
-                        ].divide(SizedBox(width: 4.0)),
-                      ),
-                      Text(
-                        'Continue as guest',
-                        textAlign: TextAlign.center,
-                        style: FlutterFlowTheme.of(context).bodyMedium.override(
-                              font: GoogleFonts.inter(
+                                color: Color(0xFFFF9800), // COLORES LANDGO TRAVEL - Botones Principales
+                                letterSpacing: 0.0,
                                 fontWeight: FontWeight.w500,
                                 fontStyle: FlutterFlowTheme.of(context)
                                     .bodyMedium
                                     .fontStyle,
                               ),
-                              color: Colors.orange,
-                              letterSpacing: 0.0,
-                              fontWeight: FontWeight.w500,
-                              fontStyle: FlutterFlowTheme.of(context)
-                                  .bodyMedium
-                                  .fontStyle,
-                            ),
+                        ),
                       ),
                     ].divide(SizedBox(height: 12.0)),
                   ),

@@ -1,12 +1,12 @@
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
+import '/auth/supabase_auth/auth_util.dart';
+import '/backend/supabase/supabase.dart';
 import 'dart:ui';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'sign_up_page_model.dart';
 export 'sign_up_page_model.dart';
 
@@ -69,7 +69,7 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
       },
       child: Scaffold(
         key: scaffoldKey,
-        backgroundColor: Color(0xFFF1FAFB),
+        backgroundColor: Color(0xFFF1F5F9), // COLORES LANDGO TRAVEL - Fondo General
         body: SafeArea(
           top: true,
           child: Padding(
@@ -101,7 +101,7 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                                     .headlineMedium
                                     .fontStyle,
                               ),
-                              color: Color(0xFF023047),
+                              color: Color(0xFF1F2937), // COLORES LANDGO TRAVEL - Texto Principal
                               letterSpacing: 0.0,
                               fontWeight: FontWeight.bold,
                               fontStyle: FlutterFlowTheme.of(context)
@@ -124,7 +124,7 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                                           .bodyMedium
                                           .fontStyle,
                                     ),
-                                    color: Color(0xFF023047),
+                                    color: Color(0xFF1F2937), // COLORES LANDGO TRAVEL - Texto Principal
                                     letterSpacing: 0.0,
                                     fontWeight: FlutterFlowTheme.of(context)
                                         .bodyMedium
@@ -166,7 +166,7 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                                           .titleSmall
                                           .fontStyle,
                                     ),
-                                    color: Color(0xFF023047),
+                                    color: Color(0xFF1F2937), // COLORES LANDGO TRAVEL - Texto Principal
                                     letterSpacing: 0.0,
                                     fontWeight: FontWeight.w600,
                                     fontStyle: FlutterFlowTheme.of(context)
@@ -246,7 +246,7 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                                     .bodySmall
                                     .fontStyle,
                               ),
-                              color: Color(0xFF023047),
+                              color: Color(0xFF1F2937), // COLORES LANDGO TRAVEL - Texto Principal
                               letterSpacing: 0.0,
                               fontWeight: FontWeight.w500,
                               fontStyle: FlutterFlowTheme.of(context)
@@ -290,7 +290,7 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                                         .labelMedium
                                         .fontStyle,
                                   ),
-                                  color: Color(0xFF023047),
+                                  color: Color(0xFF1F2937), // COLORES LANDGO TRAVEL - Texto Principal
                                   letterSpacing: 0.0,
                                   fontWeight: FlutterFlowTheme.of(context)
                                       .labelMedium
@@ -341,7 +341,7 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                                           .bodyMedium
                                           .fontStyle,
                                     ),
-                                    color: Color(0xFF023047),
+                                    color: Color(0xFF1F2937), // COLORES LANDGO TRAVEL - Texto Principal
                                     letterSpacing: 0.0,
                                     fontWeight: FlutterFlowTheme.of(context)
                                         .bodyMedium
@@ -375,7 +375,7 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                                         .labelMedium
                                         .fontStyle,
                                   ),
-                                  color: Color(0xFF023047),
+                                  color: Color(0xFF1F2937), // COLORES LANDGO TRAVEL - Texto Principal
                                   letterSpacing: 0.0,
                                   fontWeight: FlutterFlowTheme.of(context)
                                       .labelMedium
@@ -426,7 +426,7 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                                           .bodyMedium
                                           .fontStyle,
                                     ),
-                                    color: Color(0xFF023047),
+                                    color: Color(0xFF1F2937), // COLORES LANDGO TRAVEL - Texto Principal
                                     letterSpacing: 0.0,
                                     fontWeight: FlutterFlowTheme.of(context)
                                         .bodyMedium
@@ -460,7 +460,7 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                                         .labelMedium
                                         .fontStyle,
                                   ),
-                                  color: Color(0xFF023047),
+                                  color: Color(0xFF1F2937), // COLORES LANDGO TRAVEL - Texto Principal
                                   letterSpacing: 0.0,
                                   fontWeight: FlutterFlowTheme.of(context)
                                       .labelMedium
@@ -525,7 +525,7 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                                           .bodyMedium
                                           .fontStyle,
                                     ),
-                                    color: Color(0xFF023047),
+                                    color: Color(0xFF1F2937), // COLORES LANDGO TRAVEL - Texto Principal
                                     letterSpacing: 0.0,
                                     fontWeight: FlutterFlowTheme.of(context)
                                         .bodyMedium
@@ -541,31 +541,35 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                       ].divide(SizedBox(height: 16.0)),
                     ),
                   ),
-                  Row(
-                    mainAxisSize: MainAxisSize.max,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 20.0,
-                        height: 20.0,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(4.0),
-                          border: Border.all(
-                            color: Color(0xFF0077B6),
-                            width: 2.0,
+                  InkWell(
+                    onTap: () => setState(() => _model.checkboxValue = !_model.checkboxValue!),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.max,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 20.0,
+                          height: 20.0,
+                          decoration: BoxDecoration(
+                            color: _model.checkboxValue! ? Color(0xFF4CAF50) : Colors.white,
+                            borderRadius: BorderRadius.circular(4.0),
+                            border: Border.all(
+                              color: _model.checkboxValue! ? Color(0xFF4CAF50) : Color(0xFF0077B6),
+                              width: 2.0,
+                            ),
                           ),
+                          child: _model.checkboxValue!
+                              ? Align(
+                                  alignment: AlignmentDirectional(0.0, 0.0),
+                                  child: Icon(
+                                    Icons.check,
+                                    color: Colors.white,
+                                    size: 14.0,
+                                  ),
+                                )
+                              : null,
                         ),
-                        child: Align(
-                          alignment: AlignmentDirectional(0.0, 0.0),
-                          child: Icon(
-                            Icons.check,
-                            color: Color(0xFF0077B6),
-                            size: 14.0,
-                          ),
-                        ),
-                      ),
-                      Expanded(
+                        Expanded(
                         child: RichText(
                           textScaler: MediaQuery.of(context).textScaler,
                           text: TextSpan(
@@ -605,7 +609,7 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                                             .bodySmall
                                             .fontStyle,
                                       ),
-                                      color: Color(0xFF023047),
+                                      color: Color(0xFF1F2937), // COLORES LANDGO TRAVEL - Texto Principal
                                       letterSpacing: 0.0,
                                       fontWeight: FlutterFlowTheme.of(context)
                                           .bodySmall
@@ -618,10 +622,67 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                         ),
                       ),
                     ].divide(SizedBox(width: 12.0)),
+                    ),
                   ),
                   FFButtonWidget(
-                    onPressed: () {
-                      print('Button pressed ...');
+                    onPressed: () async {
+                      if (_model.formKey.currentState == null ||
+                          !_model.formKey.currentState!.validate()) {
+                        return;
+                      }
+                      if (!_model.checkboxValue!) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Debes aceptar los términos y condiciones'),
+                            backgroundColor: Color(0xFFDC2626),
+                          ),
+                        );
+                        return;
+                      }
+
+                      // Crear cuenta sin confirmación automática de Supabase
+                      final user = await authManager.createAccountWithEmail(
+                        context,
+                        _model.textController2.text, // email
+                        _model.textController3.text, // password
+                      );
+                      
+                      if (user != null) {
+                        // Usuario creado exitosamente
+                        // Enviar email de confirmación personalizado con Resend usando el ID del usuario
+                        try {
+                          await SupaFlow.client.functions.invoke(
+                            'send-verification-code',
+                            body: {
+                              'email': _model.textController2.text,
+                              'type': 'email_confirmation',
+                              'fullName': _model.textController1.text,
+                              'userId': user.uid, // Enviar ID del usuario para confirmación
+                            },
+                          );
+                        } catch (e) {
+                          print('Error sending confirmation email: $e');
+                        }
+                        
+                        // Ir a pantalla de confirmación personalizada
+                        context.pushNamed(
+                          'EmailConfirmationPage',
+                          queryParameters: {
+                            'email': _model.textController2.text,
+                            'fullName': _model.textController1.text,
+                          },
+                        );
+                      } else {
+                        // Error al crear cuenta
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Error creating account. Please try again.'),
+                              backgroundColor: Color(0xFFDC2626), // COLORES LANDGO TRAVEL - Error
+                            ),
+                          );
+                        }
+                      }
                     },
                     text: 'Sign Up',
                     options: FFButtonOptions(
@@ -630,7 +691,7 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                       padding: EdgeInsets.all(8.0),
                       iconPadding:
                           EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 0.0),
-                      color: Color(0xFF0077B6),
+                      color: Color(0xFFFF9800), // COLORES LANDGO TRAVEL - Botones Principales
                       textStyle:
                           FlutterFlowTheme.of(context).titleMedium.override(
                                 font: GoogleFonts.interTight(
@@ -664,23 +725,25 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                       ),
                     ),
                   ),
-                  RichText(
-                    textScaler: MediaQuery.of(context).textScaler,
-                    text: TextSpan(
-                      children: [
-                        TextSpan(
-                          text: 'Already have an account? ',
-                          style: TextStyle(),
-                        ),
-                        TextSpan(
-                          text: 'Log In',
-                          style: TextStyle(
-                            color: Color(0xFF0077B6),
-                            fontWeight: FontWeight.w600,
-                            decoration: TextDecoration.underline,
+                  InkWell(
+                    onTap: () => context.pushNamed('LoginPage'),
+                    child: RichText(
+                      textScaler: MediaQuery.of(context).textScaler,
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: 'Already have an account? ',
+                            style: TextStyle(),
                           ),
-                        )
-                      ],
+                          TextSpan(
+                            text: 'Log In',
+                            style: TextStyle(
+                              color: Color(0xFF37474F), // COLORES LANDGO TRAVEL - Header
+                              fontWeight: FontWeight.w600,
+                              decoration: TextDecoration.underline,
+                            ),
+                          )
+                        ],
                       style: FlutterFlowTheme.of(context).bodyMedium.override(
                             font: GoogleFonts.inter(
                               fontWeight: FlutterFlowTheme.of(context)
@@ -690,7 +753,7 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                                   .bodyMedium
                                   .fontStyle,
                             ),
-                            color: Color(0xFF023047),
+                            color: Color(0xFF1F2937), // COLORES LANDGO TRAVEL - Texto Principal
                             letterSpacing: 0.0,
                             fontWeight: FlutterFlowTheme.of(context)
                                 .bodyMedium
@@ -699,8 +762,9 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                                 .bodyMedium
                                 .fontStyle,
                           ),
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
                   ),
                 ].divide(SizedBox(height: 24.0)),
               ),

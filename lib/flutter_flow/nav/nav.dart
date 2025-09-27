@@ -350,11 +350,35 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           path: FlightBookingPageWidget.routePath,
           builder: (context, params) => FlightBookingPageWidget(),
         ),
-        FFRoute(
-          name: HotelBookingPageWidget.routeName,
-          path: HotelBookingPageWidget.routePath,
-          builder: (context, params) => HotelBookingPageWidget(),
-        ),
+    FFRoute(
+      name: HotelBookingPageWidget.routeName,
+      path: HotelBookingPageWidget.routePath,
+      builder: (context, params) => HotelBookingPageWidget(),
+    ),
+    FFRoute(
+      name: EmailConfirmationPageWidget.routeName,
+      path: EmailConfirmationPageWidget.routePath,
+      builder: (context, params) => EmailConfirmationPageWidget(
+        email: params.getParam<String>('email', ParamType.String) ?? '',
+      ),
+    ),
+    FFRoute(
+      name: ForgotPasswordPageWidget.routeName,
+      path: ForgotPasswordPageWidget.routePath,
+      builder: (context, params) => ForgotPasswordPageWidget(),
+    ),
+    FFRoute(
+      name: ResetPasswordPageWidget.routeName,
+      path: ResetPasswordPageWidget.routePath,
+      builder: (context, params) => ResetPasswordPageWidget(),
+    ),
+    FFRoute(
+      name: VerificationCodePageWidget.routeName,
+      path: VerificationCodePageWidget.routePath,
+      builder: (context, params) => VerificationCodePageWidget(
+        email: params.getParam<String>('email', ParamType.String) ?? '',
+      ),
+    ),
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );
 

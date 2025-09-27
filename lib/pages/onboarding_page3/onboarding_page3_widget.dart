@@ -192,6 +192,48 @@ class _OnboardingPage3WidgetState extends State<OnboardingPage3Widget> {
                         borderRadius: BorderRadius.circular(12.0),
                       ),
                     ),
+                    Row(
+                      mainAxisSize: MainAxisSize.max,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Padding(
+                          padding: EdgeInsetsDirectional.fromSTEB(
+                              4.0, 0.0, 4.0, 0.0),
+                          child: Container(
+                            width: 8.0,
+                            height: 8.0,
+                            decoration: BoxDecoration(
+                              color: Color(0xFF00B4D8),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: EdgeInsetsDirectional.fromSTEB(
+                              4.0, 0.0, 4.0, 0.0),
+                          child: Container(
+                            width: 8.0,
+                            height: 8.0,
+                            decoration: BoxDecoration(
+                              color: Color(0xFF00B4D8),
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ),
+                        Padding(
+                          padding: EdgeInsetsDirectional.fromSTEB(
+                              4.0, 0.0, 4.0, 0.0),
+                          child: Container(
+                            width: 12.0,
+                            height: 8.0,
+                            decoration: BoxDecoration(
+                              color: Color(0xFF0077B6),
+                              borderRadius: BorderRadius.circular(4.0),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ].divide(SizedBox(height: 16.0)),
                 ),
               ],
