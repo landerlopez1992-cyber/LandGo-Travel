@@ -1,0 +1,503 @@
+# 🎨 SISTEMA DE DISEÑO OFICIAL - LANDGO TRAVEL
+
+## 📋 INFORMACIÓN GENERAL
+- **Proyecto:** LandGo Travel App
+- **Versión:** 2.0
+- **Fecha:** 2025-01-27
+- **Tipo:** Aplicación Flutter para Viajes y Turismo
+- **Tema:** Dark Mode Completo
+
+---
+
+## 🎨 PALETA DE COLORES OFICIAL
+
+### 🎯 COLORES PRINCIPALES
+```dart
+// FONDOS
+Background Primary: Color(0xFF000000)      // Negro puro
+Background Secondary: Color(0xFF2C2C2C)    // Gris oscuro para cards
+Background Tertiary: Color(0xFF1A1A1A)     // Gris muy oscuro
+
+// TEXTO
+Text Primary: Color(0xFFFFFFFF)           // Blanco puro
+Text Secondary: Color(0xFFAAAAAA)         // Gris claro
+Text Tertiary: Color(0xFF888888)          // Gris medio
+
+// ACENTOS PRINCIPALES
+Accent Primary: Color(0xFF4DD0E1)         // Turquesa/Cyan principal
+Accent Secondary: Color(0xFF4CAF50)       // Verde
+Accent Warning: Color(0xFFFF6B6B)         // Rosa/Rojo para advertencias
+Accent Star: Color(0xFFFFD700)            // Amarillo para estrellas
+Accent Google: Color(0xFFDB4437)          // Rojo Google
+
+// BORDES
+Border Light: Color(0xFF404040)           // Gris para bordes
+Border Medium: Color(0xFF606060)          // Gris medio para bordes
+```
+
+---
+
+## 🔘 SISTEMA DE BOTONES
+
+### 🎯 BOTÓN PRINCIPAL (Primary Button)
+```dart
+Container(
+  width: double.infinity,
+  height: 56.0,
+  decoration: BoxDecoration(
+    color: Color(0xFF4DD0E1), // Turquesa principal
+    borderRadius: BorderRadius.circular(12.0),
+  ),
+  child: ElevatedButton(
+    style: ElevatedButton.styleFrom(
+      backgroundColor: Colors.transparent,
+      shadowColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12.0),
+      ),
+    ),
+    child: Text(
+      'Button Text',
+      style: GoogleFonts.inter(
+        color: Color(0xFF000000), // Texto negro sobre turquesa
+        fontSize: 16.0,
+        fontWeight: FontWeight.w600,
+      ),
+    ),
+  ),
+)
+```
+
+### 🔘 BOTÓN SECUNDARIO (Secondary Button)
+```dart
+Container(
+  height: 56.0,
+  decoration: BoxDecoration(
+    color: Color(0xFF2C2C2C), // Gris oscuro
+    borderRadius: BorderRadius.circular(12.0),
+    border: Border.all(
+      color: Color(0xFF404040),
+      width: 1.0,
+    ),
+  ),
+  child: ElevatedButton(
+    style: ElevatedButton.styleFrom(
+      backgroundColor: Colors.transparent,
+      shadowColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12.0),
+      ),
+    ),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(icon, color: Color(0xFFFFFFFF), size: 20.0),
+        SizedBox(width: 8.0),
+        Text(
+          'Button Text',
+          style: GoogleFonts.inter(
+            color: Color(0xFFFFFFFF),
+            fontSize: 14.0,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    ),
+  ),
+)
+```
+
+### 🔘 BOTÓN SOCIAL (Social Button)
+```dart
+// Para Google, Phone, etc.
+Container(
+  height: 56.0,
+  decoration: BoxDecoration(
+    color: Colors.white,
+    borderRadius: BorderRadius.circular(12.0),
+    border: Border.all(
+      color: Color(0xFFE2E8F0),
+      width: 1.0,
+    ),
+  ),
+  child: ElevatedButton(
+    style: ElevatedButton.styleFrom(
+      backgroundColor: Colors.white,
+      shadowColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12.0),
+      ),
+    ),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(icon, color: iconColor, size: 20.0),
+        SizedBox(width: 8.0),
+        Text(
+          'Social Platform',
+          style: GoogleFonts.inter(
+            color: Color(0xFF2D3748),
+            fontSize: 14.0,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    ),
+  ),
+)
+```
+
+---
+
+## 📝 SISTEMA DE FORMULARIOS
+
+### 🔤 CAMPO DE TEXTO (Text Field)
+```dart
+Container(
+  decoration: BoxDecoration(
+    color: Color(0xFFF7FAFC),
+    borderRadius: BorderRadius.circular(12.0),
+    border: Border.all(
+      color: Color(0xFFE2E8F0),
+      width: 1.0,
+    ),
+  ),
+  child: TextFormField(
+    decoration: InputDecoration(
+      hintText: 'Placeholder Text',
+      hintStyle: GoogleFonts.inter(
+        color: Color(0xFFA0AEC0),
+        fontSize: 16.0,
+      ),
+      prefixIcon: Icon(
+        icon,
+        color: Color(0xFF718096),
+        size: 20.0,
+      ),
+      border: InputBorder.none,
+      contentPadding: EdgeInsetsDirectional.fromSTEB(16.0, 16.0, 16.0, 16.0),
+    ),
+    style: GoogleFonts.inter(
+      color: Color(0xFF2D3748),
+      fontSize: 16.0,
+    ),
+  ),
+)
+```
+
+---
+
+## 🎨 SISTEMA DE TIPOGRAFÍA
+
+### 🚨 REGLA CRÍTICA: CENTRADO DE TEXTOS
+```dart
+// TODOS LOS TÍTULOS Y TEXTOS PRINCIPALES DEBEN ESTAR CENTRADOS
+Center(
+  child: Text(
+    'Main Title',
+    textAlign: TextAlign.center,
+    style: GoogleFonts.inter(
+      color: Color(0xFFFFFFFF),
+      fontSize: 28.0,
+      fontWeight: FontWeight.bold,
+    ),
+  ),
+)
+```
+
+### 📝 ESTILOS DE TEXTO
+```dart
+// TÍTULO PRINCIPAL CENTRADO
+Center(
+  child: Text(
+    'Main Title',
+    textAlign: TextAlign.center,
+    style: GoogleFonts.inter(
+      color: Color(0xFFFFFFFF),
+      fontSize: 28.0,
+      fontWeight: FontWeight.bold,
+    ),
+  ),
+)
+
+// TÍTULO SECUNDARIO
+Text(
+  'Secondary Title',
+  style: GoogleFonts.inter(
+    color: Color(0xFF2D3748),
+    fontSize: 24.0,
+    fontWeight: FontWeight.bold,
+  ),
+)
+
+// TEXTO PRINCIPAL
+Text(
+  'Primary Text',
+  style: GoogleFonts.inter(
+    color: Color(0xFF2D3748),
+    fontSize: 16.0,
+    fontWeight: FontWeight.w500,
+  ),
+)
+
+// TEXTO SECUNDARIO
+Text(
+  'Secondary Text',
+  style: GoogleFonts.inter(
+    color: Color(0xFF718096),
+    fontSize: 14.0,
+    fontWeight: FontWeight.w400,
+  ),
+)
+
+// TEXTO CLARO
+Text(
+  'Light Text',
+  style: GoogleFonts.inter(
+    color: Color(0xFFA0AEC0),
+    fontSize: 14.0,
+    fontWeight: FontWeight.w400,
+  ),
+)
+
+// TEXTO BLANCO
+Text(
+  'White Text',
+  style: GoogleFonts.inter(
+    color: Colors.white,
+    fontSize: 16.0,
+    fontWeight: FontWeight.w600,
+  ),
+)
+```
+
+---
+
+## 🏗️ SISTEMA DE LAYOUTS
+
+### 📱 ESTRUCTURA DE PANTALLA CON GRADIENTE
+```dart
+Scaffold(
+  backgroundColor: Colors.white,
+  body: SafeArea(
+    child: Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF667eea), Color(0xFF764ba2)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
+      ),
+      child: Column(
+        children: [
+          // Header con gradiente
+          Container(
+            padding: EdgeInsetsDirectional.fromSTEB(20.0, 60.0, 20.0, 40.0),
+            child: Column(
+              children: [
+                // Logo en card blanco
+                Container(
+                  width: 120.0,
+                  height: 120.0,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20.0),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 20.0,
+                        offset: Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: // Logo content
+                ),
+              ],
+            ),
+          ),
+          
+          // Card principal blanco
+          Expanded(
+            child: Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(30.0),
+                  topRight: Radius.circular(30.0),
+                ),
+              ),
+              child: Padding(
+                padding: EdgeInsetsDirectional.fromSTEB(24.0, 40.0, 24.0, 24.0),
+                child: // Main content
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+  ),
+)
+```
+
+---
+
+## 🎯 COMPONENTES ESPECÍFICOS
+
+### 🏷️ DIVIDER CON TEXTO
+```dart
+Row(
+  children: [
+    Expanded(
+      child: Divider(
+        color: Color(0xFFE2E8F0),
+        thickness: 1.0,
+      ),
+    ),
+    Padding(
+      padding: EdgeInsetsDirectional.fromSTEB(16.0, 0.0, 16.0, 0.0),
+      child: Text(
+        'or',
+        style: GoogleFonts.inter(
+          color: Color(0xFF718096),
+          fontSize: 14.0,
+        ),
+      ),
+    ),
+    Expanded(
+      child: Divider(
+        color: Color(0xFFE2E8F0),
+        thickness: 1.0,
+      ),
+    ),
+  ],
+)
+```
+
+### 🔗 ENLACES Y LINKS
+```dart
+// Link principal
+Text(
+  'Link Text',
+  style: GoogleFonts.inter(
+    color: Color(0xFF667eea),
+    fontSize: 14.0,
+    fontWeight: FontWeight.w600,
+  ),
+)
+
+// Link secundario
+Text(
+  'Secondary Link',
+  style: GoogleFonts.inter(
+    color: Color(0xFF718096),
+    fontSize: 14.0,
+    fontWeight: FontWeight.w500,
+  ),
+)
+```
+
+---
+
+## 📐 ESPACIADO Y DIMENSIONES
+
+### 📏 SISTEMA DE ESPACIADO
+```dart
+// Espaciado vertical
+SizedBox(height: 8.0)   // Espaciado pequeño
+SizedBox(height: 16.0)  // Espaciado medio
+SizedBox(height: 20.0)  // Espaciado grande
+SizedBox(height: 24.0)  // Espaciado extra grande
+SizedBox(height: 30.0)  // Espaciado sección
+
+// Espaciado horizontal
+SizedBox(width: 8.0)    // Espaciado pequeño
+SizedBox(width: 16.0)   // Espaciado medio
+SizedBox(width: 24.0)   // Espaciado grande
+
+// Padding estándar
+EdgeInsetsDirectional.fromSTEB(24.0, 40.0, 24.0, 24.0)  // Card padding
+EdgeInsetsDirectional.fromSTEB(20.0, 60.0, 20.0, 40.0)  // Header padding
+EdgeInsetsDirectional.fromSTEB(16.0, 16.0, 16.0, 16.0)  // Field padding
+```
+
+### 📐 RADIOS DE BORDE
+```dart
+BorderRadius.circular(12.0)  // Botones y campos
+BorderRadius.circular(20.0)  // Logo container
+BorderRadius.circular(30.0)  // Card principal
+```
+
+---
+
+## 🎨 SOMBRAS Y ELEVACIÓN
+
+### 🌫️ SISTEMA DE SOMBRAS
+```dart
+// Sombra suave
+BoxShadow(
+  color: Colors.black.withOpacity(0.1),
+  blurRadius: 20.0,
+  offset: Offset(0, 10),
+)
+
+// Sombra de botón
+BoxShadow(
+  color: Color(0xFF667eea).withOpacity(0.3),
+  blurRadius: 20.0,
+  offset: Offset(0, 10),
+)
+```
+
+---
+
+## 📱 RESPONSIVE DESIGN
+
+### 📐 BREAKPOINTS
+```dart
+// Mobile First Approach
+// Base: 375px - 414px (iPhone)
+// Tablet: 768px - 1024px
+// Desktop: 1024px+
+```
+
+---
+
+## 🔄 ESTADOS DE COMPONENTES
+
+### ✅ ESTADOS DE BOTONES
+- **Normal:** Gradiente principal
+- **Hover:** Gradiente con opacidad reducida
+- **Pressed:** Gradiente con opacidad aumentada
+- **Disabled:** Gris con opacidad reducida
+
+### ✅ ESTADOS DE CAMPOS
+- **Normal:** Borde gris claro
+- **Focused:** Borde azul
+- **Error:** Borde rojo
+- **Disabled:** Fondo gris
+
+---
+
+## 📝 NOTAS IMPORTANTES
+
+1. **Siempre usar Google Fonts Inter** para todos los textos
+2. **Gradientes son elementos clave** del diseño
+3. **Bordes redondeados** en todos los componentes
+4. **Sombras suaves** para profundidad
+5. **Espaciado consistente** entre elementos
+6. **Colores siempre con códigos hex específicos**
+7. **Mobile first** en todos los diseños
+8. **🚨 REGLA CRÍTICA: TODOS LOS TEXTOS CENTRADOS** - Todos los títulos, subtítulos y textos principales deben estar centrados en la pantalla, alineados con el logo que está en el centro
+
+---
+
+## 🚀 IMPLEMENTACIÓN
+
+Este sistema de diseño debe ser usado en **TODAS** las pantallas de LandGo Travel para mantener consistencia visual y profesional.
+
+**Archivo creado:** 2025-01-27
+**Última actualización:** 2025-01-27
+**Versión:** 1.0
