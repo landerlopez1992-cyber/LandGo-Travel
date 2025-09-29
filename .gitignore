@@ -1,0 +1,158 @@
+# ═══════════════════════════════════════════════════════════════
+# 🚫 REGLA CRÍTICA: ARCHIVOS QUE NUNCA DEBEN SUBIR A GIT
+# ═══════════════════════════════════════════════════════════════
+
+# 🔥 ARCHIVOS GRANDES - MÁXIMA PRIORIDAD
+# Estos archivos causan que GitHub rechace todos los pushes futuros
+*.apk
+*.aab
+*.ipa
+*.so
+*.dll
+*.dylib
+*.dill
+*.cache
+*.bin
+*.jar
+*.zip
+*.tar.gz
+*.tar
+*.7z
+
+# 📱 BUILD FOLDERS - NUNCA SUBIR
+build/
+android/app/build/
+android/build/
+ios/build/
+web/build/
+macos/build/
+windows/build/
+linux/build/
+
+# 🛠️ FLUTTER/DART ARTIFACTS
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+**/.packages
+**/.flutter-plugins
+**/.flutter-plugins-dependencies
+
+# 📦 DEPENDENCIES
+pubspec.lock
+.packages
+node_modules/
+package-lock.json
+yarn.lock
+
+# 🔧 ANDROID SPECIFIC
+android/app/debug/
+android/app/profile/
+android/app/release/
+android/gradle/
+android/.gradle/
+android/captures/
+android/gradlew
+android/gradlew.bat
+android/local.properties
+android/app/google-services.json
+android/key.properties
+android/upload-keystore.jks
+*.keystore
+android/**/*.bin
+android/**/*.lock
+android/**/executionHistory/
+android/**/fileHashes/
+
+# 🍎 IOS SPECIFIC
+ios/Flutter/flutter_exports_environment.sh
+ios/Runner.xcworkspace/xcshareddata/
+ios/Runner.xcodeproj/xcshareddata/
+ios/Runner.xcodeproj/project.xcworkspace/xcshareddata/
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/ephemeral/
+ios/ServiceDefinitions.json
+
+# 💻 EDITOR FILES
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+migrate_working_dir/
+.vscode/settings.json
+.vscode/launch.json
+.idea/
+*.iml
+*.ipr
+*.iws
+.cursor/
+
+# 🔐 SECRETS AND KEYS
+.env
+.env.*
+*.pem
+*.p12
+*.p8
+firebase_options.dart
+google-services.json
+GoogleService-Info.plist
+supabase_credentials.json
+
+# 🗃️ TEMPORARY FILES
+*.tmp
+*.temp
+*.log
+*.swp
+*.swo
+*~
+.~*
+#*#
+
+# 📊 ANALYTICS AND REPORTS
+coverage/
+test-results/
+reports/
+*.lcov
+
+# 🔄 VERSION CONTROL
+*.orig
+*.rej
+.git/hooks/
+.git/info/
+.git/logs/
+.git/refs/remotes/*/
+.git/objects/pack/
+
+# 📱 MOBILE SPECIFIC
+*.hprof
+*.trace
+profiling/
+
+# 🌐 WEB SPECIFIC
+web/favicon.png
+web/icons/
+web/manifest.json
+web/robots.txt
+
+# 🔧 FLUTTER TOOLS
+.fvm/
+flutter_*.log
+.flutter-devtools/
+
+# ═══════════════════════════════════════════════════════════════
+# 📋 IMPORTANTE: ARCHIVOS QUE SÍ DEBEN SUBIR
+# ═══════════════════════════════════════════════════════════════
+# ✅ lib/ - Código fuente principal
+# ✅ pubspec.yaml - Dependencias
+# ✅ analysis_options.yaml - Configuración linting
+# ✅ README.md - Documentación
+# ✅ *.dart - Archivos de código
+# ✅ *.sql - Scripts de base de datos
+# ✅ assets/ - Recursos del app (imágenes, iconos)
+# ✅ l10n.yaml - Configuración i18n
+# ✅ .gitignore - Este archivo
+# ═══════════════════════════════════════════════════════════════
