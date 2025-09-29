@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'dart:convert';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/components/back_button_widget.dart';
 import '/backend/supabase/supabase.dart';
@@ -43,9 +44,23 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
   String _tempDateOfBirth = '';
   String _tempMembership = '';
   
+  // Valores reales del usuario para comparación
+  String _realPhone = '+1 (555) 123-4567';
+  String _realDateOfBirth = 'January 15, 1990';
+  String _realMembership = 'Premium Member';
+  
   // Variables para carga de imagen
   final ImagePicker _picker = ImagePicker();
   bool _isUploadingImage = false;
+  bool _isSavingChanges = false; // NUEVO: Estado de carga para guardar cambios
+  
+  // Variables para selector de país
+  String _selectedCountryCode = '+1';
+  String _selectedCountryName = 'United States';
+  
+  // Variables para verificación de email
+  bool _isEmailVerificationRequired = false;
+  String _pendingChanges = ''; // JSON string de los cambios pendientes
 
   @override
   void initState() {
@@ -75,7 +90,7 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
         // Primero verificar si existe el perfil
         final existingProfile = await SupaFlow.client
             .from('profiles')
-            .select('id, full_name, email, avatar_url')
+            .select('id, full_name, email, avatar_url, phone, date_of_birth, membership_type')
             .eq('id', currentUser.id)
             .maybeSingle();
             
@@ -110,7 +125,7 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
         // Obtener datos del usuario desde la tabla profiles
         final response = await SupaFlow.client
             .from('profiles')
-            .select('full_name, email, avatar_url')
+            .select('full_name, email, avatar_url, phone, date_of_birth, membership_type')
             .eq('id', currentUser.id)
             .single();
             
@@ -133,9 +148,43 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
           
           _userEmail = response['email'] ?? currentUser.email ?? 'user@example.com';
           _userAvatarUrl = response['avatar_url'];
+          
+          // Cargar teléfono real del usuario
+          final phoneFromDB = response['phone'];
+          if (phoneFromDB != null && phoneFromDB.isNotEmpty && phoneFromDB.trim() != '') {
+            _realPhone = phoneFromDB;
+            print('Phone from database: $_realPhone');
+          } else {
+            _realPhone = '+1 (555) 123-4567'; // Valor por defecto
+            print('Using default phone: $_realPhone');
+          }
+          
+          // Cargar fecha de nacimiento real
+          final dateOfBirthFromDB = response['date_of_birth'];
+          if (dateOfBirthFromDB != null && dateOfBirthFromDB.isNotEmpty && dateOfBirthFromDB.trim() != '') {
+            _realDateOfBirth = dateOfBirthFromDB;
+            print('Date of birth from database: $_realDateOfBirth');
+          } else {
+            _realDateOfBirth = 'January 15, 1990'; // Valor por defecto
+            print('Using default date of birth: $_realDateOfBirth');
+          }
+          
+          // Cargar membresía real
+          final membershipFromDB = response['membership_type'];
+          if (membershipFromDB != null && membershipFromDB.isNotEmpty && membershipFromDB.trim() != '') {
+            _realMembership = membershipFromDB;
+            print('Membership from database: $_realMembership');
+          } else {
+            _realMembership = 'Premium Member'; // Valor por defecto
+            print('Using default membership: $_realMembership');
+          }
+          
           print('Final user name: $_userName');
           print('Final user email: $_userEmail');
           print('Final user avatar: $_userAvatarUrl');
+          print('Final user phone: $_realPhone');
+          print('Final user date of birth: $_realDateOfBirth');
+          print('Final user membership: $_realMembership');
         });
       } else {
         // Usuario invitado
@@ -143,6 +192,9 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
           _userName = 'Guest User';
           _userEmail = 'guest@landgotravel.com';
           _userAvatarUrl = null;
+          _realPhone = '+1 (555) 123-4567';
+          _realDateOfBirth = 'January 15, 1990';
+          _realMembership = 'Premium Member';
         });
       }
     } catch (e) {
@@ -155,6 +207,9 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
           final email = currentUser.email ?? 'user@example.com';
           _userName = email.split('@')[0]; // Tomar la parte antes del @
           _userEmail = email;
+          _realPhone = '+1 (555) 123-4567';
+          _realDateOfBirth = 'January 15, 1990';
+          _realMembership = 'Premium Member';
         });
       }
     }
@@ -230,8 +285,16 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
   // Método para activar modo de edición
   void _toggleEditMode() {
     if (_isEditMode) {
-      // Si está en modo edición, guardar cambios
-      _saveChanges();
+      // Si está en modo edición, solo guardar si hay cambios
+      if (_hasChanges) {
+        _saveChanges();
+      } else {
+        // Si no hay cambios, solo salir del modo edición
+        setState(() {
+          _isEditMode = false;
+          _hasChanges = false;
+        });
+      }
     } else {
       // Si no está en modo edición, activarlo
       setState(() {
@@ -239,37 +302,80 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
         _hasChanges = false;
         _tempFullName = _userName;
         _tempEmail = _userEmail;
-        _tempPhone = '+1 (555) 123-4567'; // Valor por defecto
-        _tempDateOfBirth = 'January 15, 1990'; // Valor por defecto
-        _tempMembership = 'Premium Member'; // Valor por defecto
+        _tempPhone = _realPhone; // Usar valor real del usuario
+        _tempDateOfBirth = _realDateOfBirth; // Usar valor real del usuario
+        _tempMembership = _realMembership; // Usar valor real del usuario
       });
     }
   }
 
   // Método para guardar cambios
   Future<void> _saveChanges() async {
+    // Verificar si se requiere verificación de email
+    if (!_isEmailVerificationRequired) {
+      _showEmailVerificationModal();
+      return;
+    }
+
+    // Activar indicador de carga
+    setState(() {
+      _isSavingChanges = true;
+    });
+
     try {
+      // Mínimo 2 segundos de carga para dar sensación de procesamiento
+      final stopwatch = Stopwatch()..start();
+      
       final currentUser = SupaFlow.client.auth.currentUser;
       if (currentUser != null) {
         // Actualizar perfil en Supabase
-        await SupaFlow.client
+        print('🔍 DEBUG: Guardando datos en Supabase:');
+        print('  - full_name: $_tempFullName');
+        print('  - phone: $_tempPhone');
+        print('  - date_of_birth: $_tempDateOfBirth');
+        
+        final updateData = {
+          'full_name': _tempFullName,
+          'phone': _tempPhone,
+          'date_of_birth': _tempDateOfBirth,
+          'updated_at': DateTime.now().toIso8601String(),
+        };
+        
+        print('🔍 DEBUG: Datos a actualizar: $updateData');
+        print('🔍 DEBUG: User ID: ${currentUser.id}');
+        
+        final response = await SupaFlow.client
             .from('profiles')
-            .update({
-              'full_name': _tempFullName,
-              'email': _tempEmail,
-              'phone': _tempPhone,
-              'date_of_birth': _tempDateOfBirth,
-              'membership_type': _tempMembership,
-              'updated_at': DateTime.now().toIso8601String(),
-            })
-            .eq('id', currentUser.id);
+            .update(updateData)
+            .eq('id', currentUser.id)
+            .select();
+            
+        print('🔍 DEBUG: Respuesta de Supabase: $response');
+        
+        // Verificar que se actualizó correctamente
+        if (response.isNotEmpty) {
+          print('🔍 DEBUG: Perfil actualizado exitosamente');
+          print('🔍 DEBUG: Datos actualizados: ${response.first}');
+        } else {
+          print('🔍 DEBUG: ERROR: No se encontró el perfil para actualizar');
+        }
+
+        // Esperar hasta completar mínimo 2 segundos
+        final elapsed = stopwatch.elapsedMilliseconds;
+        if (elapsed < 2000) {
+          await Future.delayed(Duration(milliseconds: 2000 - elapsed));
+        }
 
         // Actualizar estado local
         setState(() {
           _userName = _tempFullName;
           _userEmail = _tempEmail;
+          _realPhone = _tempPhone; // Actualizar valor real del teléfono
+          _realDateOfBirth = _tempDateOfBirth; // Actualizar valor real de fecha
+          _realMembership = _tempMembership; // Actualizar valor real de membresía
           _isEditMode = false;
           _hasChanges = false;
+          _isSavingChanges = false; // Desactivar indicador de carga
         });
 
         _showSuccessSnackBar('Profile updated successfully!');
@@ -278,19 +384,33 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
     } catch (e) {
       print('Error updating profile: $e');
       _showErrorSnackBar('Error updating profile');
+      
+      // Desactivar indicador de carga en caso de error
+      setState(() {
+        _isSavingChanges = false;
+      });
     }
   }
 
 
   // Método para detectar cambios
   void _onFieldChanged() {
+    // Solo detectar cambios en campos editables (excluir email y membership)
     bool hasChanges = _tempFullName != _userName || 
-                     _tempEmail != _userEmail;
+                     _tempPhone != _realPhone ||
+                     _tempDateOfBirth != _realDateOfBirth;
+    
+    print('🔍 DEBUG: Detección de cambios:');
+    print('  - _tempFullName: "$_tempFullName" vs _userName: "$_userName"');
+    print('  - _tempPhone: "$_tempPhone" vs _realPhone: "$_realPhone"');
+    print('  - _tempDateOfBirth: "$_tempDateOfBirth" vs _realDateOfBirth: "$_realDateOfBirth"');
+    print('  - hasChanges: $hasChanges, _hasChanges: $_hasChanges');
     
     if (hasChanges != _hasChanges) {
       setState(() {
         _hasChanges = hasChanges;
       });
+      print('🔍 DEBUG: _hasChanges actualizado a: $_hasChanges');
     }
   }
 
@@ -525,42 +645,1107 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
     }
   }
 
-  // Método para mostrar mensaje de éxito
+  // 🎉 MÉTODO PARA MOSTRAR MODAL DE ÉXITO
   void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: GoogleFonts.outfit(
-            color: Colors.white,
-            fontWeight: FontWeight.w500,
+    _showSuccessModal(message);
+  }
+
+  // ❌ MÉTODO PARA MOSTRAR MODAL DE ERROR
+  void _showErrorSnackBar(String message) {
+    _showErrorModal(message);
+  }
+
+  // 🎉 MODAL DE ÉXITO PROFESIONAL
+  void _showSuccessModal(String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            width: double.infinity,
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 30),
+                // ICONO DE ÉXITO
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE0F7FA), // TURQUESA CLARO
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Container(
+                      width: 50,
+                      height: 50,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF4DD0E1), // TURQUESA LANDGO
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.check,
+                        color: Colors.white,
+                        size: 30,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                // TÍTULO
+                Text(
+                  'Success!',
+                  style: GoogleFonts.outfit(
+                    color: Colors.black,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // MENSAJE
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    message,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.outfit(
+                      color: Colors.black87,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 30),
+                // BOTÓN
+                Container(
+                  width: double.infinity,
+                  height: 50,
+                  margin: const EdgeInsets.fromLTRB(20, 0, 20, 30),
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF4DD0E1), // TURQUESA LANDGO
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      'Continue',
+                      style: GoogleFonts.outfit(
+                        color: Colors.black,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        backgroundColor: const Color(0xFF4CAF50),
-        duration: const Duration(seconds: 3),
-      ),
+        );
+      },
     );
   }
 
-  // Método para mostrar mensaje de error
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          message,
-          style: GoogleFonts.outfit(
-            color: Colors.white,
-            fontWeight: FontWeight.w500,
+  // 🔐 MODAL DE VERIFICACIÓN DE EMAIL REQUERIDA
+  void _showEmailVerificationModal() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            width: double.infinity,
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 30),
+                // ICONO DE SEGURIDAD
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE3F2FD), // AZUL CLARO
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Container(
+                      width: 50,
+                      height: 50,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF2196F3), // AZUL LANDGO
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.security,
+                        color: Colors.white,
+                        size: 30,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                // TÍTULO
+                Text(
+                  'Email Verification Required',
+                  style: GoogleFonts.outfit(
+                    color: Colors.black,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // MENSAJE
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    'For security reasons, we need to verify your identity before making changes to your personal information.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.outfit(
+                      color: Colors.black87,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                // INFORMACIÓN ADICIONAL
+                Container(
+                  margin: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF8F9FA),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFFE9ECEF),
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.info_outline,
+                            color: Color(0xFF2196F3),
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'What happens next?',
+                            style: GoogleFonts.outfit(
+                              color: Colors.black,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '• We\'ll send a verification code to your email\n• Enter the code to confirm your identity\n• Your changes will be saved securely',
+                        style: GoogleFonts.outfit(
+                          color: Colors.black87,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 30),
+                // BOTONES
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 30),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: const BorderSide(
+                                color: Color(0xFFE9ECEF),
+                                width: 1,
+                              ),
+                            ),
+                          ),
+                          child: Text(
+                            'Cancel',
+                            style: GoogleFonts.outfit(
+                              color: Colors.black54,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            _sendVerificationEmail();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF2196F3), // AZUL LANDGO
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                          ),
+                          child: Text(
+                            'Send Code',
+                            style: GoogleFonts.outfit(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-        ),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 3),
-      ),
+        );
+      },
     );
+  }
+
+  // 📧 ENVIAR EMAIL DE VERIFICACIÓN
+  Future<void> _sendVerificationEmail() async {
+    try {
+
+      // Guardar cambios pendientes
+      final pendingChanges = {
+        'full_name': _tempFullName,
+        'phone': _tempPhone,
+        'date_of_birth': _tempDateOfBirth,
+      };
+      _pendingChanges = jsonEncode(pendingChanges);
+
+      // Enviar email de verificación usando Supabase Edge Function
+      final response = await SupaFlow.client.functions.invoke(
+        'send-verification-code',
+        body: {
+          'email': _userEmail,
+          'type': 'profile_update',
+          'changes': pendingChanges,
+        },
+      );
+
+      print('🔍 DEBUG: Email verification sent: $response');
+
+      // Navegar a la pantalla de verificación de código
+      if (mounted) {
+        context.pushNamed(
+          'VerificationCodePage',
+          queryParameters: {
+            'email': _userEmail,
+            'type': 'profile_update',
+            'pendingChanges': _pendingChanges,
+          },
+        );
+      }
+    } catch (e) {
+      print('Error sending verification email: $e');
+      _showErrorSnackBar('Error sending verification email. Please try again.');
+    }
+  }
+
+  // ❌ MODAL DE ERROR PROFESIONAL
+  void _showErrorModal(String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            width: double.infinity,
+            margin: const EdgeInsets.symmetric(horizontal: 20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: 30),
+                // ICONO DE ERROR
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFEBEE), // ROJO CLARO
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Container(
+                      width: 50,
+                      height: 50,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFDC2626), // ROJO LANDGO
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 30,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                // TÍTULO
+                Text(
+                  'Error!',
+                  style: GoogleFonts.outfit(
+                    color: Colors.black,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // MENSAJE
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    message,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.outfit(
+                      color: Colors.black87,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 30),
+                // BOTÓN
+                Container(
+                  width: double.infinity,
+                  height: 50,
+                  margin: const EdgeInsets.fromLTRB(20, 0, 20, 30),
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFDC2626), // ROJO LANDGO
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Text(
+                      'Try Again',
+                      style: GoogleFonts.outfit(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // 🌍 SELECTOR DE PAÍS PARA TELÉFONO
+  void _showCountrySelectorDialog() {
+    final countries = [
+      // América del Norte
+      {'code': '+1', 'name': 'United States', 'flag': '🇺🇸'},
+      {'code': '+1', 'name': 'Canada', 'flag': '🇨🇦'},
+      // América Latina
+      {'code': '+52', 'name': 'Mexico', 'flag': '🇲🇽'},
+      {'code': '+53', 'name': 'Cuba', 'flag': '🇨🇺'},
+      {'code': '+54', 'name': 'Argentina', 'flag': '🇦🇷'},
+      {'code': '+55', 'name': 'Brazil', 'flag': '🇧🇷'},
+      {'code': '+56', 'name': 'Chile', 'flag': '🇨🇱'},
+      {'code': '+57', 'name': 'Colombia', 'flag': '🇨🇴'},
+      {'code': '+58', 'name': 'Venezuela', 'flag': '🇻🇪'},
+      {'code': '+51', 'name': 'Peru', 'flag': '🇵🇪'},
+      {'code': '+593', 'name': 'Ecuador', 'flag': '🇪🇨'},
+      {'code': '+502', 'name': 'Guatemala', 'flag': '🇬🇹'},
+      {'code': '+503', 'name': 'El Salvador', 'flag': '🇸🇻'},
+      {'code': '+504', 'name': 'Honduras', 'flag': '🇭🇳'},
+      {'code': '+505', 'name': 'Nicaragua', 'flag': '🇳🇮'},
+      {'code': '+506', 'name': 'Costa Rica', 'flag': '🇨🇷'},
+      {'code': '+507', 'name': 'Panama', 'flag': '🇵🇦'},
+      {'code': '+1-787', 'name': 'Puerto Rico', 'flag': '🇵🇷'},
+      {'code': '+1-809', 'name': 'Dominican Republic', 'flag': '🇩🇴'},
+      {'code': '+591', 'name': 'Bolivia', 'flag': '🇧🇴'},
+      {'code': '+595', 'name': 'Paraguay', 'flag': '🇵🇾'},
+      {'code': '+598', 'name': 'Uruguay', 'flag': '🇺🇾'},
+      // Europa
+      {'code': '+34', 'name': 'Spain', 'flag': '🇪🇸'},
+      {'code': '+44', 'name': 'United Kingdom', 'flag': '🇬🇧'},
+      {'code': '+33', 'name': 'France', 'flag': '🇫🇷'},
+      {'code': '+49', 'name': 'Germany', 'flag': '🇩🇪'},
+      {'code': '+39', 'name': 'Italy', 'flag': '🇮🇹'},
+      {'code': '+351', 'name': 'Portugal', 'flag': '🇵🇹'},
+      {'code': '+31', 'name': 'Netherlands', 'flag': '🇳🇱'},
+      {'code': '+32', 'name': 'Belgium', 'flag': '🇧🇪'},
+      {'code': '+41', 'name': 'Switzerland', 'flag': '🇨🇭'},
+      {'code': '+43', 'name': 'Austria', 'flag': '🇦🇹'},
+      {'code': '+46', 'name': 'Sweden', 'flag': '🇸🇪'},
+      {'code': '+47', 'name': 'Norway', 'flag': '🇳🇴'},
+      {'code': '+45', 'name': 'Denmark', 'flag': '🇩🇰'},
+      {'code': '+358', 'name': 'Finland', 'flag': '🇫🇮'},
+      {'code': '+7', 'name': 'Russia', 'flag': '🇷🇺'},
+      {'code': '+48', 'name': 'Poland', 'flag': '🇵🇱'},
+      {'code': '+30', 'name': 'Greece', 'flag': '🇬🇷'},
+      // Asia
+      {'code': '+86', 'name': 'China', 'flag': '🇨🇳'},
+      {'code': '+81', 'name': 'Japan', 'flag': '🇯🇵'},
+      {'code': '+82', 'name': 'South Korea', 'flag': '🇰🇷'},
+      {'code': '+91', 'name': 'India', 'flag': '🇮🇳'},
+      {'code': '+62', 'name': 'Indonesia', 'flag': '🇮🇩'},
+      {'code': '+63', 'name': 'Philippines', 'flag': '🇵🇭'},
+      {'code': '+65', 'name': 'Singapore', 'flag': '🇸🇬'},
+      {'code': '+66', 'name': 'Thailand', 'flag': '🇹🇭'},
+      {'code': '+84', 'name': 'Vietnam', 'flag': '🇻🇳'},
+      {'code': '+60', 'name': 'Malaysia', 'flag': '🇲🇾'},
+      {'code': '+92', 'name': 'Pakistan', 'flag': '🇵🇰'},
+      {'code': '+880', 'name': 'Bangladesh', 'flag': '🇧🇩'},
+      // Medio Oriente
+      {'code': '+971', 'name': 'United Arab Emirates', 'flag': '🇦🇪'},
+      {'code': '+966', 'name': 'Saudi Arabia', 'flag': '🇸🇦'},
+      {'code': '+972', 'name': 'Israel', 'flag': '🇮🇱'},
+      {'code': '+90', 'name': 'Turkey', 'flag': '🇹🇷'},
+      // África
+      {'code': '+27', 'name': 'South Africa', 'flag': '🇿🇦'},
+      {'code': '+20', 'name': 'Egypt', 'flag': '🇪🇬'},
+      {'code': '+234', 'name': 'Nigeria', 'flag': '🇳🇬'},
+      {'code': '+254', 'name': 'Kenya', 'flag': '🇰🇪'},
+      // Oceanía
+      {'code': '+61', 'name': 'Australia', 'flag': '🇦🇺'},
+      {'code': '+64', 'name': 'New Zealand', 'flag': '🇳🇿'},
+    ];
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        String searchQuery = '';
+        return StatefulBuilder(
+          builder: (context, setState) {
+            // Filtrar países según búsqueda
+            final filteredCountries = countries.where((country) {
+              final name = country['name']!.toLowerCase();
+              final code = country['code']!.toLowerCase();
+              final query = searchQuery.toLowerCase();
+              return name.contains(query) || code.contains(query);
+            }).toList();
+
+            return AlertDialog(
+              backgroundColor: const Color(0xFF2C2C2C),
+              title: Text(
+                'Select Country',
+                style: GoogleFonts.outfit(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                height: 400,
+                child: Column(
+                  children: [
+                    // Barra de búsqueda
+                    TextField(
+                      onChanged: (value) {
+                        setState(() {
+                          searchQuery = value;
+                        });
+                      },
+                      style: GoogleFonts.outfit(
+                        color: Colors.black,
+                        fontSize: 16,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Search country...',
+                        hintStyle: GoogleFonts.outfit(
+                          color: Colors.grey[600],
+                          fontSize: 14,
+                        ),
+                        prefixIcon: const Icon(Icons.search, color: Color(0xFF4DD0E1)),
+                        filled: true,
+                        fillColor: Colors.white,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Lista de países
+                    Expanded(
+                      child: ListView.builder(
+                        itemCount: filteredCountries.length,
+                        itemBuilder: (context, index) {
+                          final country = filteredCountries[index];
+                          final isSelected = country['code'] == _selectedCountryCode && 
+                                           country['name'] == _selectedCountryName;
+                
+                          return ListTile(
+                            leading: Text(
+                              country['flag']!,
+                              style: const TextStyle(fontSize: 24),
+                            ),
+                            title: Text(
+                              country['name']!,
+                              style: GoogleFonts.outfit(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            trailing: Text(
+                              country['code']!,
+                              style: GoogleFonts.outfit(
+                                color: const Color(0xFF4DD0E1),
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            selected: isSelected,
+                            selectedTileColor: const Color(0xFF4DD0E1).withOpacity(0.1),
+                            onTap: () {
+                              // Actualizar el estado del padre
+                              this.setState(() {
+                                _selectedCountryCode = country['code']!;
+                                _selectedCountryName = country['name']!;
+                              });
+                              Navigator.of(context).pop();
+                              _showPhoneInputDialog();
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // 📞 DIÁLOGO PARA INGRESAR NÚMERO TELEFÓNICO
+  void _showPhoneInputDialog() {
+    final controller = TextEditingController();
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF2C2C2C),
+          title: Text(
+            'Enter Phone Number',
+            style: GoogleFonts.outfit(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Country: $_selectedCountryName ($_selectedCountryCode)',
+                style: GoogleFonts.outfit(
+                  color: const Color(0xFF4DD0E1),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: controller,
+                keyboardType: TextInputType.phone,
+                style: GoogleFonts.outfit(
+                  color: Colors.black,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Enter phone number',
+                  hintStyle: GoogleFonts.outfit(
+                    color: Colors.grey[600],
+                    fontSize: 16,
+                  ),
+                  filled: true,
+                  fillColor: Colors.white,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: Color(0xFF4DD0E1),
+                      width: 2,
+                    ),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: Color(0xFF4DD0E1),
+                      width: 2,
+                    ),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: Color(0xFF4DD0E1),
+                      width: 2,
+                    ),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Cancel',
+                style: GoogleFonts.outfit(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final phoneNumber = controller.text.trim();
+                print('🔍 DEBUG: Botón Save presionado');
+                print('🔍 DEBUG: Número ingresado: "$phoneNumber"');
+                print('🔍 DEBUG: País seleccionado: $_selectedCountryName ($_selectedCountryCode)');
+                
+                if (phoneNumber.isNotEmpty) {
+                  final formattedPhone = _formatPhoneWithCountryCode(phoneNumber);
+                  print('🔍 DEBUG: Teléfono formateado: "$formattedPhone"');
+                  _updateFieldValue('phone', formattedPhone);
+                  Navigator.of(context).pop();
+                  print('🔍 DEBUG: Diálogo cerrado, valor actualizado');
+                } else {
+                  print('🔍 DEBUG: ERROR: Número vacío');
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF4DD0E1),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              ),
+              child: Text(
+                'Save',
+                style: GoogleFonts.outfit(
+                  color: Colors.black,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // 📞 FORMATEAR TELÉFONO CON CÓDIGO DE PAÍS SELECCIONADO
+  String _formatPhoneWithCountryCode(String phoneNumber) {
+    // Remover todos los caracteres no numéricos
+    String digitsOnly = phoneNumber.replaceAll(RegExp(r'[^\d]'), '');
+    
+    print('🔍 DEBUG: Formateando teléfono con país:');
+    print('  - País seleccionado: $_selectedCountryName ($_selectedCountryCode)');
+    print('  - Número ingresado: $phoneNumber');
+    print('  - Solo dígitos: $digitsOnly');
+    
+    if (_selectedCountryCode == '+1') {
+      // Formato USA/Canadá
+      if (digitsOnly.length == 10) {
+        String areaCode = digitsOnly.substring(0, 3);
+        String exchange = digitsOnly.substring(3, 6);
+        String number = digitsOnly.substring(6, 10);
+        return '+1 ($areaCode) $exchange-$number';
+      }
+    } else {
+      // Formato internacional
+      return '$_selectedCountryCode $digitsOnly';
+    }
+    
+    return '$_selectedCountryCode $digitsOnly';
+  }
+
+  // 📅 MÉTODO PARA MOSTRAR CALENDARIO PROFESIONAL
+  void _showDatePickerDialog() {
+    // Fecha por defecto: 25 años atrás
+    final today = DateTime.now();
+    DateTime selectedDate = DateTime(today.year - 25, today.month, today.day);
+    
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Dialog(
+              backgroundColor: Colors.transparent,
+              child: Container(
+                width: double.infinity,
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2C2C2C), // FONDO OSCURO COMO EN LA IMAGEN
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // HEADER DEL CALENDARIO
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        children: [
+                          // TÍTULO "Select date"
+                          Row(
+                            children: [
+                              Text(
+                                'Select date',
+                                style: GoogleFonts.outfit(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          // FECHA SELECCIONADA
+                          Row(
+                            children: [
+                              Text(
+                                _formatSelectedDate(selectedDate),
+                                style: GoogleFonts.outfit(
+                                  color: Colors.white,
+                                  fontSize: 24,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Icon(
+                                  Icons.edit,
+                                  color: Colors.white,
+                                  size: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          // SELECTOR DE MES/AÑO
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    _formatMonthYear(selectedDate),
+                                    style: GoogleFonts.outfit(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  const Icon(
+                                    Icons.keyboard_arrow_down,
+                                    color: Colors.white,
+                                    size: 20,
+                                  ),
+                                ],
+                              ),
+                              // NAVEGACIÓN DE MESES
+                              Row(
+                                children: [
+                                  GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        selectedDate = DateTime(
+                                          selectedDate.year,
+                                          selectedDate.month - 1,
+                                          selectedDate.day,
+                                        );
+                                      });
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      child: const Icon(
+                                        Icons.chevron_left,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  GestureDetector(
+                                    onTap: () {
+                                      setState(() {
+                                        selectedDate = DateTime(
+                                          selectedDate.year,
+                                          selectedDate.month + 1,
+                                          selectedDate.day,
+                                        );
+                                      });
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(8),
+                                      child: const Icon(
+                                        Icons.chevron_right,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    // CALENDARIO
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      child: _buildCalendarGrid(selectedDate, setState),
+                    ),
+                    const SizedBox(height: 20),
+                    // BOTONES
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: Text(
+                              'Cancel',
+                              style: GoogleFonts.outfit(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 16),
+                          ElevatedButton(
+                            onPressed: () {
+                              // Validar que el usuario sea mayor de 18 años
+                              final today = DateTime.now();
+                              final age = today.difference(selectedDate).inDays ~/ 365;
+                              
+                              if (age < 18) {
+                                _showErrorSnackBar('You must be at least 18 years old to use this service');
+                                return;
+                              }
+                              
+                              _updateFieldValue('date_of_birth', _formatDateForDisplay(selectedDate));
+                              Navigator.of(context).pop();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF4DD0E1), // TURQUESA LANDGO
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            ),
+                            child: Text(
+                              'OK',
+                              style: GoogleFonts.outfit(
+                                color: Colors.black,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // 📅 MÉTODO PARA CONSTRUIR LA GRILLA DEL CALENDARIO
+  Widget _buildCalendarGrid(DateTime selectedDate, StateSetter setState) {
+    final firstDayOfMonth = DateTime(selectedDate.year, selectedDate.month, 1);
+    final lastDayOfMonth = DateTime(selectedDate.year, selectedDate.month + 1, 0);
+    final firstWeekday = firstDayOfMonth.weekday;
+    
+    // Calcular fecha mínima (18 años atrás desde hoy)
+    final today = DateTime.now();
+    final minDate = DateTime(today.year - 18, today.month, today.day);
+    
+    // DÍAS DE LA SEMANA
+    final weekDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+    
+    return Column(
+      children: [
+        // HEADER DE DÍAS DE LA SEMANA
+        Row(
+          children: weekDays.map((day) => Expanded(
+            child: Center(
+              child: Text(
+                day,
+                style: GoogleFonts.outfit(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          )).toList(),
+        ),
+        const SizedBox(height: 12),
+        // GRILLA DE DÍAS
+        ...List.generate(6, (weekIndex) {
+          return Row(
+            children: List.generate(7, (dayIndex) {
+              final dayNumber = weekIndex * 7 + dayIndex - firstWeekday + 2;
+              final isCurrentMonth = dayNumber > 0 && dayNumber <= lastDayOfMonth.day;
+              final isSelected = isCurrentMonth && dayNumber == selectedDate.day;
+              
+              // Verificar si la fecha es válida (mayor de 18 años)
+              DateTime potentialDate;
+              bool isValidDate = false;
+              if (isCurrentMonth) {
+                potentialDate = DateTime(selectedDate.year, selectedDate.month, dayNumber);
+                isValidDate = potentialDate.isBefore(minDate) || potentialDate.isAtSameMomentAs(minDate);
+              }
+              
+              return Expanded(
+                child: GestureDetector(
+                  onTap: (isCurrentMonth && isValidDate) ? () {
+                    setState(() {
+                      selectedDate = DateTime(selectedDate.year, selectedDate.month, dayNumber);
+                    });
+                  } : null,
+                  child: Container(
+                    height: 40,
+                    margin: const EdgeInsets.all(2),
+                    decoration: BoxDecoration(
+                      color: isSelected ? const Color(0xFF4DD0E1) : Colors.transparent,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        isCurrentMonth ? dayNumber.toString() : '',
+                        style: GoogleFonts.outfit(
+                          color: isSelected ? Colors.black : 
+                                 (isCurrentMonth && !isValidDate) ? Colors.grey : Colors.white,
+                          fontSize: 16,
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }),
+          );
+        }),
+      ],
+    );
+  }
+
+
+  // 📅 MÉTODOS DE FORMATEO DE FECHAS
+  String _formatSelectedDate(DateTime date) {
+    final weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    
+    return '${weekdays[date.weekday - 1]}, ${months[date.month - 1]} ${date.day}';
+  }
+
+  String _formatMonthYear(DateTime date) {
+    final months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    return '${months[date.month - 1]} ${date.year}';
+  }
+
+  String _formatDateForDisplay(DateTime date) {
+    final months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    return '${months[date.month - 1]} ${date.day}, ${date.year}';
   }
 
   // Método para mostrar diálogo de edición de campo
   void _showEditFieldDialog(String label, String currentValue, String fieldKey) {
+    // 🚫 PROTECCIÓN: Email no se puede editar por seguridad
+    if (fieldKey == 'email') {
+      _showErrorSnackBar('Email cannot be changed for security reasons');
+      return;
+    }
+    
+    // 🚫 PROTECCIÓN: Membership no se puede editar desde aquí
+    if (fieldKey == 'membership') {
+      _showErrorSnackBar('Membership can only be changed from the membership page');
+      return;
+    }
+    
+    // 📅 CALENDARIO ESPECIAL para fecha de nacimiento
+    if (fieldKey == 'date_of_birth') {
+      _showDatePickerDialog();
+      return;
+    }
+    
+    // 📞 SELECTOR DE PAÍS para teléfono
+    if (fieldKey == 'phone') {
+      _showCountrySelectorDialog();
+      return;
+    }
+    
     final controller = TextEditingController(text: currentValue);
     
     showDialog(
@@ -579,24 +1764,42 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
           content: TextField(
             controller: controller,
             style: GoogleFonts.outfit(
-              color: Colors.white,
+              color: Colors.black, // TEXTO NEGRO PARA VISIBILIDAD
               fontSize: 16,
+              fontWeight: FontWeight.w500,
             ),
             decoration: InputDecoration(
               hintText: 'Enter $label',
               hintStyle: GoogleFonts.outfit(
-                color: Colors.grey,
+                color: Colors.grey[600], // HINT MÁS VISIBLE
                 fontSize: 16,
               ),
               filled: true,
-              fillColor: Colors.white,
+              fillColor: Colors.white, // FONDO BLANCO
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
+                borderSide: const BorderSide(
+                  color: Color(0xFF4DD0E1), // BORDE TURQUESA
+                  width: 2,
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: Color(0xFF4DD0E1), // BORDE TURQUESA
+                  width: 2,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: Color(0xFF4DD0E1), // BORDE TURQUESA AL FOCUS
+                  width: 2,
+                ),
               ),
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
-                vertical: 12,
+                vertical: 16,
               ),
             ),
           ),
@@ -636,27 +1839,41 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
 
   // Método para actualizar valor de campo
   void _updateFieldValue(String fieldKey, String newValue) {
+    print('🔍 DEBUG: _updateFieldValue llamado:');
+    print('  - fieldKey: $fieldKey');
+    print('  - newValue: $newValue');
+    print('  - _tempPhone antes: $_tempPhone');
+    
     setState(() {
       switch (fieldKey) {
         case 'full_name':
           _tempFullName = newValue;
+          print('  - _tempFullName actualizado a: $_tempFullName');
           break;
         case 'email':
           _tempEmail = newValue;
+          print('  - _tempEmail actualizado a: $_tempEmail');
           break;
         case 'phone':
-          _tempPhone = newValue;
+          _tempPhone = newValue; // Usar el valor ya formateado del diálogo
+          print('  - _tempPhone actualizado a: $_tempPhone');
+          print('  - _realPhone antes: $_realPhone');
           break;
         case 'date_of_birth':
           _tempDateOfBirth = newValue;
+          print('  - _tempDateOfBirth actualizado a: $_tempDateOfBirth');
           break;
         case 'membership':
           _tempMembership = newValue;
+          print('  - _tempMembership actualizado a: $_tempMembership');
           break;
       }
       _onFieldChanged();
     });
   }
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -720,6 +1937,12 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
                   
                   // Edit Profile Button
                   _buildEditProfileButton(),
+                  
+                  // Cancel Button (solo en modo edición)
+                  if (_isEditMode) ...[
+                    const SizedBox(height: 12),
+                    _buildCancelButton(),
+                  ],
                   
                   const SizedBox(height: 100), // ESPACIO PARA BOTTOM NAV
                 ],
@@ -927,11 +2150,11 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
         const SizedBox(height: 12),
         _buildInfoField('Email', _isEditMode ? _tempEmail : _userEmail, Icons.email_outlined, 'email'),
         const SizedBox(height: 12),
-        _buildInfoField('Phone', _isEditMode ? _tempPhone : '+1 (555) 123-4567', Icons.phone_outlined, 'phone'),
+        _buildInfoField('Phone', _isEditMode ? _tempPhone : _realPhone, Icons.phone_outlined, 'phone'),
         const SizedBox(height: 12),
-        _buildInfoField('Date of Birth', _isEditMode ? _tempDateOfBirth : 'January 15, 1990', Icons.cake_outlined, 'date_of_birth'),
+        _buildInfoField('Date of Birth', _isEditMode ? _tempDateOfBirth : _realDateOfBirth, Icons.cake_outlined, 'date_of_birth'),
         const SizedBox(height: 12),
-        _buildInfoField('Membership', _isEditMode ? _tempMembership : 'Premium Member', Icons.diamond_outlined, 'membership'),
+        _buildInfoField('Membership', _isEditMode ? _tempMembership : _realMembership, Icons.diamond_outlined, 'membership'),
       ],
     );
   }
@@ -984,7 +2207,7 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
               ],
             ),
           ),
-          if (_isEditMode)
+          if (_isEditMode && fieldKey != 'email' && fieldKey != 'membership')
             GestureDetector(
               onTap: () => _showEditFieldDialog(label, value, fieldKey),
               child: Container(
@@ -1001,39 +2224,231 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
                 ),
               ),
             ),
+          if ((fieldKey == 'email' || fieldKey == 'membership') && _isEditMode)
+            Container(
+              width: 32,
+              height: 32,
+              decoration: const BoxDecoration(
+                color: Color(0xFF666666), // GRIS PARA INDICAR NO EDITABLE
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.lock_outline, // ICONO DE CANDADO
+                color: Colors.white70,
+                size: 16,
+              ),
+            ),
         ],
       ),
     );
   }
 
   Widget _buildEditProfileButton() {
+    // Determinar color del botón basado en el estado
+    Color buttonColor;
+    Widget? buttonChild;
+    
+    if (_isSavingChanges) {
+      // Botón en estado de carga - Gris con spinner
+      buttonColor = const Color(0xFF666666);
+      buttonChild = Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            'Saving...',
+            style: GoogleFonts.outfit(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      );
+    } else if (_isEditMode && _hasChanges) {
+      // Botón "Save Changes" - Verde para indicar acción de guardar
+      buttonColor = const Color(0xFF4CAF50);
+      buttonChild = Text(
+        'Save Changes',
+        style: GoogleFonts.outfit(
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+        ),
+      );
+    } else if (_isEditMode && !_hasChanges) {
+      // Botón en modo edición pero sin cambios - Gris para indicar inactivo
+      buttonColor = const Color(0xFF666666);
+      buttonChild = Text(
+        'Edit Profile',
+        style: GoogleFonts.outfit(
+          color: Colors.white70,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+        ),
+      );
+    } else {
+      // Botón "Edit Profile" - Turquesa normal
+      buttonColor = const Color(0xFF4DD0E1);
+      buttonChild = Text(
+        'Edit Profile',
+        style: GoogleFonts.outfit(
+          color: Colors.black,
+          fontSize: 18,
+          fontWeight: FontWeight.w600,
+        ),
+      );
+    }
+    
     return Container(
       width: double.infinity,
       height: 56,
       decoration: BoxDecoration(
-        color: const Color(0xFF4DD0E1), // TURQUESA EXACTO
+        color: buttonColor,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: _toggleEditMode,
+          onTap: _isSavingChanges ? null : _toggleEditMode, // Deshabilitar durante carga
           child: Center(
-            child: Text(
-              _isEditMode 
-                  ? (_hasChanges ? 'Save Changes' : 'Edit Profile')
-                  : 'Edit Profile',
-              style: GoogleFonts.outfit(
-                color: Colors.black, // TEXTO NEGRO SOBRE TURQUESA
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
+            child: buttonChild,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ❌ BOTÓN DE CANCELAR EDICIÓN
+  Widget _buildCancelButton() {
+    return Container(
+      width: double.infinity,
+      height: 56,
+      decoration: BoxDecoration(
+        color: const Color(0xFF666666), // GRIS PARA CANCELAR
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFF4DD0E1), // BORDE TURQUESA
+          width: 2,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: _cancelEdit,
+          child: Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.close,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Cancel',
+                  style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  // ❌ MÉTODO PARA CANCELAR EDICIÓN
+  void _cancelEdit() {
+    // Mostrar diálogo de confirmación
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF2C2C2C),
+          title: Text(
+            'Cancel Changes?',
+            style: GoogleFonts.outfit(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          content: Text(
+            'Are you sure you want to cancel? All unsaved changes will be lost.',
+            style: GoogleFonts.outfit(
+              color: Colors.white70,
+              fontSize: 16,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'Keep Editing',
+                style: GoogleFonts.outfit(
+                  color: const Color(0xFF4DD0E1),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _confirmCancelEdit();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFDC2626),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                'Cancel',
+                style: GoogleFonts.outfit(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // ❌ CONFIRMAR CANCELACIÓN DE EDICIÓN
+  void _confirmCancelEdit() {
+    setState(() {
+      _isEditMode = false;
+      _hasChanges = false;
+      _isSavingChanges = false;
+      
+      // Restaurar valores originales
+      _tempFullName = _userName;
+      _tempEmail = _userEmail;
+      _tempPhone = _realPhone;
+      _tempDateOfBirth = _realDateOfBirth;
+      _tempMembership = _realMembership;
+    });
+    
+    print('🔍 DEBUG: Edición cancelada, valores restaurados');
   }
 
   Widget _buildBottomNavigation() {
