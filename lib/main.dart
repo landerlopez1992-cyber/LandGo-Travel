@@ -15,6 +15,38 @@ import 'flutter_flow/internationalization.dart';
 import 'flutter_flow/nav/nav.dart';
 import 'index.dart';
 
+// Función para verificar y restaurar sesión existente
+Future<void> _checkAndRestoreSession() async {
+  try {
+    // Intentar recuperar sesión existente
+    final session = SupaFlow.client.auth.currentSession;
+    if (session != null) {
+      print('🔑 Sesión existente encontrada: ${session.user.email}');
+      
+      // Verificar que la sesión no esté expirada
+      final now = DateTime.now();
+      final expiresAt = DateTime.fromMillisecondsSinceEpoch(session.expiresAt! * 1000);
+      
+      if (now.isBefore(expiresAt)) {
+        print('✅ Sesión válida, usuario mantiene login');
+        currentUser = LandGoTravelSupabaseUser(session.user);
+      } else {
+        print('⚠️ Sesión expirada, refrescando...');
+        await SupaFlow.client.auth.refreshSession();
+        final newSession = SupaFlow.client.auth.currentSession;
+        if (newSession != null) {
+          currentUser = LandGoTravelSupabaseUser(newSession.user);
+          print('✅ Sesión refrescada exitosamente');
+        }
+      }
+    } else {
+      print('❌ No hay sesión guardada');
+    }
+  } catch (e) {
+    print('⚠️ Error verificando sesión: $e');
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   GoRouter.optionURLReflectsImperativeAPIs = true;
@@ -23,6 +55,9 @@ void main() async {
   await initFirebase();
 
   await SupaFlow.initialize();
+  
+  // Verificar y restaurar sesión existente
+  // await _checkAndRestoreSession(); // TEMPORALMENTE COMENTADO
 
   runApp(MyApp());
 }

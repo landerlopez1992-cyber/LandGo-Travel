@@ -22,6 +22,29 @@ import '/index.dart';
 export 'package:go_router/go_router.dart';
 export 'serialization_util.dart';
 
+// Función para verificar autenticación y navegar correctamente
+Widget _checkAuthAndNavigate() {
+  // Verificar si hay una sesión activa en Supabase
+  final session = SupaFlow.client.auth.currentSession;
+  final user = SupaFlow.client.auth.currentUser;
+  
+  print('Checking auth state:');
+  print('  Session exists: ${session != null}');
+  print('  User exists: ${user != null}');
+  print('  User email: ${user?.email}');
+  
+  if (session != null && user != null) {
+    print('User is logged in, navigating to MainPage');
+    // Usuario autenticado, ir a la página principal
+    return MainPageWidget();
+  } else {
+    print('User is not logged in, navigating to Welcome');
+    // Usuario no autenticado, ir a la página de bienvenida
+    return NewWelcomePageWidget();
+  }
+}
+
+
 const kTransitionInfoKey = '__transition_info__';
 
 GlobalKey<NavigatorState> appNavigatorKey = GlobalKey<NavigatorState>();
@@ -89,7 +112,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         FFRoute(
           name: '_initialize',
           path: '/',
-          builder: (context, _) => NewWelcomePageWidget(),
+          builder: (context, _) => _checkAuthAndNavigate(),
         ),
         FFRoute(
           name: ManageUsersPageWidget.routeName,
@@ -138,6 +161,16 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => MyWalletPageWidget(),
         ),
         FFRoute(
+          name: MyProfilePageWidget.routeName,
+          path: MyProfilePageWidget.routePath,
+          builder: (context, params) => MyProfilePageWidget(),
+        ),
+        FFRoute(
+          name: ProfilePageWidget.routeName,
+          path: ProfilePageWidget.routePath,
+          builder: (context, params) => ProfilePageWidget(),
+        ),
+        FFRoute(
           name: MembershipPageWidget.routeName,
           path: MembershipPageWidget.routePath,
           builder: (context, params) => MembershipPageWidget(),
@@ -177,11 +210,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           path: MyBookingsPageWidget.routePath,
           builder: (context, params) => MyBookingsPageWidget(),
         ),
-        FFRoute(
-          name: ProfilePageWidget.routeName,
-          path: ProfilePageWidget.routePath,
-          builder: (context, params) => ProfilePageWidget(),
-        ),
+        // ELIMINADA: Página de perfil antigua con fondo claro
         FFRoute(
           name: SupportChatPageWidget.routeName,
           path: SupportChatPageWidget.routePath,

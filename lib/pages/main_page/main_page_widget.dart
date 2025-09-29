@@ -83,11 +83,8 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                 // Existing Grid of Buttons (Book Travel, Membership, Wallet, My Bookings)
                 _buildExistingButtonsGrid(),
                 
-                // Existing Special Offer Banner
-                _buildSpecialOfferBanner(),
-                
-                // Bottom spacing for navigation - AUMENTADO PARA BOTONES ANDROID
-                const SizedBox(height: 120),
+                // Bottom spacing for navigation - AJUSTADO PARA EVITAR OVERFLOW
+                const SizedBox(height: 100),
               ],
             ),
           ),
@@ -219,12 +216,12 @@ class _MainPageWidgetState extends State<MainPageWidget> {
           return Container(
             width: 80,
             margin: const EdgeInsets.only(right: 16),
-            child: Column(
-                                  children: [
-                Container(
+                                          child: Column(
+                                            children: [
+                                              Container(
                   width: 60,
                   height: 60,
-                                        decoration: BoxDecoration(
+                                                decoration: BoxDecoration(
                     color: Colors.grey[900],
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -232,18 +229,18 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                     child: Text(
                       category['emoji'] as String,
                       style: const TextStyle(fontSize: 24),
-                    ),
-                  ),
-                ),
+                                                  ),
+                                                ),
+                                              ),
                 const SizedBox(height: 8),
-                Text(
+                                              Text(
                   category['name'] as String,
                   style: TextStyle(
                                           color: Colors.white,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
-                  textAlign: TextAlign.center,
+                                                textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -281,7 +278,7 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                 Container(
                   width: 120,
                   height: 120,
-                  decoration: BoxDecoration(
+                                        decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
                     image: DecorationImage(
                       image: NetworkImage('https://images.unsplash.com/photo-1571896349842-33c89424de2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTYyMDF8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NTM5MzA2ODh8&ixlib=rb-4.1.0&q=80&w=1080'),
@@ -290,15 +287,15 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                                                 ),
                                               ),
                 Expanded(
-                  child: Padding(
+                                        child: Padding(
                     padding: const EdgeInsets.all(16.0),
-                    child: Column(
+                                          child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                                            children: [
                                               Text(
                           'Azure wave island',
                           style: TextStyle(
-                            color: Colors.white,
+                                                    color: Colors.white,
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
@@ -321,7 +318,7 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
+                                              Text(
                               '2 Person',
                               style: TextStyle(
                                 color: Colors.grey[400],
@@ -346,7 +343,7 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                   padding: const EdgeInsets.all(16.0),
                                                   child: Icon(
                     Icons.favorite_border,
-                                                    color: Colors.white,
+                                          color: Colors.white,
                     size: 20,
                   ),
                 ),
@@ -362,21 +359,21 @@ class _MainPageWidgetState extends State<MainPageWidget> {
   Widget _buildPopularTripsSection() {
     return Padding(
       padding: const EdgeInsets.all(20.0),
-      child: Column(
+                                          child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+                                            children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
                                               Text(
                 'Popular trip',
                 style: TextStyle(
-                  color: Colors.white,
+                                                    color: Colors.white,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
+                                                ),
+                                              ),
+                                              Text(
                 'View all',
                 style: TextStyle(
                   color: const Color(0xFF4DD0E1),
@@ -432,7 +429,7 @@ class _MainPageWidgetState extends State<MainPageWidget> {
               Text(
                 'Top destinations',
                 style: TextStyle(
-                                                    color: Colors.white,
+                                          color: Colors.white,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                                                 ),
@@ -450,9 +447,9 @@ class _MainPageWidgetState extends State<MainPageWidget> {
           const SizedBox(height: 16),
           
           // Large destination card
-          Container(
+                                              Container(
             height: 200,
-            decoration: BoxDecoration(
+                                                decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
               image: DecorationImage(
                 image: NetworkImage('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTYyMDF8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NTM5MzA0ODV8&ixlib=rb-4.1.0&q=80&w=1080'),
@@ -476,7 +473,7 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                       children: [
                         Icon(Icons.star, color: Colors.amber, size: 16),
                         const SizedBox(width: 4),
-                        Text(
+                                              Text(
                           '4.2',
                           style: TextStyle(
                             color: Colors.white,
@@ -515,10 +512,10 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                   child: Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
+                                    gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
-                        colors: [
+                                      colors: [
                           Colors.transparent,
                           Colors.black.withOpacity(0.8),
                         ],
@@ -528,10 +525,10 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                                           child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                                             children: [
-                        Text(
+                                              Text(
                           'Paris in a weekend',
                           style: TextStyle(
-                            color: Colors.white,
+                                                          color: Colors.white,
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
@@ -541,17 +538,17 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                           children: [
                             Icon(Icons.location_on, color: const Color(0xFF4DD0E1), size: 16),
                             const SizedBox(width: 4),
-                            Text(
+                                              Text(
                               'Bali',
                               style: TextStyle(
-                                                    color: Colors.white,
+                                                          color: Colors.white,
                                 fontSize: 14,
                                                   ),
                                                 ),
                             Container(
                               width: 1,
                               height: 16,
-                              color: Colors.white,
+                                                  color: Colors.white,
                               margin: const EdgeInsets.symmetric(horizontal: 8),
                                               ),
                             Icon(Icons.person, color: const Color(0xFF4DD0E1), size: 16),
@@ -573,11 +570,11 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                               ),
                             ),
                           ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                 
                 // Floating action button
                 Positioned(
@@ -594,9 +591,9 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                       Icons.arrow_upward,
                       color: Colors.black,
                       size: 20,
-                    ),
-                  ),
-                ),
+                          ),
+                        ),
+                      ),
               ],
             ),
           ),
@@ -636,7 +633,7 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                 // Navigate to membership
               }),
               _buildActionCard('Wallet', Icons.account_balance_wallet_rounded, const Color(0xFF4DD0E1), () {
-                // Navigate to wallet
+                context.pushNamed('MyWalletPage'); // CONECTAR A MY WALLET
               }),
               _buildActionCard('My Bookings', Icons.calendar_month_rounded, const Color(0xFF4DD0E1), () {
                 // Navigate to bookings
@@ -648,93 +645,23 @@ class _MainPageWidgetState extends State<MainPageWidget> {
     );
   }
 
-  // Existing Special Offer Banner
-  Widget _buildSpecialOfferBanner() {
-    return Padding(
-      padding: const EdgeInsets.all(20.0),
-      child: Container(
-        height: 120,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [const Color(0xFF4DD0E1), const Color(0xFF26C6DA)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Padding(
-          padding: const EdgeInsets.all(20.0),
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                                            children: [
-                                              Text(
-                                                'Special Offer!',
-                      style: TextStyle(
-                        color: Colors.black,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                                              Text(
-                                                'Get 20% off your next booking',
-                      style: TextStyle(
-                        color: Colors.black.withOpacity(0.8),
-                        fontSize: 14,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                                                  color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        'Claim Now',
-                        style: TextStyle(
-                          color: const Color(0xFF4DD0E1),
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ],
-                                          ),
-                                        ),
-                                        Icon(
-                                          Icons.local_offer_rounded,
-                color: Colors.white,
-                size: 48,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-    );
-  }
 
-  // Modern Bottom Navigation
+  // Modern Bottom Navigation - EXACTAMENTE COMO MY PROFILE
   Widget _buildBottomNavigation() {
     return Container(
-      height: 100, // AUMENTADO MÁS PARA ESTAR ARRIBA DE BOTONES ANDROID
       decoration: const BoxDecoration(
-        color: Color(0xFF000000), // FONDO NEGRO LANDGO TRAVEL
+        color: Color(0xFF2C2C2C), // FONDO GRIS OSCURO COMO EN CAPTURA
         border: Border(
           top: BorderSide(
             color: Color(0xFF333333), // BORDE SUTIL GRIS
             width: 0.5,
-                            ),
-                          ),
-                        ),
+          ),
+        ),
+      ),
       child: SafeArea(
-        bottom: true, // IMPORTANTE: RESPETA EL SAFE AREA DEL SISTEMA
+        bottom: true, // RESPETA EL SAFE AREA DEL SISTEMA
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16.0, 12.0, 16.0, 20.0), // MÁS PADDING INFERIOR
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0), // PADDING BALANCEADO
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -764,13 +691,13 @@ class _MainPageWidgetState extends State<MainPageWidget> {
               ),
               GestureDetector(
                 onTap: () {
-                  // TODO: Navigate to Profile when page exists
+                  context.pushNamed('ProfilePage'); // CONECTAR A PROFILE (PANTALLA INTERMEDIA)
                 },
                 child: _buildNavItem(Icons.person, 'Profile', false),
-                      ),
-                    ],
-                  ),
-                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -789,7 +716,7 @@ class _MainPageWidgetState extends State<MainPageWidget> {
         style: TextStyle(
           color: isActive ? Colors.black : Colors.white,
           fontSize: 14,
-                                          fontWeight: FontWeight.w600,
+                                        fontWeight: FontWeight.w600,
         ),
       ),
     );
@@ -913,30 +840,32 @@ class _MainPageWidgetState extends State<MainPageWidget> {
     );
   }
 
+
   Widget _buildNavItem(IconData icon, String label, bool isActive) {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
+      children: [
         Container(
-          width: 44,
-          height: 44,
+          width: 40, // TAMAÑO EXACTO BASADO EN CAPTURA MY PROFILE
+          height: 40, // TAMAÑO EXACTO BASADO EN CAPTURA MY PROFILE
           decoration: BoxDecoration(
             color: isActive ? const Color(0xFF4DD0E1) : Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(8), // BORDES COMO EN CAPTURA
           ),
           child: Icon(
             icon,
-            color: isActive ? Colors.black : Colors.grey[400],
-            size: 22,
+            color: isActive ? Colors.black : Colors.white, // COLORES CORRECTOS
+            size: 22, // TAMAÑO EXACTO BASADO EN CAPTURA
           ),
         ),
         const SizedBox(height: 4),
-                                  Text(
+        Text(
           label,
           style: TextStyle(
-            color: isActive ? const Color(0xFF4DD0E1) : Colors.grey[400],
-            fontSize: 12,
-                                            fontWeight: FontWeight.w600,
+            color: isActive ? const Color(0xFF4DD0E1) : Colors.white, // COLORES CORRECTOS
+            fontSize: 11, // TAMAÑO EXACTO BASADO EN CAPTURA
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],

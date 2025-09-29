@@ -140,11 +140,6 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
                   // Recent Transactions Section
                   _buildRecentTransactionsSection(),
                   
-                  const SizedBox(height: 20),
-                  
-                  // Transfer Feature Banner
-                  _buildTransferBanner(),
-                  
                   const SizedBox(height: 100), // ESPACIO PARA BOTTOM NAV
                 ],
               ),
@@ -334,7 +329,7 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
           width: 50,
           height: 50,
           decoration: BoxDecoration(
-            color: iconColor.withOpacity(0.2),
+            color: iconColor.withValues(alpha: 0.2),
             shape: BoxShape.circle,
           ),
           child: Icon(
@@ -431,25 +426,6 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
     );
   }
 
-  Widget _buildTransferBanner() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF4CAF50), // VERDE BANNER
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Text(
-        'Transfer feature coming soon!',
-        style: GoogleFonts.outfit(
-          color: Colors.white,
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-        ),
-        textAlign: TextAlign.center,
-      ),
-    );
-  }
 
   void _showAddMoneyModal() {
     showModalBottomSheet(
@@ -457,7 +433,7 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
       builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.7, // 70% DE PANTALLA
+        height: MediaQuery.of(context).size.height * 0.6, // REDUCIDO A 60% PARA SUBIR EL MODAL
         decoration: const BoxDecoration(
           color: Color(0xFF2C2C2C), // GRIS OSCURO LANDGO
           borderRadius: BorderRadius.only(
@@ -540,14 +516,14 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
                 false,
               ),
               
-              const Spacer(),
+              const SizedBox(height: 40), // ESPACIO FIJO EN LUGAR DE SPACER
               
               // Add Money Button
               Container(
                 width: double.infinity,
                 height: 56,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF4CAF50), // VERDE BUTTON
+                  color: const Color(0xFF4DD0E1), // TURQUESA LANDGO
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Material(
@@ -572,7 +548,7 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
                 ),
               ),
               
-              const SizedBox(height: 20), // ESPACIO ADICIONAL PARA BOTONES ANDROID
+              const SizedBox(height: 10), // REDUCIDO PARA SUBIR EL BOTÓN
             ],
           ),
         ),

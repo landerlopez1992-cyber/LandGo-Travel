@@ -12,6 +12,8 @@ export '/pages/login_page/login_page_widget.dart' show LoginPageWidget;
 export '/pages/sign_up_page/sign_up_page_widget.dart' show SignUpPageWidget;
 export '/pages/main_page/main_page_widget.dart' show MainPageWidget;
 export '/pages/my_wallet_page/my_wallet_page_widget.dart' show MyWalletPageWidget;
+export '/pages/my_profile_page/my_profile_page_widget.dart' show MyProfilePageWidget;
+export '/pages/profile_page/profile_page_widget.dart' show ProfilePageWidget;
 export '/membership_page/membership_page/membership_page_widget.dart'
     show MembershipPageWidget;
 export '/payment/wallet_page/wallet_page_widget.dart' show WalletPageWidget;
@@ -26,7 +28,7 @@ export '/payment/payment_success_pag/payment_success_pag_widget.dart'
     show PaymentSuccessPagWidget;
 export '/booking_home_page/my_bookings_page/my_bookings_page_widget.dart'
     show MyBookingsPageWidget;
-export '/user/profile_page/profile_page_widget.dart' show ProfilePageWidget;
+// ELIMINADA: Página de perfil antigua con fondo claro
 export '/user/support_chat_page/support_chat_page_widget.dart'
     show SupportChatPageWidget;
 export '/admin_dashboard_page/admin_dashboard_page/admin_dashboard_page_widget.dart'

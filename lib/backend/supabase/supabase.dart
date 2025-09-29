@@ -23,7 +23,10 @@ class SupaFlow {
         },
         anonKey: _kSupabaseAnonKey,
         debug: false,
-        authOptions:
-            FlutterAuthClientOptions(authFlowType: AuthFlowType.implicit),
+        authOptions: FlutterAuthClientOptions(
+          authFlowType: AuthFlowType.pkce, // CRÍTICO: Para persistir sesiones
+          localStorage: SharedPreferencesLocalStorage(persistSessionKey: 'landgo_session'), // Guardar en storage local
+          detectSessionInUri: true, // Detectar sesión en URL
+        ),
       );
 }
