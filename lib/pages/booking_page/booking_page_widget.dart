@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/auth/supabase_auth/auth_util.dart';
+import '/components/back_button_widget.dart';
 import 'booking_page_model.dart';
 export 'booking_page_model.dart';
 
@@ -44,35 +44,39 @@ class _BookingPageWidgetState extends State<BookingPageWidget> {
         backgroundColor: const Color(0xFF000000), // FONDO NEGRO LANDGO TRAVEL
         extendBodyBehindAppBar: false,
         extendBody: false,
-        appBar: AppBar(
-          backgroundColor: const Color(0xFF37474F), // HEADER LANDGO TRAVEL
-          automaticallyImplyLeading: false,
-          leading: IconButton(
-            icon: const Icon(
-              Icons.arrow_back,
-              color: Colors.white,
-              size: 24,
-            ),
-            onPressed: () {
-              context.pop();
-            },
-          ),
-          title: Text(
-            'Book Your Trip',
-            style: GoogleFonts.outfit(
-              color: Colors.white,
-              fontSize: 22,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          centerTitle: true,
-          elevation: 2,
-        ),
         body: SafeArea(
           top: true,
           child: SingleChildScrollView(
             child: Column(
               children: [
+                // Header con botón de regreso y título
+                Padding(
+                  padding: const EdgeInsets.all(20.0),
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          StandardBackButton(
+                            onPressed: () => context.pop(),
+                          ),
+                          const Spacer(),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      Center(
+                        child: Text(
+                          'Book Your Trip',
+                          style: GoogleFonts.outfit(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
                 // Selector horizontal de Vuelos/Hoteles
                 _buildTabSelector(),
                 

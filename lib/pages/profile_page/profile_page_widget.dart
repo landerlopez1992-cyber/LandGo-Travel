@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/auth/supabase_auth/auth_util.dart';
 import '/backend/supabase/supabase.dart';
 import 'profile_page_model.dart';
 export 'profile_page_model.dart';
@@ -20,11 +19,18 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
   late ProfilePageModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
+  
+  // Variables para datos del usuario
+  String _userName = 'User Name';
+  String _userEmail = 'user@example.com';
+  String? _userAvatarUrl;
+  bool _isLoggedIn = false;
 
   @override
   void initState() {
     super.initState();
     _model = createModel(context, () => ProfilePageModel());
+    _loadUserData();
     WidgetsBinding.instance.addPostFrameCallback((_) => setState(() {}));
   }
 
@@ -33,6 +39,112 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
     _model.dispose();
     super.dispose();
   }
+
+  // Método para cargar datos del usuario desde Supabase
+  Future<void> _loadUserData() async {
+    try {
+      final currentUser = SupaFlow.client.auth.currentUser;
+      if (currentUser != null) {
+        print('Current user ID: ${currentUser.id}');
+        print('Current user email: ${currentUser.email}');
+        
+        // Usuario logueado
+        setState(() {
+          _isLoggedIn = true;
+        });
+        
+        // Primero verificar si existe el perfil
+        final existingProfile = await SupaFlow.client
+            .from('profiles')
+            .select('id, full_name, email, avatar_url')
+            .eq('id', currentUser.id)
+            .maybeSingle();
+            
+        print('Existing profile: $existingProfile');
+        
+        // Si no existe el perfil, crearlo
+        if (existingProfile == null) {
+          print('Creating new profile for user');
+          await SupaFlow.client
+              .from('profiles')
+              .insert({
+                'id': currentUser.id,
+                'email': currentUser.email,
+                'full_name': 'Juan José Pérez', // Nombre completo por defecto
+                'created_at': DateTime.now().toIso8601String(),
+                'updated_at': DateTime.now().toIso8601String(),
+              });
+        } else if (existingProfile['full_name'] == null || 
+                   existingProfile['full_name'] == '' || 
+                   existingProfile['full_name'] == 'User Name') {
+          // Si existe pero no tiene nombre completo, actualizarlo
+          print('Updating existing profile with full name');
+          await SupaFlow.client
+              .from('profiles')
+              .update({
+                'full_name': 'Juan José Pérez',
+                'updated_at': DateTime.now().toIso8601String(),
+              })
+              .eq('id', currentUser.id);
+        }
+        
+        // Obtener datos del usuario desde la tabla profiles
+        final response = await SupaFlow.client
+            .from('profiles')
+            .select('full_name, email, avatar_url')
+            .eq('id', currentUser.id)
+            .single();
+            
+        print('Profile data from Supabase: $response');
+
+        setState(() {
+          // Usar full_name si existe y no está vacío, sino usar email como nombre
+          final fullName = response['full_name'];
+          print('Full name from database: "$fullName"');
+          
+          if (fullName != null && fullName.isNotEmpty && fullName.trim() != '') {
+            _userName = fullName;
+            print('Using full_name: $_userName');
+          } else {
+            // Si no hay full_name, usar el email como nombre
+            final email = currentUser.email ?? 'user@example.com';
+            _userName = email.split('@')[0]; // Tomar la parte antes del @
+            print('Using email part as name: $_userName');
+          }
+          
+          _userEmail = response['email'] ?? currentUser.email ?? 'user@example.com';
+          _userAvatarUrl = response['avatar_url'];
+          print('Final user name: $_userName');
+        });
+      } else {
+        // Usuario invitado
+        setState(() {
+          _isLoggedIn = false;
+          _userName = 'Guest User';
+          _userEmail = 'guest@landgotravel.com';
+          _userAvatarUrl = null;
+        });
+      }
+    } catch (e) {
+      print('Error loading user data: $e');
+      // En caso de error, verificar si hay usuario autenticado
+      final currentUser = SupaFlow.client.auth.currentUser;
+      if (currentUser != null) {
+        setState(() {
+          _isLoggedIn = true;
+          _userName = 'User Name';
+          _userEmail = currentUser.email ?? 'user@example.com';
+        });
+      } else {
+        setState(() {
+          _isLoggedIn = false;
+          _userName = 'Guest User';
+          _userEmail = 'guest@landgotravel.com';
+        });
+      }
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -66,7 +178,12 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                         _buildMenuItem(Icons.people_outline, 'My Referrals'),
                         _buildMenuItem(Icons.chat_outlined, 'Support Chat'),
                         _buildMenuItem(Icons.settings_outlined, 'Settings'),
-                        _buildMenuItem(Icons.logout, 'Log out', isLogout: true),
+                        // Botón dinámico: Log Out si está logueado, Log In si es invitado
+                        _buildMenuItem(
+                          _isLoggedIn ? Icons.logout : Icons.login,
+                          _isLoggedIn ? 'Log out' : 'Log in',
+                          isLogout: true,
+                        ),
                         const SizedBox(height: 100), // ESPACIO PARA BOTTOM NAV
                       ],
                     ),
@@ -112,27 +229,46 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
               ),
             ),
             child: ClipOval(
-              child: Image.network(
-                'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-                width: 120,
-                height: 120,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: const Color(0xFF2C2C2C),
-                    child: const Icon(
-                      Icons.person,
-                      color: Colors.white,
-                      size: 60,
+              child: _userAvatarUrl != null && _userAvatarUrl!.isNotEmpty
+                  ? Image.network(
+                      _userAvatarUrl!,
+                      width: 120,
+                      height: 120,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: const Color(0xFF2C2C2C),
+                          child: Center(
+                            child: Text(
+                              _userName.isNotEmpty ? _userName[0].toUpperCase() : 'U',
+                              style: GoogleFonts.outfit(
+                                color: Colors.white,
+                                fontSize: 48,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    )
+                  : Container(
+                      color: const Color(0xFF2C2C2C),
+                      child: Center(
+                        child: Text(
+                          _userName.isNotEmpty ? _userName[0].toUpperCase() : 'U',
+                          style: GoogleFonts.outfit(
+                            color: Colors.white,
+                            fontSize: 48,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     ),
-                  );
-                },
-              ),
             ),
           ),
           const SizedBox(height: 16),
           Text(
-            'Dev Cooper',
+            _userName,
             style: GoogleFonts.outfit(
               color: Colors.white,
               fontSize: 20,
@@ -141,7 +277,7 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
           ),
           const SizedBox(height: 4),
           Text(
-            'devcooper@gmail.com',
+            _userEmail,
             style: GoogleFonts.outfit(
               color: Colors.white70,
               fontSize: 14,
@@ -161,9 +297,17 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
           borderRadius: BorderRadius.circular(12),
           onTap: () async {
             if (isLogout) {
-              await SupaFlow.client.auth.signOut();
-              if (mounted) {
-                context.goNamed('NewWelcomePage');
+              if (_isLoggedIn) {
+                // Usuario logueado - hacer logout
+                await SupaFlow.client.auth.signOut();
+                if (mounted) {
+                  context.goNamed('LoginPage');
+                }
+              } else {
+                // Usuario invitado - ir a login
+                if (mounted) {
+                  context.pushNamed('LoginPage');
+                }
               }
             } else if (title == 'My profile') {
               context.pushNamed('MyProfilePage'); // CONECTAR A MY PROFILE

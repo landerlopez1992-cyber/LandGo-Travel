@@ -16,6 +16,7 @@ export '/pages/my_profile_page/my_profile_page_widget.dart' show MyProfilePageWi
 export '/pages/profile_page/profile_page_widget.dart' show ProfilePageWidget;
 export '/pages/booking_page/booking_page_widget.dart' show BookingPageWidget;
 export '/pages/settings_page/settings_page_widget.dart' show SettingsPageWidget;
+export '/pages/transfer_money_page/transfer_money_page_widget.dart' show TransferMoneyPageWidget;
 export '/membership_page/membership_page/membership_page_widget.dart'
     show MembershipPageWidget;
 export '/payment/wallet_page/wallet_page_widget.dart' show WalletPageWidget;

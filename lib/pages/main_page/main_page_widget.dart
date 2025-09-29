@@ -1,6 +1,5 @@
 import '/flutter_flow/flutter_flow_util.dart';
-import '/auth/supabase_auth/auth_util.dart';
-import '/auth/supabase_auth/supabase_user_provider.dart';
+import '/backend/supabase/supabase.dart';
 import 'package:flutter/material.dart';
 import 'main_page_model.dart';
 export 'main_page_model.dart';
@@ -29,12 +28,16 @@ class _MainPageWidgetState extends State<MainPageWidget> {
   late MainPageModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
+  
+  // Variables para datos del usuario
+  String _userName = 'User Name';
+  String? _userAvatarUrl;
 
   @override
   void initState() {
     super.initState();
     _model = createModel(context, () => MainPageModel());
-
+    _loadUserData();
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
   }
 
@@ -43,6 +46,78 @@ class _MainPageWidgetState extends State<MainPageWidget> {
     _model.dispose();
 
     super.dispose();
+  }
+
+  // Método para cargar datos del usuario desde Supabase
+  Future<void> _loadUserData() async {
+    try {
+      final currentUser = SupaFlow.client.auth.currentUser;
+      if (currentUser != null) {
+        print('Current user ID: ${currentUser.id}');
+        print('Current user email: ${currentUser.email}');
+        
+        // Primero verificar si existe el perfil
+        final existingProfile = await SupaFlow.client
+            .from('profiles')
+            .select('id, full_name, email, avatar_url')
+            .eq('id', currentUser.id)
+            .maybeSingle();
+            
+        print('Existing profile: $existingProfile');
+        
+        // Si no existe el perfil, crearlo
+        if (existingProfile == null) {
+          print('Creating new profile for user');
+          await SupaFlow.client
+              .from('profiles')
+              .insert({
+                'id': currentUser.id,
+                'email': currentUser.email,
+                'full_name': 'User Name', // Nombre por defecto
+                'created_at': DateTime.now().toIso8601String(),
+                'updated_at': DateTime.now().toIso8601String(),
+              });
+        }
+        
+        // Obtener datos del usuario desde la tabla profiles
+        final response = await SupaFlow.client
+            .from('profiles')
+            .select('full_name, email, avatar_url')
+            .eq('id', currentUser.id)
+            .single();
+            
+        print('Profile data from Supabase: $response');
+
+        setState(() {
+          // Usar full_name si existe y no está vacío, sino usar email como nombre
+          final fullName = response['full_name'];
+          print('Full name from database: "$fullName"');
+          
+          if (fullName != null && fullName.isNotEmpty && fullName.trim() != '') {
+            _userName = fullName;
+            print('Using full_name: $_userName');
+          } else {
+            // Si no hay full_name, usar el email como nombre
+            final email = currentUser.email ?? 'user@example.com';
+            _userName = email.split('@')[0]; // Tomar la parte antes del @
+            print('Using email part as name: $_userName');
+          }
+          
+          _userAvatarUrl = response['avatar_url'];
+          print('Final user name: $_userName');
+        });
+      }
+    } catch (e) {
+      print('Error loading user data: $e');
+      // En caso de error, usar datos del usuario autenticado
+      final currentUser = SupaFlow.client.auth.currentUser;
+      if (currentUser != null) {
+        setState(() {
+          _userName = 'User Name';
+          // _userEmail = currentUser.email ?? 'user@example.com';
+        });
+      }
+    }
   }
 
   @override
@@ -105,17 +180,48 @@ class _MainPageWidgetState extends State<MainPageWidget> {
           Container(
             width: 50,
             height: 50,
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
               border: Border.all(color: const Color(0xFF4DD0E1), width: 2),
             ),
             child: ClipOval(
-                                              child: Image.network(
-                                                'https://images.unsplash.com/photo-1519058082700-08a0b56da9b4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTYyMDF8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NTM5MzA0ODV8&ixlib=rb-4.1.0&q=80&w=1080',
-                                                fit: BoxFit.cover,
-                                              ),
-                                            ),
-                                          ),
+              child: _userAvatarUrl != null && _userAvatarUrl!.isNotEmpty
+                  ? Image.network(
+                      _userAvatarUrl!,
+                      width: 50,
+                      height: 50,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: const Color(0xFF2C2C2C),
+                          child: Center(
+                            child: Text(
+                              _userName.isNotEmpty ? _userName[0].toUpperCase() : 'U',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    )
+                  : Container(
+                      color: const Color(0xFF2C2C2C),
+                      child: Center(
+                        child: Text(
+                          _userName.isNotEmpty ? _userName[0].toUpperCase() : 'U',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+            ),
+          ),
           
           const SizedBox(width: 12),
           
@@ -132,12 +238,12 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                     fontWeight: FontWeight.w400,
                                         ),
                                       ),
-                                      Text(
-                  '${(currentUser as LandGoTravelSupabaseUser?)?.user?.userMetadata?['full_name'] ?? 'Dev Cooper'} 👋',
+                Text(
+                  '$_userName 👋',
                   style: TextStyle(
-                                              color: Colors.white,
+                    color: Colors.white,
                     fontSize: 20,
-                                              fontWeight: FontWeight.bold,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],

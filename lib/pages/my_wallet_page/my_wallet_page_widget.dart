@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/auth/supabase_auth/auth_util.dart';
-import '/auth/supabase_auth/supabase_user_provider.dart';
-import '/backend/supabase/supabase.dart';
+import '/components/back_button_widget.dart';
 import 'my_wallet_page_model.dart';
 export 'my_wallet_page_model.dart';
 
@@ -46,74 +44,6 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
         backgroundColor: const Color(0xFF000000), // FONDO NEGRO LANDGO
         extendBodyBehindAppBar: false,
         extendBody: false,
-        appBar: AppBar(
-          backgroundColor: const Color(0xFF000000), // FONDO NEGRO
-          automaticallyImplyLeading: true,
-          leading: Container(
-            margin: const EdgeInsets.all(8),
-            decoration: const BoxDecoration(
-              color: Color(0xFF2C2C2C), // GRIS OSCURO
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              icon: const Icon(
-                Icons.arrow_back_ios_new,
-                color: Colors.white,
-                size: 18,
-              ),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF4DD0E1), // TURQUESA LANDGO
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.account_balance_wallet,
-                  color: Colors.black,
-                  size: 20,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'My Wallet',
-                style: GoogleFonts.outfit(
-                  color: Colors.white,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            Container(
-              margin: const EdgeInsets.all(8),
-              decoration: const BoxDecoration(
-                color: Color(0xFF2C2C2C),
-                shape: BoxShape.circle,
-              ),
-              child: IconButton(
-                icon: const Icon(
-                  Icons.refresh,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                onPressed: () {
-                  // Reload wallet data
-                  setState(() {});
-                },
-              ),
-            ),
-          ],
-          centerTitle: false,
-          elevation: 0,
-        ),
         body: SafeArea(
           top: true,
           child: SingleChildScrollView(
@@ -122,6 +52,32 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Header con botón de regreso - ESTANDARIZADO
+                  Row(
+                    children: [
+                      StandardBackButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                      const Spacer(),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 10),
+                  
+                  // Título "My Wallet" centrado
+                  Center(
+                    child: Text(
+                      'My Wallet',
+                      style: GoogleFonts.outfit(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 20),
+                  
                   // Current Balance Card
                   _buildCurrentBalanceCard(),
                   
@@ -259,7 +215,7 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
               child: InkWell(
                 borderRadius: BorderRadius.circular(16),
                 onTap: () {
-                  // TODO: Navigate to Transfer page
+                  context.pushNamed('TransferMoneyPage');
                 },
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,

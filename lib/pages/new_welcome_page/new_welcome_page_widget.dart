@@ -19,6 +19,32 @@ class _NewWelcomePageWidgetState extends State<NewWelcomePageWidget> {
   late NewWelcomePageModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
+  
+  int _currentPage = 0;
+  final PageController _pageController = PageController();
+  
+  final List<OnboardingData> _onboardingData = [
+    OnboardingData(
+      title: 'Descubre destinos\nparadisíacos con LandGo Travel',
+      subtitle: 'Tu agencia de confianza con más de 10 años creando experiencias inolvidables para familias alrededor del mundo.',
+      imageUrl: 'assets/images/1.png',
+    ),
+    OnboardingData(
+      title: 'Viaja en familia\ncon descuentos exclusivos',
+      subtitle: 'Ahorra hasta 50% en hoteles y vuelos. Crea recuerdos inolvidables con tus seres queridos en los mejores destinos.',
+      imageUrl: 'assets/images/2.png',
+    ),
+    OnboardingData(
+      title: 'Gana puntos y\nreferidos en cada viaje',
+      subtitle: 'Cada compra te da puntos que puedes usar para futuros viajes. Invita amigos y gana comisiones por cada referido.',
+      imageUrl: 'assets/images/3.png',
+    ),
+    OnboardingData(
+      title: 'Paraísos tropicales\nal alcance de tu mano',
+      subtitle: 'Únete a nuestro programa de membresías VIP y disfruta de cashback automático, soporte prioritario y descuentos adicionales.',
+      imageUrl: 'assets/images/4.png',
+    ),
+  ];
 
   @override
   void initState() {
@@ -30,7 +56,20 @@ class _NewWelcomePageWidgetState extends State<NewWelcomePageWidget> {
   @override
   void dispose() {
     _model.dispose();
+    _pageController.dispose();
     super.dispose();
+  }
+
+  void _nextPage() {
+    if (_currentPage < _onboardingData.length - 1) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    } else {
+      // Ir a login
+      context.pushNamed('LoginPage');
+    }
   }
 
   @override
@@ -43,185 +82,184 @@ class _NewWelcomePageWidgetState extends State<NewWelcomePageWidget> {
       child: Scaffold(
         key: scaffoldKey,
         backgroundColor: Colors.black,
-        body: Container(
-          width: double.infinity,
-          height: double.infinity,
-          decoration: BoxDecoration(
-            // Fondo de montañas paradisíacas
-            image: DecorationImage(
-              image: AssetImage('assets/images/vista-de-la-playa-y-el-paisaje-natural-impresionantes.jpg'),
-              fit: BoxFit.cover,
-            ),
+        body: PageView.builder(
+          controller: _pageController,
+          onPageChanged: (index) {
+            setState(() {
+              _currentPage = index;
+            });
+          },
+          itemCount: _onboardingData.length,
+          itemBuilder: (context, index) {
+            return _buildOnboardingPage(_onboardingData[index]);
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildOnboardingPage(OnboardingData data) {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: data.imageUrl.startsWith('assets/') 
+              ? AssetImage(data.imageUrl) as ImageProvider
+              : NetworkImage(data.imageUrl),
+          fit: BoxFit.cover, // Las fotos tienen las dimensiones exactas (1080 x 2400)
+        ),
+      ),
+      child: Container(
+        // Overlay oscuro para legibilidad del texto
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.black.withOpacity(0.3),
+              Colors.black.withOpacity(0.7),
+            ],
           ),
-          child: Container(
-            // Overlay oscuro para legibilidad del texto
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Colors.black.withOpacity(0.3),
-                  Colors.black.withOpacity(0.7),
-                ],
-              ),
-            ),
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Column(
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Column(
+              children: [
+                // Status bar spacer
+                const SizedBox(height: 20),
+                
+                // Spacer to push content down
+                const Expanded(
+                  flex: 3,
+                  child: SizedBox(),
+                ),
+                
+                // Main content
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Status bar spacer
-                    const SizedBox(height: 20),
-                    
-                    // Spacer to push content down
-                    const Expanded(
-                      flex: 3,
-                      child: SizedBox(),
+                    // Main title - exacto como la captura
+                    Text(
+                      data.title,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        height: 1.2,
+                      ),
                     ),
                     
-                    // Main content
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Main title - exacto como la captura
-                        Text(
-                          'Your journey starts with a thoughtfully planned',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            color: Colors.white,
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            height: 1.2,
-                          ),
-                        ),
-                        
-                        const SizedBox(height: 16),
-                        
-                        // Subtitle - exacto como la captura
-                        Text(
-                          'From destination dreams to real itineraries, Tripplanner helps you explore the world with purpose, ease, and adventure.',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            color: Colors.white.withOpacity(0.8),
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                            height: 1.4,
-                          ),
-                        ),
-                        
-                        const SizedBox(height: 32),
-                        
-                        // Page indicators - exacto como la captura
-                        Row(
-                          children: [
-                            // Indicator activo (verde-azulado)
-                            Container(
-                              width: 24,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF4DD0E1), // Verde-azulado
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            // Indicator inactivo
-                            Container(
-                              width: 8,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.3),
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            // Indicator inactivo
-                            Container(
-                              width: 8,
-                              height: 4,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.3),
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                    const SizedBox(height: 16),
+                    
+                    // Subtitle - exacto como la captura
+                    Text(
+                      data.subtitle,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        color: Colors.white.withOpacity(0.8),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                        height: 1.4,
+                      ),
                     ),
                     
-                    const SizedBox(height: 48),
+                    const SizedBox(height: 32),
                     
-                    // Buttons - exactos como la captura
+                    // Page indicators - exacto como la captura
                     Row(
-                      children: [
-                        // Skip button (outline transparente)
-                        Expanded(
-                          child: Container(
-                            height: 56,
-                            child: OutlinedButton(
-                              onPressed: () async {
-                                context.pushNamed('LoginPage');
-                              },
-                              style: OutlinedButton.styleFrom(
-                                backgroundColor: Colors.transparent,
-                                side: BorderSide(
-                                  color: Colors.white.withOpacity(0.3),
-                                  width: 1.5,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                              child: Text(
-                                'Skip',
-                                style: TextStyle(
-                                  fontFamily: 'Inter',
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
+                      children: List.generate(
+                        _onboardingData.length,
+                        (index) => Container(
+                          margin: const EdgeInsets.only(right: 8),
+                          width: _currentPage == index ? 24 : 8,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: _currentPage == index 
+                                ? const Color(0xFF4DD0E1) // Verde-azulado activo
+                                : Colors.white.withOpacity(0.3), // Inactivo
+                            borderRadius: BorderRadius.circular(2),
                           ),
                         ),
-                        
-                        const SizedBox(width: 16),
-                        
-                        // Next button (verde-azulado sólido)
-                        Expanded(
-                          flex: 2,
-                          child: Container(
-                            height: 56,
-                            child: ElevatedButton(
-                              onPressed: () async {
-                                context.pushNamed('NewWelcomePage2');
-                              },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF4DD0E1), // Verde-azulado
-                                foregroundColor: Colors.black,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                              child: Text(
-                                'Next',
-                                style: TextStyle(
-                                  fontFamily: 'Inter',
-                                  color: Colors.black,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                    
-                    const SizedBox(height: 48),
                   ],
                 ),
-              ),
+                
+                const SizedBox(height: 48),
+                
+                // Buttons - exactos como la captura
+                Row(
+                  children: [
+                    // Skip button (outline transparente)
+                    Expanded(
+                      child: Container(
+                        height: 56,
+                        child: OutlinedButton(
+                          onPressed: () async {
+                            context.pushNamed('LoginPage');
+                          },
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            side: BorderSide(
+                              color: Colors.white.withOpacity(0.3),
+                              width: 1.5,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: Text(
+                            'Skip',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(width: 16),
+                    
+                    // Next button (verde-azulado sólido)
+                    Expanded(
+                      flex: 2,
+                      child: Container(
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: _nextPage,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF4DD0E1), // Verde-azulado
+                            foregroundColor: Colors.black,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                          ),
+                          child: Text(
+                            _currentPage == _onboardingData.length - 1 
+                                ? 'Get Started' 
+                                : 'Next',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              color: Colors.black,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 48),
+              ],
             ),
           ),
         ),
@@ -229,3 +267,16 @@ class _NewWelcomePageWidgetState extends State<NewWelcomePageWidget> {
     );
   }
 }
+
+class OnboardingData {
+  final String title;
+  final String subtitle;
+  final String imageUrl;
+
+  OnboardingData({
+    required this.title,
+    required this.subtitle,
+    required this.imageUrl,
+  });
+}
+

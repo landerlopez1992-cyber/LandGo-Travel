@@ -10,10 +10,7 @@ import '/backend/supabase/supabase.dart';
 
 import '/auth/base_auth_user_provider.dart';
 
-import '/main.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
-import '/flutter_flow/lat_lng.dart';
-import '/flutter_flow/place.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'serialization_util.dart';
 
@@ -179,6 +176,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: SettingsPageWidget.routeName,
           path: SettingsPageWidget.routePath,
           builder: (context, params) => SettingsPageWidget(),
+        ),
+        FFRoute(
+          name: TransferMoneyPageWidget.routeName,
+          path: TransferMoneyPageWidget.routePath,
+          builder: (context, params) => TransferMoneyPageWidget(),
         ),
         FFRoute(
           name: MembershipPageWidget.routeName,

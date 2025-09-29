@@ -176,7 +176,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
                 color: const Color(0xFF404040), // GRIS MÁS CLARO
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 icon,
                 color: Colors.white,
                 size: 24,
