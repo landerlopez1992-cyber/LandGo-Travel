@@ -14,6 +14,8 @@ export '/pages/main_page/main_page_widget.dart' show MainPageWidget;
 export '/pages/my_wallet_page/my_wallet_page_widget.dart' show MyWalletPageWidget;
 export '/pages/my_profile_page/my_profile_page_widget.dart' show MyProfilePageWidget;
 export '/pages/profile_page/profile_page_widget.dart' show ProfilePageWidget;
+export '/pages/booking_page/booking_page_widget.dart' show BookingPageWidget;
+export '/pages/settings_page/settings_page_widget.dart' show SettingsPageWidget;
 export '/membership_page/membership_page/membership_page_widget.dart'
     show MembershipPageWidget;
 export '/payment/wallet_page/wallet_page_widget.dart' show WalletPageWidget;

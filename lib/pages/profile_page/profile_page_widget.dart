@@ -168,7 +168,7 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
             } else if (title == 'My profile') {
               context.pushNamed('MyProfilePage'); // CONECTAR A MY PROFILE
             } else if (title == 'Settings') {
-              // TODO: Navigate to Settings
+              context.pushNamed('SettingsPage'); // CONECTAR A SETTINGS
             } else if (title == 'My reviews') {
               // TODO: Navigate to My reviews
             } else if (title == 'My favorites') {

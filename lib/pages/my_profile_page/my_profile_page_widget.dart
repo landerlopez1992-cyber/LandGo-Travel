@@ -82,6 +82,11 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Profile Picture Section
+                  _buildProfilePictureSection(),
+                  
+                  const SizedBox(height: 30),
+                  
                   // Account Balance Section
                   _buildAccountBalanceSection(),
                   
@@ -103,6 +108,68 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
         ),
         // Bottom Navigation Bar EXACTO como en captura
         bottomNavigationBar: _buildBottomNavigation(),
+      ),
+    );
+  }
+
+  // Profile Picture Section
+  Widget _buildProfilePictureSection() {
+    return Center(
+      child: Column(
+        children: [
+          // Circular Profile Picture
+          Container(
+            width: 120,
+            height: 120,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF2C2C2C), // FONDO GRIS OSCURO
+              border: Border.all(
+                color: const Color(0xFF4DD0E1), // BORDE TURQUESA
+                width: 3,
+              ),
+            ),
+            child: const Icon(
+              Icons.person,
+              size: 60,
+              color: Color(0xFF4DD0E1), // ICONO TURQUESA
+            ),
+          ),
+          const SizedBox(height: 12),
+          // Add Photo Button
+          ElevatedButton.icon(
+            onPressed: () {
+              // TODO: Implementar selector de foto
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Photo upload feature coming soon!'),
+                  backgroundColor: Color(0xFF4CAF50),
+                ),
+              );
+            },
+            icon: const Icon(
+              Icons.add_a_photo,
+              size: 18,
+              color: Colors.black,
+            ),
+            label: Text(
+              'Add Photo',
+              style: GoogleFonts.outfit(
+                color: Colors.black,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4DD0E1), // TURQUESA
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              elevation: 0,
+            ),
+          ),
+        ],
       ),
     );
   }

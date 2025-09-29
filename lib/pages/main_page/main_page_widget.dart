@@ -627,7 +627,7 @@ class _MainPageWidgetState extends State<MainPageWidget> {
             childAspectRatio: 1.2,
             children: [
               _buildActionCard('Book Travel', Icons.flight_takeoff_rounded, const Color(0xFF4DD0E1), () {
-                // Navigate to booking
+                context.pushNamed('BookingPage'); // CONECTAR A BOOKING PAGE
               }),
               _buildActionCard('Membership', Icons.military_tech_rounded, const Color(0xFF4DD0E1), () {
                 // Navigate to membership

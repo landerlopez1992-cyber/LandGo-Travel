@@ -171,6 +171,16 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => ProfilePageWidget(),
         ),
         FFRoute(
+          name: BookingPageWidget.routeName,
+          path: BookingPageWidget.routePath,
+          builder: (context, params) => BookingPageWidget(),
+        ),
+        FFRoute(
+          name: SettingsPageWidget.routeName,
+          path: SettingsPageWidget.routePath,
+          builder: (context, params) => SettingsPageWidget(),
+        ),
+        FFRoute(
           name: MembershipPageWidget.routeName,
           path: MembershipPageWidget.routePath,
           builder: (context, params) => MembershipPageWidget(),
