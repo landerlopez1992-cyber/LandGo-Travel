@@ -168,6 +168,31 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => ProfilePageWidget(),
         ),
         FFRoute(
+          name: MyFavoritesPageWidget.routeName,
+          path: MyFavoritesPageWidget.routePath,
+          builder: (context, params) => MyFavoritesPageWidget(),
+        ),
+        FFRoute(
+          name: MyTripPageWidget.routeName,
+          path: MyTripPageWidget.routePath,
+          builder: (context, params) => MyTripPageWidget(),
+        ),
+        FFRoute(
+          name: DiscoverPageWidget.routeName,
+          path: DiscoverPageWidget.routePath,
+          builder: (context, params) => DiscoverPageWidget(),
+        ),
+        FFRoute(
+          name: NotificationsPageWidget.routeName,
+          path: NotificationsPageWidget.routePath,
+          builder: (context, params) => NotificationsPageWidget(),
+        ),
+        FFRoute(
+          name: ProductDetailPageWidget.routeName,
+          path: ProductDetailPageWidget.routePath,
+          builder: (context, params) => ProductDetailPageWidget(),
+        ),
+        FFRoute(
           name: BookingPageWidget.routeName,
           path: BookingPageWidget.routePath,
           builder: (context, params) => BookingPageWidget(),
@@ -400,7 +425,9 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
       name: VerificationCodePageWidget.routeName,
       path: VerificationCodePageWidget.routePath,
       builder: (context, params) => VerificationCodePageWidget(
-        email: params.getParam<String>('email', ParamType.String) ?? '',
+        email: params.getParam<String>('email', ParamType.String),
+        type: params.getParam<String>('type', ParamType.String),
+        pendingChanges: params.getParam<String>('pendingChanges', ParamType.String),
       ),
     ),
       ].map((r) => r.toRoute(appStateNotifier)).toList(),

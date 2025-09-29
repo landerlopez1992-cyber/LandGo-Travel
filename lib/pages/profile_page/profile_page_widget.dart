@@ -316,7 +316,11 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
             } else if (title == 'My reviews') {
               // TODO: Navigate to My reviews
             } else if (title == 'My favorites') {
-              // TODO: Navigate to My favorites
+              print('My favorites menu item tapped');
+              await Future.delayed(Duration(milliseconds: 100));
+              if (mounted) {
+                context.pushNamed('MyFavoritesPage');
+              }
             } else if (title == 'Payment Methods') {
               // TODO: Navigate to Payment Methods
             } else if (title == 'My Referrals') {
@@ -397,21 +401,31 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
               ),
               GestureDetector(
                 onTap: () {
-                  // TODO: Navigate to Discover
+                  print('Discover button tapped from ProfilePage');
+                  context.pushNamed('DiscoverPage');
                 },
                 child: _buildNavItem(Icons.explore, 'Discover', false),
               ),
               GestureDetector(
                 onTap: () {
-                  // TODO: Navigate to My trip
+                  print('My trip button tapped from ProfilePage');
+                  context.pushNamed('MyTripPage');
                 },
                 child: _buildNavItem(Icons.card_travel, 'My trip', false),
               ),
-              GestureDetector(
-                onTap: () {
-                  // TODO: Navigate to My favorites
-                },
-                child: _buildNavItem(Icons.favorite_border, 'My favorites', false),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: () async {
+                    print('My favorites button tapped');
+                    await Future.delayed(Duration(milliseconds: 100));
+                    if (mounted) {
+                      context.pushNamed('MyFavoritesPage');
+                    }
+                  },
+                  child: _buildNavItem(Icons.favorite_border, 'My favorites', false),
+                ),
               ),
               GestureDetector(
                 onTap: () {

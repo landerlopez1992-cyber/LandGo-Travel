@@ -251,17 +251,23 @@ class _MainPageWidgetState extends State<MainPageWidget> {
           ),
           
           // Notifications Icon
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(
-              Icons.notifications_outlined,
-              color: Colors.white,
-              size: 20,
+          GestureDetector(
+            onTap: () {
+              print('Notifications bell tapped from MainPage');
+              context.pushNamed('NotificationsPage');
+            },
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                Icons.notifications_outlined,
+                color: Colors.white,
+                size: 20,
+              ),
             ),
           ),
         ],
@@ -372,7 +378,12 @@ class _MainPageWidgetState extends State<MainPageWidget> {
             ),
           ),
           const SizedBox(height: 16),
-                                              Container(
+                                              GestureDetector(
+            onTap: () {
+              print('Recently viewed card tapped: Azure wave island');
+              context.pushNamed('ProductDetailPage');
+            },
+            child: Container(
             height: 120,
                                                 decoration: BoxDecoration(
               color: Colors.grey[900],
@@ -454,6 +465,7 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                   ),
                 ),
               ],
+            ),
             ),
           ),
         ],
@@ -779,19 +791,22 @@ class _MainPageWidgetState extends State<MainPageWidget> {
               ),
               GestureDetector(
                 onTap: () {
-                  // TODO: Navigate to Discover when page exists
+                  print('Discover button tapped from MainPage');
+                  context.pushNamed('DiscoverPage');
                 },
                 child: _buildNavItem(Icons.explore, 'Discover', false),
               ),
               GestureDetector(
                 onTap: () {
-                  // TODO: Navigate to My trip when page exists
+                  print('My trip button tapped from MainPage');
+                  context.pushNamed('MyTripPage');
                 },
                 child: _buildNavItem(Icons.card_travel, 'My trip', false),
               ),
               GestureDetector(
                 onTap: () {
-                  // TODO: Navigate to My favorites when page exists
+                  print('My favorites button tapped from MainPage');
+                  context.pushNamed('MyFavoritesPage');
                 },
                 child: _buildNavItem(Icons.favorite_border, 'My favorites', false),
               ),
@@ -829,7 +844,12 @@ class _MainPageWidgetState extends State<MainPageWidget> {
   }
 
   Widget _buildTripCard(String title, String location, String rating, String price, String imageUrl) {
-    return Container(
+    return GestureDetector(
+      onTap: () {
+        print('Trip card tapped: $title');
+        context.pushNamed('ProductDetailPage');
+      },
+      child: Container(
       width: 160,
       margin: const EdgeInsets.only(right: 16),
       decoration: BoxDecoration(
@@ -903,6 +923,7 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                             ),
                           ],
                         ),
+      ),
     );
   }
 

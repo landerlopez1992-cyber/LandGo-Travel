@@ -71,6 +71,7 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
     WidgetsBinding.instance.addPostFrameCallback((_) => setState(() {}));
   }
 
+
   @override
   void dispose() {
     _model.dispose();
@@ -773,19 +774,19 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const SizedBox(height: 30),
-                // ICONO DE SEGURIDAD
+                const SizedBox(height: 24),
+                // ICONO DE SEGURIDAD - MÁS PEQUEÑO
                 Container(
-                  width: 80,
-                  height: 80,
+                  width: 60,
+                  height: 60,
                   decoration: BoxDecoration(
                     color: const Color(0xFFE3F2FD), // AZUL CLARO
                     shape: BoxShape.circle,
                   ),
                   child: Center(
                     child: Container(
-                      width: 50,
-                      height: 50,
+                      width: 40,
+                      height: 40,
                       decoration: const BoxDecoration(
                         color: Color(0xFF2196F3), // AZUL LANDGO
                         shape: BoxShape.circle,
@@ -793,95 +794,54 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
                       child: const Icon(
                         Icons.security,
                         color: Colors.white,
-                        size: 30,
+                        size: 24,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
-                // TÍTULO
-                Text(
-                  'Email Verification Required',
-                  style: GoogleFonts.outfit(
-                    color: Colors.black,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // MENSAJE
+                const SizedBox(height: 16),
+                // TÍTULO - MÁS PEQUEÑO
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Text(
-                    'For security reasons, we need to verify your identity before making changes to your personal information.',
+                    'Email verification required',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.outfit(
+                      color: Colors.black,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                // MENSAJE - MÁS PEQUEÑO Y COMPACTO
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    'We need to verify your identity before saving changes to your personal information.',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.outfit(
                       color: Colors.black87,
-                      fontSize: 16,
+                      fontSize: 14,
                       fontWeight: FontWeight.w400,
                     ),
                   ),
                 ),
-                const SizedBox(height: 20),
-                // INFORMACIÓN ADICIONAL
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 20),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8F9FA),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: const Color(0xFFE9ECEF),
-                      width: 1,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.info_outline,
-                            color: Color(0xFF2196F3),
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'What happens next?',
-                            style: GoogleFonts.outfit(
-                              color: Colors.black,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '• We\'ll send a verification code to your email\n• Enter the code to confirm your identity\n• Your changes will be saved securely',
-                        style: GoogleFonts.outfit(
-                          color: Colors.black87,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 30),
-                // BOTONES
+                const SizedBox(height: 24),
+                // BOTONES - MÁS COMPACTOS
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 30),
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
                   child: Row(
                     children: [
                       Expanded(
                         child: TextButton(
                           onPressed: () => Navigator.of(context).pop(),
                           style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(8),
                               side: const BorderSide(
-                                color: Color(0xFFE9ECEF),
+                                color: Colors.grey,
                                 width: 1,
                               ),
                             ),
@@ -889,9 +849,9 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
                           child: Text(
                             'Cancel',
                             style: GoogleFonts.outfit(
-                              color: Colors.black54,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                              color: Colors.black,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
                         ),
@@ -904,17 +864,17 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
                             _sendVerificationEmail();
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF2196F3), // AZUL LANDGO
+                            backgroundColor: const Color(0xFF4DD0E1), // TURQUESA LANDGO
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                           child: Text(
                             'Send Code',
                             style: GoogleFonts.outfit(
                               color: Colors.white,
-                              fontSize: 16,
+                              fontSize: 14,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -944,6 +904,11 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
       _pendingChanges = jsonEncode(pendingChanges);
 
       // Enviar email de verificación usando Supabase Edge Function
+      print('🔍 DEBUG: Sending verification email with data:');
+      print('  - email: $_userEmail');
+      print('  - type: profile_update');
+      print('  - changes: $pendingChanges');
+      
       final response = await SupaFlow.client.functions.invoke(
         'send-verification-code',
         body: {
@@ -953,11 +918,11 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
         },
       );
 
-      print('🔍 DEBUG: Email verification sent: $response');
+      print('🔍 DEBUG: Email verification response: $response');
 
       // Navegar a la pantalla de verificación de código
       if (mounted) {
-        context.pushNamed(
+        final result = await context.pushNamed(
           'VerificationCodePage',
           queryParameters: {
             'email': _userEmail,
@@ -965,6 +930,19 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
             'pendingChanges': _pendingChanges,
           },
         );
+        
+        // Si regresó con éxito (true), salir del modo edición
+        if (result == true && mounted) {
+          print('🔍 DEBUG: Verificación exitosa, saliendo del modo edición');
+          setState(() {
+            _isEditMode = false;
+            _hasChanges = false;
+            _isSavingChanges = false;
+            _isEmailVerificationRequired = false;
+            _pendingChanges = '';
+          });
+          await _loadUserData(); // Recargar datos actualizados
+        }
       }
     } catch (e) {
       print('Error sending verification email: $e');
@@ -1412,308 +1390,65 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
   }
 
   // 📅 MÉTODO PARA MOSTRAR CALENDARIO PROFESIONAL
-  void _showDatePickerDialog() {
-    // Fecha por defecto: 25 años atrás
+  void _showDatePickerDialog() async {
+    // Calcular fechas límite
     final today = DateTime.now();
-    DateTime selectedDate = DateTime(today.year - 25, today.month, today.day);
+    final minDate = DateTime(today.year - 100, today.month, today.day); // 100 años atrás
+    final maxDate = DateTime(today.year - 18, today.month, today.day); // 18 años atrás
+    final initialDate = DateTime(today.year - 25, today.month, today.day); // 25 años por defecto
     
-    showDialog(
+    print('🔍 DEBUG: Opening date picker');
+    print('  - minDate: $minDate');
+    print('  - maxDate: $maxDate');
+    print('  - initialDate: $initialDate');
+    
+    final DateTime? pickedDate = await showDatePicker(
       context: context,
-      barrierDismissible: true,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return Dialog(
-              backgroundColor: Colors.transparent,
-              child: Container(
-                width: double.infinity,
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2C2C2C), // FONDO OSCURO COMO EN LA IMAGEN
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // HEADER DEL CALENDARIO
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        children: [
-                          // TÍTULO "Select date"
-                          Row(
-                            children: [
-                              Text(
-                                'Select date',
-                                style: GoogleFonts.outfit(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          // FECHA SELECCIONADA
-                          Row(
-                            children: [
-                              Text(
-                                _formatSelectedDate(selectedDate),
-                                style: GoogleFonts.outfit(
-                                  color: Colors.white,
-                                  fontSize: 24,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: const Icon(
-                                  Icons.edit,
-                                  color: Colors.white,
-                                  size: 16,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          // SELECTOR DE MES/AÑO
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(
-                                    _formatMonthYear(selectedDate),
-                                    style: GoogleFonts.outfit(
-                                      color: Colors.white,
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  const Icon(
-                                    Icons.keyboard_arrow_down,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
-                                ],
-                              ),
-                              // NAVEGACIÓN DE MESES
-                              Row(
-                                children: [
-                                  GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        selectedDate = DateTime(
-                                          selectedDate.year,
-                                          selectedDate.month - 1,
-                                          selectedDate.day,
-                                        );
-                                      });
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.all(8),
-                                      child: const Icon(
-                                        Icons.chevron_left,
-                                        color: Colors.white,
-                                        size: 20,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  GestureDetector(
-                                    onTap: () {
-                                      setState(() {
-                                        selectedDate = DateTime(
-                                          selectedDate.year,
-                                          selectedDate.month + 1,
-                                          selectedDate.day,
-                                        );
-                                      });
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.all(8),
-                                      child: const Icon(
-                                        Icons.chevron_right,
-                                        color: Colors.white,
-                                        size: 20,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    // CALENDARIO
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: _buildCalendarGrid(selectedDate, setState),
-                    ),
-                    const SizedBox(height: 20),
-                    // BOTONES
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: Text(
-                              'Cancel',
-                              style: GoogleFonts.outfit(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          ElevatedButton(
-                            onPressed: () {
-                              // Validar que el usuario sea mayor de 18 años
-                              final today = DateTime.now();
-                              final age = today.difference(selectedDate).inDays ~/ 365;
-                              
-                              if (age < 18) {
-                                _showErrorSnackBar('You must be at least 18 years old to use this service');
-                                return;
-                              }
-                              
-                              _updateFieldValue('date_of_birth', _formatDateForDisplay(selectedDate));
-                              Navigator.of(context).pop();
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF4DD0E1), // TURQUESA LANDGO
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                            ),
-                            child: Text(
-                              'OK',
-                              style: GoogleFonts.outfit(
-                                color: Colors.black,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+      initialDate: initialDate,
+      firstDate: minDate,
+      lastDate: maxDate,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFF4DD0E1), // Turquesa LandGo
+              onPrimary: Colors.black,
+              surface: Color(0xFF2C2C2C), // Fondo oscuro
+              onSurface: Colors.white,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF4DD0E1), // Turquesa para botones
               ),
-            );
-          },
+            ),
+          ),
+          child: child!,
         );
       },
     );
-  }
-
-  // 📅 MÉTODO PARA CONSTRUIR LA GRILLA DEL CALENDARIO
-  Widget _buildCalendarGrid(DateTime selectedDate, StateSetter setState) {
-    final firstDayOfMonth = DateTime(selectedDate.year, selectedDate.month, 1);
-    final lastDayOfMonth = DateTime(selectedDate.year, selectedDate.month + 1, 0);
-    final firstWeekday = firstDayOfMonth.weekday;
     
-    // Calcular fecha mínima (18 años atrás desde hoy)
-    final today = DateTime.now();
-    final minDate = DateTime(today.year - 18, today.month, today.day);
-    
-    // DÍAS DE LA SEMANA
-    final weekDays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-    
-    return Column(
-      children: [
-        // HEADER DE DÍAS DE LA SEMANA
-        Row(
-          children: weekDays.map((day) => Expanded(
-            child: Center(
-              child: Text(
-                day,
-                style: GoogleFonts.outfit(
-                  color: Colors.white,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-          )).toList(),
-        ),
-        const SizedBox(height: 12),
-        // GRILLA DE DÍAS
-        ...List.generate(6, (weekIndex) {
-          return Row(
-            children: List.generate(7, (dayIndex) {
-              final dayNumber = weekIndex * 7 + dayIndex - firstWeekday + 2;
-              final isCurrentMonth = dayNumber > 0 && dayNumber <= lastDayOfMonth.day;
-              final isSelected = isCurrentMonth && dayNumber == selectedDate.day;
-              
-              // Verificar si la fecha es válida (mayor de 18 años)
-              DateTime potentialDate;
-              bool isValidDate = false;
-              if (isCurrentMonth) {
-                potentialDate = DateTime(selectedDate.year, selectedDate.month, dayNumber);
-                isValidDate = potentialDate.isBefore(minDate) || potentialDate.isAtSameMomentAs(minDate);
-              }
-              
-              return Expanded(
-                child: GestureDetector(
-                  onTap: (isCurrentMonth && isValidDate) ? () {
-                    setState(() {
-                      selectedDate = DateTime(selectedDate.year, selectedDate.month, dayNumber);
-                    });
-                  } : null,
-                  child: Container(
-                    height: 40,
-                    margin: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      color: isSelected ? const Color(0xFF4DD0E1) : Colors.transparent,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                        isCurrentMonth ? dayNumber.toString() : '',
-                        style: GoogleFonts.outfit(
-                          color: isSelected ? Colors.black : 
-                                 (isCurrentMonth && !isValidDate) ? Colors.grey : Colors.white,
-                          fontSize: 16,
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }),
-          );
-        }),
-      ],
-    );
+    if (pickedDate != null) {
+      print('🔍 DEBUG: Date selected: $pickedDate');
+      
+      // Validar edad nuevamente
+      final age = today.difference(pickedDate).inDays ~/ 365;
+      print('  - Age calculated: $age years');
+      
+      if (age < 18) {
+        print('  - Age validation failed');
+        _showErrorSnackBar('You must be at least 18 years old to use this service');
+        return;
+      }
+      
+      print('  - Age validation passed');
+      _updateFieldValue('date_of_birth', _formatDateForDisplay(pickedDate));
+    } else {
+      print('🔍 DEBUG: Date picker cancelled');
+    }
   }
 
 
-  // 📅 MÉTODOS DE FORMATEO DE FECHAS
-  String _formatSelectedDate(DateTime date) {
-    final weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    
-    return '${weekdays[date.weekday - 1]}, ${months[date.month - 1]} ${date.day}';
-  }
 
-  String _formatMonthYear(DateTime date) {
-    final months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-    return '${months[date.month - 1]} ${date.year}';
-  }
 
   String _formatDateForDisplay(DateTime date) {
     final months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
@@ -2477,19 +2212,22 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
               ),
               GestureDetector(
                 onTap: () {
-                  // TODO: Navigate to Discover
+                  print('Discover button tapped from MyProfilePage');
+                  context.pushNamed('DiscoverPage');
                 },
                 child: _buildNavItem(Icons.explore, 'Discover', false),
               ),
               GestureDetector(
                 onTap: () {
-                  // TODO: Navigate to My trip
+                  print('My trip button tapped from MyProfilePage');
+                  context.pushNamed('MyTripPage');
                 },
                 child: _buildNavItem(Icons.card_travel, 'My trip', false),
               ),
               GestureDetector(
                 onTap: () {
-                  // TODO: Navigate to My favorites
+                  print('My favorites button tapped from MyProfilePage');
+                  context.pushNamed('MyFavoritesPage');
                 },
                 child: _buildNavItem(Icons.favorite_border, 'My favorites', false),
               ),

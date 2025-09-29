@@ -293,19 +293,22 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
               ),
               GestureDetector(
                 onTap: () {
-                  // TODO: Navigate to Discover
+                  print('Discover button tapped from SettingsPage');
+                  context.pushNamed('DiscoverPage');
                 },
                 child: _buildNavItem(Icons.explore, 'Discover', false),
               ),
               GestureDetector(
                 onTap: () {
-                  // TODO: Navigate to My trip
+                  print('My trip button tapped from SettingsPage');
+                  context.pushNamed('MyTripPage');
                 },
                 child: _buildNavItem(Icons.card_travel, 'My trip', false),
               ),
               GestureDetector(
                 onTap: () {
-                  // TODO: Navigate to My favorites
+                  print('My favorites button tapped from SettingsPage');
+                  context.pushNamed('MyFavoritesPage');
                 },
                 child: _buildNavItem(Icons.favorite_border, 'My favorites', false),
               ),
