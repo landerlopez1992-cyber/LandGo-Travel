@@ -1,0 +1,1 @@
+ /Users/cubcolexpress/Desktop/land_go_travel/.dart_tool/flutter_build/7b33a8f8b2fef6fce0c44d329794aeaf/native_assets.json: 

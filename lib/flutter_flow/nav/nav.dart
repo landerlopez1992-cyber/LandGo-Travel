@@ -116,21 +116,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           path: NewWelcomePageWidget.routePath,
           builder: (context, params) => NewWelcomePageWidget(),
         ),
-        FFRoute(
-          name: NewWelcomePage2Widget.routeName,
-          path: NewWelcomePage2Widget.routePath,
-          builder: (context, params) => NewWelcomePage2Widget(),
-        ),
-        FFRoute(
-          name: NewWelcomePage3Widget.routeName,
-          path: NewWelcomePage3Widget.routePath,
-          builder: (context, params) => NewWelcomePage3Widget(),
-        ),
-        FFRoute(
-          name: NewWelcomePage4Widget.routeName,
-          path: NewWelcomePage4Widget.routePath,
-          builder: (context, params) => NewWelcomePage4Widget(),
-        ),
+        // ELIMINADAS: NewWelcomePage2, 3, 4
         FFRoute(
           name: LoginPageWidget.routeName,
           path: LoginPageWidget.routePath,
@@ -145,6 +131,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: MainPageWidget.routeName,
           path: MainPageWidget.routePath,
           builder: (context, params) => MainPageWidget(),
+        ),
+        FFRoute(
+          name: MyWalletPageWidget.routeName,
+          path: MyWalletPageWidget.routePath,
+          builder: (context, params) => MyWalletPageWidget(),
         ),
         FFRoute(
           name: MembershipPageWidget.routeName,
@@ -346,26 +337,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
       path: HotelBookingPageWidget.routePath,
       builder: (context, params) => HotelBookingPageWidget(),
     ),
-    FFRoute(
-      name: TermsConditionsPageWidget.routeName,
-      path: TermsConditionsPageWidget.routePath,
-      builder: (context, params) => TermsConditionsPageWidget(),
-    ),
-    FFRoute(
-      name: SettingsPageWidget.routeName,
-      path: SettingsPageWidget.routePath,
-      builder: (context, params) => SettingsPageWidget(),
-    ),
-    FFRoute(
-      name: NotificationsPageWidget.routeName,
-      path: NotificationsPageWidget.routePath,
-      builder: (context, params) => NotificationsPageWidget(),
-    ),
-    FFRoute(
-      name: PaymentMethodPageWidget.routeName,
-      path: PaymentMethodPageWidget.routePath,
-      builder: (context, params) => PaymentMethodPageWidget(),
-    ),
+    // ELIMINADAS: TermsConditions, Settings, Notifications, PaymentMethod
     FFRoute(
       name: EmailConfirmationPageWidget.routeName,
       path: EmailConfirmationPageWidget.routePath,

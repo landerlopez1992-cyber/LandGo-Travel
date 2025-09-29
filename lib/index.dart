@@ -7,12 +7,11 @@ export '/admin_dashboard_page/support_chat_admin_page/support_chat_admin_page_wi
     show SupportChatAdminPageWidget;
 export '/pages/welcome_pagee/welcome_pagee_widget.dart' show WelcomePageeWidget;
 export '/pages/new_welcome_page/new_welcome_page_widget.dart' show NewWelcomePageWidget;
-export '/pages/new_welcome_page2/new_welcome_page2_widget.dart' show NewWelcomePage2Widget;
-export '/pages/new_welcome_page3/new_welcome_page3_widget.dart' show NewWelcomePage3Widget;
-export '/pages/new_welcome_page4/new_welcome_page4_widget.dart' show NewWelcomePage4Widget;
+// ELIMINADAS: new_welcome_page2, 3, 4
 export '/pages/login_page/login_page_widget.dart' show LoginPageWidget;
 export '/pages/sign_up_page/sign_up_page_widget.dart' show SignUpPageWidget;
 export '/pages/main_page/main_page_widget.dart' show MainPageWidget;
+export '/pages/my_wallet_page/my_wallet_page_widget.dart' show MyWalletPageWidget;
 export '/membership_page/membership_page/membership_page_widget.dart'
     show MembershipPageWidget;
 export '/payment/wallet_page/wallet_page_widget.dart' show WalletPageWidget;
@@ -95,17 +94,4 @@ export '/booking_home_page/flight_booking_page/flight_booking_page_widget.dart'
     show FlightBookingPageWidget;
 export '/booking_home_page/hotel_booking_page/hotel_booking_page_widget.dart'
     show HotelBookingPageWidget;
-export '/pages/terms_conditions_page/terms_conditions_page_widget.dart'
-    show TermsConditionsPageWidget;
-export '/pages/settings_page/settings_page_widget.dart'
-    show SettingsPageWidget;
-export '/pages/notifications_page/notifications_page_widget.dart'
-    show NotificationsPageWidget;
-export '/pages/payment_method_page/payment_method_page_widget.dart'
-    show PaymentMethodPageWidget;
-export '/pages/gallery_page/gallery_page_widget.dart'
-    show GalleryPageWidget;
-export '/pages/review_summary_page/review_summary_page_widget.dart'
-    show ReviewSummaryPageWidget;
-export '/pages/form_schedule_page/form_schedule_page_widget.dart'
-    show FormSchedulePageWidget;
+// ELIMINADAS: terms_conditions, settings, notifications, payment_method, gallery, review_summary, form_schedule

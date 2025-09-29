@@ -55,12 +55,13 @@ class _MainPageWidgetState extends State<MainPageWidget> {
       child: Scaffold(
         key: scaffoldKey,
         backgroundColor: Colors.black, // COLORES LANDGO TRAVEL - Fondo oscuro
+        extendBody: false, // NO EXTENDER DEBAJO DEL BOTTOM NAV
         body: SafeArea(
           top: true,
           child: SingleChildScrollView(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                 // Header Section with greeting and profile
                 _buildHeaderSection(),
                 
@@ -85,8 +86,8 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                 // Existing Special Offer Banner
                 _buildSpecialOfferBanner(),
                 
-                // Bottom spacing for navigation
-                SizedBox(height: 100),
+                // Bottom spacing for navigation - AUMENTADO PARA BOTONES ANDROID
+                const SizedBox(height: 120),
               ],
             ),
           ),
@@ -102,22 +103,22 @@ class _MainPageWidgetState extends State<MainPageWidget> {
     return Padding(
       padding: const EdgeInsets.all(20.0),
       child: Row(
-        children: [
+                                    children: [
           // Profile Picture
           Container(
             width: 50,
             height: 50,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
               border: Border.all(color: const Color(0xFF4DD0E1), width: 2),
             ),
             child: ClipOval(
-              child: Image.network(
-                'https://images.unsplash.com/photo-1519058082700-08a0b56da9b4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTYyMDF8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NTM5MzA0ODV8&ixlib=rb-4.1.0&q=80&w=1080',
-                fit: BoxFit.cover,
-              ),
-            ),
-          ),
+                                              child: Image.network(
+                                                'https://images.unsplash.com/photo-1519058082700-08a0b56da9b4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTYyMDF8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NTM5MzA0ODV8&ixlib=rb-4.1.0&q=80&w=1080',
+                                                fit: BoxFit.cover,
+                                              ),
+                                            ),
+                                          ),
           
           const SizedBox(width: 12),
           
@@ -132,14 +133,14 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.w400,
-                  ),
-                ),
-                Text(
+                                        ),
+                                      ),
+                                      Text(
                   '${(currentUser as LandGoTravelSupabaseUser?)?.user?.userMetadata?['full_name'] ?? 'Dev Cooper'} 👋',
                   style: TextStyle(
-                    color: Colors.white,
+                                              color: Colors.white,
                     fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                                              fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
@@ -169,14 +170,14 @@ class _MainPageWidgetState extends State<MainPageWidget> {
   Widget _buildSearchBar() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0),
-      child: Container(
+                        child: Container(
         height: 50,
-        decoration: BoxDecoration(
+                          decoration: BoxDecoration(
           color: Colors.grey[900],
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
-          children: [
+                              children: [
             const SizedBox(width: 16),
             Icon(
               Icons.search,
@@ -184,7 +185,7 @@ class _MainPageWidgetState extends State<MainPageWidget> {
               size: 20,
             ),
             const SizedBox(width: 12),
-            Text(
+                                Text(
               'Search here',
               style: TextStyle(
                 color: Colors.white.withOpacity(0.6),
@@ -219,11 +220,11 @@ class _MainPageWidgetState extends State<MainPageWidget> {
             width: 80,
             margin: const EdgeInsets.only(right: 16),
             child: Column(
-              children: [
+                                  children: [
                 Container(
                   width: 60,
                   height: 60,
-                  decoration: BoxDecoration(
+                                        decoration: BoxDecoration(
                     color: Colors.grey[900],
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -238,7 +239,7 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                 Text(
                   category['name'] as String,
                   style: TextStyle(
-                    color: Colors.white,
+                                          color: Colors.white,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -256,9 +257,9 @@ class _MainPageWidgetState extends State<MainPageWidget> {
   Widget _buildRecentlyViewedSection() {
     return Padding(
       padding: const EdgeInsets.all(20.0),
-      child: Column(
+                                          child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+                                            children: [
           Text(
             'Recently viewed',
             style: TextStyle(
@@ -268,9 +269,9 @@ class _MainPageWidgetState extends State<MainPageWidget> {
             ),
           ),
           const SizedBox(height: 16),
-          Container(
+                                              Container(
             height: 120,
-            decoration: BoxDecoration(
+                                                decoration: BoxDecoration(
               color: Colors.grey[900],
               borderRadius: BorderRadius.circular(16),
             ),
@@ -285,16 +286,16 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                     image: DecorationImage(
                       image: NetworkImage('https://images.unsplash.com/photo-1571896349842-33c89424de2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTYyMDF8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NTM5MzA2ODh8&ixlib=rb-4.1.0&q=80&w=1080'),
                       fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
+                                                  ),
+                                                ),
+                                              ),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
+                                              Text(
                           'Azure wave island',
                           style: TextStyle(
                             color: Colors.white,
@@ -343,9 +344,9 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                 ),
                 Padding(
                   padding: const EdgeInsets.all(16.0),
-                  child: Icon(
+                                                  child: Icon(
                     Icons.favorite_border,
-                    color: Colors.white,
+                                                    color: Colors.white,
                     size: 20,
                   ),
                 ),
@@ -367,7 +368,7 @@ class _MainPageWidgetState extends State<MainPageWidget> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+                                              Text(
                 'Popular trip',
                 style: TextStyle(
                   color: Colors.white,
@@ -422,21 +423,21 @@ class _MainPageWidgetState extends State<MainPageWidget> {
   Widget _buildTopDestinationsSection() {
     return Padding(
       padding: const EdgeInsets.all(20.0),
-      child: Column(
+                                          child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+                                            children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 'Top destinations',
                 style: TextStyle(
-                  color: Colors.white,
+                                                    color: Colors.white,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                ),
-              ),
-              Text(
+                                                ),
+                                              ),
+                                              Text(
                 'View all',
                 style: TextStyle(
                   color: const Color(0xFF4DD0E1),
@@ -492,15 +493,15 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                 Positioned(
                   top: 16,
                   right: 16,
-                  child: Container(
+                                      child: Container(
                     padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
+                                        decoration: BoxDecoration(
                       color: Colors.black.withOpacity(0.6),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       Icons.favorite_border,
-                      color: Colors.white,
+                                          color: Colors.white,
                       size: 16,
                     ),
                   ),
@@ -524,9 +525,9 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                       ),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Column(
+                                          child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
+                                            children: [
                         Text(
                           'Paris in a weekend',
                           style: TextStyle(
@@ -543,19 +544,19 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                             Text(
                               'Bali',
                               style: TextStyle(
-                                color: Colors.white,
+                                                    color: Colors.white,
                                 fontSize: 14,
-                              ),
-                            ),
+                                                  ),
+                                                ),
                             Container(
                               width: 1,
                               height: 16,
                               color: Colors.white,
                               margin: const EdgeInsets.symmetric(horizontal: 8),
-                            ),
+                                              ),
                             Icon(Icons.person, color: const Color(0xFF4DD0E1), size: 16),
                             const SizedBox(width: 4),
-                            Text(
+                                              Text(
                               '2 Person',
                               style: TextStyle(
                                 color: Colors.white,
@@ -585,7 +586,7 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                   child: Container(
                     width: 48,
                     height: 48,
-                    decoration: BoxDecoration(
+                                  decoration: BoxDecoration(
                       color: const Color(0xFF4DD0E1),
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -660,18 +661,18 @@ class _MainPageWidgetState extends State<MainPageWidget> {
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(20),
-        ),
-        child: Padding(
+                                  ),
+                                  child: Padding(
           padding: const EdgeInsets.all(20.0),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Special Offer!',
+                                            children: [
+                                              Text(
+                                                'Special Offer!',
                       style: TextStyle(
                         color: Colors.black,
                         fontSize: 18,
@@ -679,8 +680,8 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Text(
-                      'Get 20% off your next booking',
+                                              Text(
+                                                'Get 20% off your next booking',
                       style: TextStyle(
                         color: Colors.black.withOpacity(0.8),
                         fontSize: 14,
@@ -690,7 +691,7 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                                                  color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(
@@ -703,42 +704,73 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                       ),
                     ),
                   ],
-                ),
-              ),
-              Icon(
-                Icons.local_offer_rounded,
+                                          ),
+                                        ),
+                                        Icon(
+                                          Icons.local_offer_rounded,
                 color: Colors.white,
                 size: 48,
-              ),
-            ],
-          ),
-        ),
-      ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
     );
   }
 
   // Modern Bottom Navigation
   Widget _buildBottomNavigation() {
     return Container(
-      height: 80,
-      decoration: BoxDecoration(
-        color: Colors.black,
+      height: 100, // AUMENTADO MÁS PARA ESTAR ARRIBA DE BOTONES ANDROID
+      decoration: const BoxDecoration(
+        color: Color(0xFF000000), // FONDO NEGRO LANDGO TRAVEL
         border: Border(
           top: BorderSide(
-            color: Colors.grey[800]!,
-            width: 1,
-          ),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildNavItem(Icons.home_rounded, 'Home', true),
-          _buildNavItem(Icons.explore_rounded, 'Discover', false),
-          _buildNavItem(Icons.star_rounded, 'My trip', false),
-          _buildNavItem(Icons.list_alt_rounded, 'My trip', false),
-          _buildNavItem(Icons.person_outline_rounded, 'Profile', false),
-        ],
+            color: Color(0xFF333333), // BORDE SUTIL GRIS
+            width: 0.5,
+                            ),
+                          ),
+                        ),
+      child: SafeArea(
+        bottom: true, // IMPORTANTE: RESPETA EL SAFE AREA DEL SISTEMA
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16.0, 12.0, 16.0, 20.0), // MÁS PADDING INFERIOR
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              GestureDetector(
+                onTap: () {
+                  // Stay on current page (Home)
+                },
+                child: _buildNavItem(Icons.home, 'Home', true), // HOME ACTIVO
+              ),
+              GestureDetector(
+                onTap: () {
+                  // TODO: Navigate to Discover when page exists
+                },
+                child: _buildNavItem(Icons.explore, 'Discover', false),
+              ),
+              GestureDetector(
+                onTap: () {
+                  // TODO: Navigate to My trip when page exists
+                },
+                child: _buildNavItem(Icons.card_travel, 'My trip', false),
+              ),
+              GestureDetector(
+                onTap: () {
+                  // TODO: Navigate to My favorites when page exists
+                },
+                child: _buildNavItem(Icons.favorite_border, 'My favorites', false),
+              ),
+              GestureDetector(
+                onTap: () {
+                  // TODO: Navigate to Profile when page exists
+                },
+                child: _buildNavItem(Icons.person, 'Profile', false),
+                      ),
+                    ],
+                  ),
+                ),
       ),
     );
   }
@@ -748,7 +780,7 @@ class _MainPageWidgetState extends State<MainPageWidget> {
     return Container(
       margin: const EdgeInsets.only(right: 12),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
+                      decoration: BoxDecoration(
         color: isActive ? const Color(0xFF4DD0E1) : Colors.grey[900],
         borderRadius: BorderRadius.circular(20),
       ),
@@ -757,7 +789,7 @@ class _MainPageWidgetState extends State<MainPageWidget> {
         style: TextStyle(
           color: isActive ? Colors.black : Colors.white,
           fontSize: 14,
-          fontWeight: FontWeight.w600,
+                                          fontWeight: FontWeight.w600,
         ),
       ),
     );
@@ -776,7 +808,7 @@ class _MainPageWidgetState extends State<MainPageWidget> {
         ),
       ),
       child: Stack(
-        children: [
+                              children: [
           // Gradient overlay for text readability
           Container(
             decoration: BoxDecoration(
@@ -787,9 +819,9 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                 colors: [
                   Colors.transparent,
                   Colors.black.withOpacity(0.7),
-                ],
-              ),
-            ),
+                    ],
+                  ),
+                ),
           ),
           
           // Content
@@ -797,9 +829,9 @@ class _MainPageWidgetState extends State<MainPageWidget> {
             bottom: 12,
             left: 12,
             right: 12,
-            child: Column(
+                              child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+                                children: [
                 Text(
                   title,
                   style: TextStyle(
@@ -813,7 +845,7 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                   children: [
                     Icon(Icons.star, color: Colors.amber, size: 12),
                     const SizedBox(width: 4),
-                    Text(
+                                  Text(
                       rating,
                       style: TextStyle(
                         color: Colors.white,
@@ -834,10 +866,10 @@ class _MainPageWidgetState extends State<MainPageWidget> {
               Icons.favorite_border,
               color: Colors.white,
               size: 16,
-            ),
-          ),
-        ],
-      ),
+                              ),
+                            ),
+                          ],
+                        ),
     );
   }
 
@@ -849,9 +881,9 @@ class _MainPageWidgetState extends State<MainPageWidget> {
           color: Colors.grey[900],
           borderRadius: BorderRadius.circular(16),
         ),
-        child: Column(
+                              child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
+                                children: [
             Container(
               width: 50,
               height: 50,
@@ -866,28 +898,28 @@ class _MainPageWidgetState extends State<MainPageWidget> {
               ),
             ),
             const SizedBox(height: 12),
-            Text(
+                                  Text(
               title,
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 14,
-                fontWeight: FontWeight.w600,
+                                            fontWeight: FontWeight.w600,
               ),
               textAlign: TextAlign.center,
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
   Widget _buildNavItem(IconData icon, String label, bool isActive) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: [
+                                children: [
         Container(
-          width: 40,
-          height: 40,
+          width: 44,
+          height: 44,
           decoration: BoxDecoration(
             color: isActive ? const Color(0xFF4DD0E1) : Colors.transparent,
             borderRadius: BorderRadius.circular(12),
@@ -895,19 +927,20 @@ class _MainPageWidgetState extends State<MainPageWidget> {
           child: Icon(
             icon,
             color: isActive ? Colors.black : Colors.grey[400],
-            size: 20,
+            size: 22,
           ),
         ),
         const SizedBox(height: 4),
-        Text(
+                                  Text(
           label,
           style: TextStyle(
             color: isActive ? const Color(0xFF4DD0E1) : Colors.grey[400],
             fontSize: 12,
-            fontWeight: FontWeight.w600,
+                                            fontWeight: FontWeight.w600,
           ),
         ),
       ],
     );
   }
+
 }
