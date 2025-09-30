@@ -6,7 +6,10 @@ const corsHeaders = {
 }
 
 // Stripe API configuration
-const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY') || 'sk_test_51SBkaB2aG6cmZRHQwkLRrfMl5vR2Id6KhpGGqlbXheXV9FKc21ORQVPEFssJ8OsjA5cYtsHnyRSNhrfGiBzSIoSm00Q1TX4TBI'
+const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY')
+if (!STRIPE_SECRET_KEY) {
+  throw new Error('STRIPE_SECRET_KEY environment variable is required')
+}
 const STRIPE_API_URL = 'https://api.stripe.com/v1'
 
 serve(async (req) => {

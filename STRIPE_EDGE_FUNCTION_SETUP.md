@@ -22,7 +22,7 @@ He creado una **Supabase Edge Function** que maneja todos los pagos de Stripe de
 ### 2. **Configurar Variable de Entorno:**
 - Ve a tu dashboard de Supabase
 - Ve a **Edge Functions** → **stripe-payment**
-- Agrega la variable: `STRIPE_SECRET_KEY` = `sk_test_51SBkaB2aG6cmZRHQwkLRrfMl5vR2Id6KhpGGqlbXheXV9FKc21ORQVPEFssJ8OsjA5cYtsHnyRSNhrfGiBzSIoSm00Q1TX4TBI`
+- Agrega la variable: `STRIPE_SECRET_KEY` = `YOUR_STRIPE_SECRET_KEY_HERE`
 
 ### 3. **Compilar y Probar:**
 ```bash

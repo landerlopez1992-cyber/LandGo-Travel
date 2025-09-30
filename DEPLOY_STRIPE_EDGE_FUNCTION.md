@@ -34,7 +34,7 @@ Asegúrate de que la variable `STRIPE_SECRET_KEY` esté configurada:
 1. Ve a **Edge Functions** → `stripe-payment` → **Settings**
 2. En **Environment Variables**, verifica que exista:
    - **Name:** `STRIPE_SECRET_KEY`
-   - **Value:** `sk_test_51SBkaB2aG6cmZRHQwkLRrfMl5vR2Id6KhpGGqlbXheXV9FKc21ORQVPEFssJ8OsjA5cYtsHnyRSNhrfGiBzSIoSm00Q1TX4TBI`
+   - **Value:** `YOUR_STRIPE_SECRET_KEY_HERE`
 
 ---
 

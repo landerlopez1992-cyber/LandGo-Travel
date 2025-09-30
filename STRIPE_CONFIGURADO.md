@@ -9,7 +9,7 @@ pk_test_51SBkaB2aG6cmZRHQ22KDLCfL4qnQFBojMVG5v7Ywwl4CoxDWnHm7r6qmFyaohPNvg9woIgC
 
 ### ✅ Clave Secreta (Secret Key)
 ```
-sk_test_51SBkaB2aG6cmZRHQwkLRrfMl5vR2Id6KhpGGqlbXheXV9FKc21ORQVPEFssJ8OsjA5cYtsHnyRSNhrfGiBzSIoSm00Q1TX4TBI
+YOUR_STRIPE_SECRET_KEY_HERE
 ```
 
 ## 🚀 Estado de integración
