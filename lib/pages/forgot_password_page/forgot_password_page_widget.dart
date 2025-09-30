@@ -1,5 +1,4 @@
 import '/flutter_flow/flutter_flow_util.dart';
-import '/auth/supabase_auth/auth_util.dart';
 import '/backend/supabase/supabase.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -21,6 +20,7 @@ class _ForgotPasswordPageWidgetState extends State<ForgotPasswordPageWidget> {
   late ForgotPasswordPageModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
+  bool _isSendingEmail = false;
 
   @override
   void initState() {
@@ -41,6 +41,11 @@ class _ForgotPasswordPageWidgetState extends State<ForgotPasswordPageWidget> {
 
   @override
   Widget build(BuildContext context) {
+    // Detectar si el teclado está visible
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final isKeyboardVisible = keyboardHeight > 0;
+    
     return GestureDetector(
       onTap: () {
         FocusScope.of(context).unfocus();
@@ -49,6 +54,7 @@ class _ForgotPasswordPageWidgetState extends State<ForgotPasswordPageWidget> {
       child: Scaffold(
         key: scaffoldKey,
         backgroundColor: Color(0xFF1A1A1A), // Fondo negro con gradiente sutil
+        resizeToAvoidBottomInset: true,
         body: SafeArea(
           top: true,
           child: Container(
@@ -65,7 +71,15 @@ class _ForgotPasswordPageWidgetState extends State<ForgotPasswordPageWidget> {
             child: Padding(
               padding: EdgeInsetsDirectional.fromSTEB(24.0, 40.0, 24.0, 24.0),
               child: SingleChildScrollView(
-                child: Column(
+                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                physics: AlwaysScrollableScrollPhysics(),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: isKeyboardVisible 
+                        ? screenHeight - keyboardHeight - 100 // Ajustar cuando hay teclado
+                        : screenHeight - 200, // Altura normal
+                  ),
+                  child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Header con botón de regreso
@@ -93,7 +107,7 @@ class _ForgotPasswordPageWidgetState extends State<ForgotPasswordPageWidget> {
                       ],
                     ),
                     
-                    SizedBox(height: 60.0),
+                    SizedBox(height: isKeyboardVisible ? 20.0 : 60.0),
                     
                     // Logo de LandGo Travel centrado
                     Center(
@@ -111,7 +125,7 @@ class _ForgotPasswordPageWidgetState extends State<ForgotPasswordPageWidget> {
                       ),
                     ),
                     
-                    SizedBox(height: 40.0),
+                    SizedBox(height: isKeyboardVisible ? 20.0 : 40.0),
                     
                     // Título principal centrado
                     Center(
@@ -141,7 +155,7 @@ class _ForgotPasswordPageWidgetState extends State<ForgotPasswordPageWidget> {
                       ),
                     ),
                     
-                    SizedBox(height: 40.0),
+                    SizedBox(height: isKeyboardVisible ? 20.0 : 40.0),
                   
                     // Formulario
                     Form(
@@ -200,48 +214,105 @@ class _ForgotPasswordPageWidgetState extends State<ForgotPasswordPageWidget> {
                             width: double.infinity,
                             height: 56.0,
                             decoration: BoxDecoration(
-                              color: Color(0xFF4DD0E1), // Turquesa
+                              color: _isSendingEmail 
+                                  ? Color(0xFF9CA3AF) // COLORES LANDGO TRAVEL - Deshabilitado
+                                  : Color(0xFF4DD0E1), // Turquesa
                               borderRadius: BorderRadius.circular(12.0),
                             ),
                             child: ElevatedButton(
-                              onPressed: () async {
+                              onPressed: _isSendingEmail ? null : () async {
                                 if (_model.formKey.currentState == null ||
                                     !_model.formKey.currentState!.validate()) {
                                   return;
                                 }
 
-                                // Generar código de verificación de 6 dígitos
-                                final verificationCode = (100000 + (DateTime.now().millisecondsSinceEpoch % 900000)).toString();
-                                
-                                // Guardar código en la base de datos
-                                await SupaFlow.client.from('password_reset_codes').insert({
-                                  'email': _model.textController.text,
-                                  'code': verificationCode,
-                                  'expires_at': DateTime.now().add(Duration(minutes: 10)).toIso8601String(),
+                                // Activar loading
+                                setState(() {
+                                  _isSendingEmail = true;
                                 });
 
-                                // Enviar email con código de verificación
-                                await SupaFlow.client.functions.invoke(
-                                  'send-verification-code',
-                                  body: {
+                                try {
+                                  // Iniciar cronómetro para mínimo 2 segundos
+                                  final stopwatch = Stopwatch()..start();
+
+                                  // Enviar email con código de verificación usando Edge Function
+                                  // La función generará y guardará el código automáticamente
+                                  print('🔍 DEBUG: Sending password reset email to: ${_model.textController.text}');
+                                  
+                                  // WORKAROUND TEMPORAL: Usar 'verification' que ya funciona
+                                  // Generar código aquí y enviarlo
+                                  final resetCode = (100000 + (DateTime.now().millisecondsSinceEpoch % 900000)).toString();
+                                  print('🔍 DEBUG: Generated reset code: $resetCode');
+                                  
+                                  // Limpiar códigos anteriores para este email y tipo
+                                  await SupaFlow.client.from('verification_codes')
+                                    .delete()
+                                    .eq('email', _model.textController.text)
+                                    .eq('type', 'password_reset');
+                                  
+                                  // Guardar código en verification_codes
+                                  await SupaFlow.client.from('verification_codes').insert({
                                     'email': _model.textController.text,
-                                    'code': verificationCode,
-                                    'type': 'verification',
-                                    'fullName': 'User',
-                                  },
-                                );
+                                    'code': resetCode,
+                                    'type': 'password_reset',
+                                    'expires_at': DateTime.now().toUtc().add(Duration(minutes: 10)).toIso8601String(),
+                                  });
+                                  
+                                  await SupaFlow.client.functions.invoke(
+                                    'send-verification-code',
+                                    body: {
+                                      'email': _model.textController.text,
+                                      'type': 'verification',
+                                      'code': resetCode,
+                                      'fullName': 'User',
+                                    },
+                                  );
 
-                                // Mostrar mensaje de éxito
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text('Verification code sent to your email'),
-                                    backgroundColor: Color(0xFF4CAF50),
-                                  ),
-                                );
+                                  print('🔍 DEBUG: Password reset email sent successfully');
 
-                                // Navegar a la pantalla de verificación
-                                context.pushNamed('VerificationCodePage');
-                              },
+                                  // Asegurar mínimo 2 segundos de loading
+                                  final elapsed = stopwatch.elapsedMilliseconds;
+                                  if (elapsed < 2000) {
+                                    await Future.delayed(Duration(milliseconds: 2000 - elapsed));
+                                  }
+
+                                  if (context.mounted) {
+                                    setState(() {
+                                      _isSendingEmail = false;
+                                    });
+
+                                    // Mostrar mensaje de éxito
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Verification code sent to your email'),
+                                        backgroundColor: Color(0xFF4CAF50),
+                                      ),
+                                    );
+
+                                    // Navegar a la pantalla de verificación CON PARÁMETROS
+                                    context.pushNamed(
+                                      'VerificationCodePage',
+                                      queryParameters: {
+                                        'email': _model.textController.text,
+                                        'type': 'password_reset',
+                                      },
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    setState(() {
+                                      _isSendingEmail = false;
+                                    });
+                                    
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Error sending email: ${e.toString()}'),
+                                        backgroundColor: Color(0xFFDC2626),
+                                      ),
+                                    );
+                                  }
+                                }
+                            },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.transparent,
                                 shadowColor: Colors.transparent,
@@ -249,14 +320,37 @@ class _ForgotPasswordPageWidgetState extends State<ForgotPasswordPageWidget> {
                                   borderRadius: BorderRadius.circular(12.0),
                                 ),
                               ),
-                              child: Text(
-                                'Send verification code',
-                                style: GoogleFonts.inter(
-                                  color: Color(0xFFFFFFFF),
-                                  fontSize: 16.0,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                              child: _isSendingEmail 
+                                  ? Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                          ),
+                                        ),
+                                        SizedBox(width: 12),
+                                        Text(
+                                          'Sending...',
+                                          style: GoogleFonts.inter(
+                                            color: Color(0xFFFFFFFF),
+                                            fontSize: 16.0,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  : Text(
+                                      'Send verification code',
+                                      style: GoogleFonts.inter(
+                                        color: Color(0xFFFFFFFF),
+                                        fontSize: 16.0,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                             ),
                           ),
                         ],
@@ -292,8 +386,9 @@ class _ForgotPasswordPageWidgetState extends State<ForgotPasswordPageWidget> {
                       ),
                     ),
                     
-                    SizedBox(height: 24.0),
+                    SizedBox(height: isKeyboardVisible ? 200.0 : 100.0), // Espacio extra para el teclado
                   ],
+                ),
                 ),
               ),
             ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/components/back_button_widget.dart';
+import '/pages/review_summary_page/review_summary_page_widget.dart';
 import 'my_wallet_page_model.dart';
 export 'my_wallet_page_model.dart';
 
@@ -388,181 +389,223 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.6, // REDUCIDO A 60% PARA SUBIR EL MODAL
-        decoration: const BoxDecoration(
-          color: Color(0xFF2C2C2C), // GRIS OSCURO LANDGO
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
+      builder: (context) => const _AddMoneyModalContent(),
+    );
+  }
+}
+
+// WIDGET SEPARADO PARA EL MODAL CON SU PROPIO ESTADO
+class _AddMoneyModalContent extends StatefulWidget {
+  const _AddMoneyModalContent();
+
+  @override
+  State<_AddMoneyModalContent> createState() => _AddMoneyModalContentState();
+}
+
+class _AddMoneyModalContentState extends State<_AddMoneyModalContent> {
+  final TextEditingController _amountController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.65,
+      decoration: const BoxDecoration(
+        color: Color(0xFF2C2C2C), // GRIS OSCURO LANDGO
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Modal Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Add Money',
-                    style: GoogleFonts.outfit(
-                      color: Colors.white,
-                      fontSize: 22,
-                      fontWeight: FontWeight.w600,
-                    ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Modal Header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Add Money',
+                  style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
                   ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(
-                      Icons.close,
-                      color: Colors.white,
-                      size: 24,
-                    ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(
+                    Icons.close,
+                    color: Colors.white,
+                    size: 24,
                   ),
-                ],
-              ),
-              
-              const SizedBox(height: 20),
-              
-              // Amount Input
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 12),
+            
+            // Amount Input - MEJORADO
+            Center(
+              child: Container(
+                width: 280,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const TextField(
-                  decoration: InputDecoration(
-                    hintText: '0.00',
-                    border: InputBorder.none,
-                    hintStyle: TextStyle(
-                      fontSize: 24,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                  keyboardType: TextInputType.number,
-                ),
-              ),
-              
-              const SizedBox(height: 24),
-              
-              // Payment Methods
-              _buildPaymentMethod(
-                'Debit/Credit Card',
-                'Visa, Mastercard, American Express',
-                Icons.credit_card,
-                true, // SELECTED
-              ),
-              
-              const SizedBox(height: 16),
-              
-              _buildPaymentMethod(
-                'Apple Pay',
-                'Quick and secure payment',
-                Icons.apple,
-                false,
-              ),
-              
-              const SizedBox(height: 40), // ESPACIO FIJO EN LUGAR DE SPACER
-              
-              // Add Money Button
-              Container(
-                width: double.infinity,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF4DD0E1), // TURQUESA LANDGO
                   borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(16),
-                    onTap: () {
-                      Navigator.pop(context);
-                      // TODO: Process payment
-                    },
-                    child: Center(
-                      child: Text(
-                        'Add Money',
-                        style: GoogleFonts.outfit(
-                          color: Colors.white,
-                          fontSize: 18,
+                child: Column(
+                  children: [
+                    // Label
+                    Text(
+                      'Enter Amount',
+                      style: GoogleFonts.outfit(
+                        color: Colors.grey[600],
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Input Field
+                    TextField(
+                      controller: _amountController,
+                      textAlign: TextAlign.center,
+                      decoration: InputDecoration(
+                        hintText: '\$0.00',
+                        border: InputBorder.none,
+                        hintStyle: GoogleFonts.outfit(
+                          fontSize: 32,
+                          color: Colors.grey[400],
+                          fontWeight: FontWeight.w300,
+                        ),
+                        prefixText: '\$ ',
+                        prefixStyle: GoogleFonts.outfit(
+                          fontSize: 32,
+                          color: const Color(0xFF4DD0E1),
                           fontWeight: FontWeight.w600,
                         ),
+                      ),
+                      style: GoogleFonts.outfit(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black,
+                      ),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            
+            const SizedBox(height: 24),
+            
+            // Add Money Button
+            Container(
+              width: double.infinity,
+              height: 56,
+              decoration: BoxDecoration(
+                color: const Color(0xFF4DD0E1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () {
+                    // Validar que se haya ingresado una cantidad
+                    if (_amountController.text.trim().isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Please enter an amount',
+                            style: GoogleFonts.outfit(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          backgroundColor: const Color(0xFFDC2626),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                      return;
+                    }
+
+                    // Validar que la cantidad sea válida
+                    final amount = double.tryParse(_amountController.text.trim());
+                    if (amount == null || amount <= 0) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            'Please enter a valid amount',
+                            style: GoogleFonts.outfit(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          backgroundColor: const Color(0xFFDC2626),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                      return;
+                    }
+
+                    print('🔍 DEBUG: Amount to send: $amount');
+                    print('🔍 DEBUG: Amount as string: ${amount.toString()}');
+                    
+                    Navigator.pop(context);
+                    // Navegar directamente a Review Summary con datos
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ReviewSummaryPageWidget(),
+                        settings: RouteSettings(
+                          arguments: {
+                            'amount': amount.toString(),
+                          },
+                        ),
+                      ),
+                    );
+                    
+                    print('🔍 DEBUG: Navigation completed to ReviewSummaryPage with extra data');
+                  },
+                  child: Center(
+                    child: Text(
+                      'Add Money',
+                      style: GoogleFonts.outfit(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
                 ),
               ),
-              
-              const SizedBox(height: 10), // REDUCIDO PARA SUBIR EL BOTÓN
-            ],
-          ),
+            ),
+            
+            const SizedBox(height: 10),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildPaymentMethod(String title, String subtitle, IconData icon, bool isSelected) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isSelected ? const Color(0xFF4DD0E1) : Colors.white,
-          width: 2,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            color: isSelected ? const Color(0xFF4DD0E1) : Colors.white,
-            size: 24,
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.outfit(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  subtitle,
-                  style: GoogleFonts.outfit(
-                    color: Colors.white70,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (isSelected)
-            const Icon(
-              Icons.check_circle,
-              color: Color(0xFF4DD0E1), // TURQUESA CHECK
-              size: 24,
-            ),
-        ],
-      ),
-    );
-  }
 }

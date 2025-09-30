@@ -726,6 +726,67 @@ serve(async (req) => {
         `)
         break
 
+      case 'password_reset':
+        // ⭐ CASO PARA RESETEO DE CONTRASEÑA ⭐
+        console.log('🔍 DEBUG: Processing password_reset case')
+        const passwordResetCode = Math.floor(100000 + Math.random() * 900000).toString()
+        console.log('🔍 DEBUG: Generated password reset code:', passwordResetCode)
+        emailSubject = 'LandGo Travel - Password Reset Code'
+        emailHtml = generateBaseHTML(`
+          <div style="text-align: center;">
+            <div class="success-icon">🔒</div>
+            <h2 style="color: #1F2937; margin: 0 0 20px 0;">Password Reset Request</h2>
+          </div>
+          <p>Hello <strong>${fullName || 'User'}</strong>,</p>
+          <p>We received a request to reset your password. Use the verification code below to continue:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <div class="verification-code">${passwordResetCode}</div>
+          </div>
+          <div class="security-notice">
+            <p style="margin: 0;"><strong>Security Notice:</strong> This code is valid for 10 minutes only. If you didn't request this password reset, please ignore this email and your password will remain unchanged.</p>
+          </div>
+          <p>After entering the code, you'll be able to create a new password for your account.</p>
+          <p>Thank you for keeping your account secure!</p>
+          <p style="margin: 20px 0 0 0;"><strong>The LandGo Travel Team</strong></p>
+        `)
+
+        try {
+          console.log('🔍 DEBUG: Saving password reset code to database...')
+          console.log('  - Code:', passwordResetCode)
+          console.log('  - Email:', email)
+          console.log('  - Type: password_reset')
+          
+          const supabaseClient = createClient(
+            Deno.env.get('SUPABASE_URL') ?? '',
+            Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+          )
+
+          const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString()
+          console.log('  - Expires at:', expiresAt)
+          console.log('  - Current time:', new Date().toISOString())
+
+          const { data, error } = await supabaseClient
+            .from('verification_codes')
+            .insert({
+              email: email,
+              code: passwordResetCode,
+              type: 'password_reset',
+              expires_at: expiresAt,
+              created_at: new Date().toISOString()
+            })
+            .select()
+
+          if (error) {
+            console.error('🔍 ERROR saving password reset code:', error)
+            throw error
+          }
+
+          console.log('🔍 SUCCESS: Password reset code saved to DB:', data)
+        } catch (dbError) {
+          console.error('Error saving password reset code:', dbError)
+        }
+        break
+
       case 'profile_update':
         console.log('🔍 DEBUG: Processing profile_update case')
         

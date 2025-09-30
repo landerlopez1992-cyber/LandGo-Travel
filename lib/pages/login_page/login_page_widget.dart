@@ -20,6 +20,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
   late LoginPageModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
+  bool _isLoggingIn = false;
 
   @override
   void initState() {
@@ -39,6 +40,142 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
   void dispose() {
     _model.dispose();
     super.dispose();
+  }
+
+  void _showLoadingModal() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(32.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icono de loading moderno con gradiente
+                Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFF4DD0E1), // Turquesa
+                        const Color(0xFF26C6DA), // Turquesa más oscuro
+                        const Color(0xFF00BCD4), // Cyan
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(50),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF4DD0E1).withOpacity(0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Círculo exterior animado
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Colors.white.withOpacity(0.3),
+                            width: 2,
+                          ),
+                        ),
+                        child: const CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      ),
+                      // Círculo interior
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.flight_takeoff,
+                          color: Colors.white,
+                          size: 30,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                
+                // Texto de loading moderno
+                Text(
+                  'Signing in...',
+                  style: GoogleFonts.outfit(
+                    color: const Color(0xFF1F2937),
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                
+                Text(
+                  'Please wait while we verify your credentials',
+                  style: GoogleFonts.outfit(
+                    color: const Color(0xFF6B7280),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.2,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                
+                // Indicador de progreso adicional
+                Container(
+                  width: 60,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE2E8F0),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFF4DD0E1),
+                          const Color(0xFF26C6DA),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -93,11 +230,11 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                     
                     SizedBox(height: 40.0),
                     
-                    // Logo de LandGo Travel centrado
+                    // Logo de LandGo Travel centrado (agrandado)
                     Center(
                       child: Container(
-                        width: 200.0,
-                        height: 80.0,
+                        width: 280.0, // Agrandado de 200 a 280
+                        height: 120.0, // Agrandado de 80 a 120
                         decoration: BoxDecoration(
                           image: DecorationImage(
                             image: NetworkImage(
@@ -283,19 +420,64 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                               borderRadius: BorderRadius.circular(12.0),
                             ),
                             child: ElevatedButton(
-                              onPressed: () async {
+                              onPressed: _isLoggingIn ? null : () async {
                                 if (_model.formKey.currentState == null ||
                                     !_model.formKey.currentState!.validate()) {
                                   return;
                                 }
 
-                                final user = await authManager.signInWithEmail(
-                                  context,
-                                  _model.textController1.text,
-                                  _model.textController2.text,
-                                );
-                                if (user != null) {
-                                  context.goNamedAuth('MainPage', context.mounted);
+                                // Activar loading
+                                setState(() {
+                                  _isLoggingIn = true;
+                                });
+
+                                // Mostrar modal de loading
+                                _showLoadingModal();
+
+                                // Iniciar cronómetro para mínimo 2 segundos
+                                final stopwatch = Stopwatch()..start();
+
+                                try {
+                                  final user = await authManager.signInWithEmail(
+                                    context,
+                                    _model.textController1.text,
+                                    _model.textController2.text,
+                                  );
+
+                                  // Asegurar mínimo 4 segundos de loading
+                                  final elapsed = stopwatch.elapsedMilliseconds;
+                                  if (elapsed < 4000) {
+                                    await Future.delayed(Duration(milliseconds: 4000 - elapsed));
+                                  }
+
+                                  if (context.mounted) {
+                                    // Cerrar modal de loading
+                                    Navigator.of(context).pop();
+                                    
+                                    if (user != null) {
+                                      context.goNamedAuth('MainPage', context.mounted);
+                                    } else {
+                                      setState(() {
+                                        _isLoggingIn = false;
+                                      });
+                                    }
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    // Cerrar modal de loading
+                                    Navigator.of(context).pop();
+                                    
+                                    setState(() {
+                                      _isLoggingIn = false;
+                                    });
+                                    
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Login failed: ${e.toString()}'),
+                                        backgroundColor: const Color(0xFFDC2626),
+                                      ),
+                                    );
+                                  }
                                 }
                               },
                               style: ElevatedButton.styleFrom(
@@ -305,14 +487,37 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                                   borderRadius: BorderRadius.circular(12.0),
                                 ),
                               ),
-                              child: Text(
-                                'Log in',
-                                style: GoogleFonts.inter(
-                                  color: Color(0xFFFFFFFF),
-                                  fontSize: 16.0,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                              child: _isLoggingIn 
+                                  ? Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        SizedBox(
+                                          width: 20,
+                                          height: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                          ),
+                                        ),
+                                        SizedBox(width: 12),
+                                        Text(
+                                          'Signing in...',
+                                          style: GoogleFonts.inter(
+                                            color: Color(0xFFFFFFFF),
+                                            fontSize: 16.0,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  : Text(
+                                      'Log in',
+                                      style: GoogleFonts.inter(
+                                        color: Color(0xFFFFFFFF),
+                                        fontSize: 16.0,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                             ),
                           ),
                           

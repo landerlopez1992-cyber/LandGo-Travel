@@ -68,10 +68,140 @@ class _ProductDetailPageWidgetState extends State<ProductDetailPageWidget> {
       width: double.infinity,
       height: MediaQuery.of(context).size.height * 0.6,
       decoration: BoxDecoration(
-        image: DecorationImage(
-          image: AssetImage('assets/images/94706-maldivas-portada-.jpeg'),
-          fit: BoxFit.cover,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF4DD0E1), // Turquesa LandGo
+            Color(0xFF37474F), // Gris azulado LandGo
+          ],
         ),
+      ),
+      child: Stack(
+        children: [
+          // Background image
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                image: DecorationImage(
+                  image: NetworkImage('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop'),
+                  fit: BoxFit.cover,
+                  onError: (exception, stackTrace) {
+                    print('Error loading image: $exception');
+                  },
+                ),
+              ),
+            ),
+          ),
+          // Dark overlay for text readability
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withOpacity(0.7),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Trip information overlay
+          Positioned(
+            bottom: 20,
+            left: 20,
+            right: 20,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Location and rating
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.location_on,
+                          color: Colors.white,
+                          size: 16,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          'Bali, Indonesia',
+                          style: GoogleFonts.outfit(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.star,
+                          color: Colors.yellow,
+                          size: 16,
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          '4.2',
+                          style: GoogleFonts.outfit(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                SizedBox(height: 8),
+                // Trip title
+                Text(
+                  'Azure wave island escape',
+                  style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(height: 4),
+                // Price
+                RichText(
+                  text: TextSpan(
+                    children: [
+                      TextSpan(
+                        text: 'From ',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                      ),
+                      TextSpan(
+                        text: '\$45',
+                        style: GoogleFonts.outfit(
+                          color: Color(0xFF4DD0E1),
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      TextSpan(
+                        text: '/per person',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -133,7 +263,7 @@ class _ProductDetailPageWidgetState extends State<ProductDetailPageWidget> {
       left: 0,
       right: 0,
       child: Container(
-        height: MediaQuery.of(context).size.height * 0.5,
+        height: MediaQuery.of(context).size.height * 0.35,
         decoration: BoxDecoration(
           color: Color(0xFF1A1A1A),
           borderRadius: BorderRadius.only(
@@ -146,21 +276,9 @@ class _ProductDetailPageWidgetState extends State<ProductDetailPageWidget> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Ubicación y calificación
-              _buildLocationAndRating(),
-              SizedBox(height: 16),
-              
-              // Título del viaje
-              _buildTripTitle(),
-              SizedBox(height: 8),
-              
-              // Precio
-              _buildPrice(),
-              SizedBox(height: 24),
-              
               // About this trip
               _buildAboutSection(),
-              SizedBox(height: 24),
+              SizedBox(height: 18),
               
               // Gallery
               _buildGallerySection(),
@@ -172,93 +290,6 @@ class _ProductDetailPageWidgetState extends State<ProductDetailPageWidget> {
     );
   }
 
-  Widget _buildLocationAndRating() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        // Ubicación
-        Row(
-          children: [
-            Icon(
-              Icons.location_on,
-              color: Colors.white,
-              size: 16,
-            ),
-            SizedBox(width: 4),
-            Text(
-              'Bali, Indonesia',
-              style: GoogleFonts.outfit(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-        // Calificación
-        Row(
-          children: [
-            Icon(
-              Icons.star,
-              color: Colors.yellow,
-              size: 16,
-            ),
-            SizedBox(width: 4),
-            Text(
-              '4.2',
-              style: GoogleFonts.outfit(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildTripTitle() {
-    return Text(
-      'Azure wave island escape',
-      style: GoogleFonts.outfit(
-        color: Colors.white,
-        fontSize: 24,
-        fontWeight: FontWeight.bold,
-      ),
-    );
-  }
-
-  Widget _buildPrice() {
-    return RichText(
-      text: TextSpan(
-        children: [
-          TextSpan(
-            text: 'From ',
-            style: GoogleFonts.outfit(
-              color: Colors.white,
-              fontSize: 16,
-            ),
-          ),
-          TextSpan(
-            text: '\$45',
-            style: GoogleFonts.outfit(
-              color: Color(0xFF4DD0E1),
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          TextSpan(
-            text: '/per person',
-            style: GoogleFonts.outfit(
-              color: Colors.white,
-              fontSize: 16,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildAboutSection() {
     return Column(
@@ -272,13 +303,13 @@ class _ProductDetailPageWidgetState extends State<ProductDetailPageWidget> {
             fontWeight: FontWeight.w600,
           ),
         ),
-        SizedBox(height: 12),
+        SizedBox(height: 8),
         Text(
-          '"Azure wave island escape" likely refers to a vacation experience, potentially at a specific location known for its azure-colored waters and island setting. This could be a resort, hotel, or travel package that offers guests the opportunity to experience a tropical island getaway with pristine blue waters...',
+          'Experience the ultimate tropical getaway with pristine azure waters and stunning island views. Perfect for couples and families seeking relaxation and adventure.',
           style: GoogleFonts.outfit(
             color: Colors.grey[300],
             fontSize: 14,
-            height: 1.5,
+            height: 1.4,
           ),
         ),
         SizedBox(height: 8),
@@ -322,11 +353,11 @@ class _ProductDetailPageWidgetState extends State<ProductDetailPageWidget> {
         SizedBox(height: 12),
         Row(
           children: [
-            _buildGalleryImage('assets/images/istockphoto-475903022-612x612.jpg'),
+            _buildGalleryImage('https://images.unsplash.com/photo-1571896349842-33c89424de2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTYyMDF8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NTM5MzA2ODh8&ixlib=rb-4.1.0&q=80&w=1080'),
             SizedBox(width: 12),
-            _buildGalleryImage('assets/images/94706-maldivas-portada-.jpeg'),
+            _buildGalleryImage('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTYyMDF8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NTM5MzA0ODV8&ixlib=rb-4.1.0&q=80&w=1080'),
             SizedBox(width: 12),
-            _buildGalleryImage('assets/images/soneva-jani-resort-1506453329.jpg'),
+            _buildGalleryImage('https://images.unsplash.com/photo-1544551763-46a013bb70d5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTYyMDF8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NTM5MzA0ODV8&ixlib=rb-4.1.0&q=80&w=1080'),
           ],
         ),
       ],
@@ -340,7 +371,7 @@ class _ProductDetailPageWidgetState extends State<ProductDetailPageWidget> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         image: DecorationImage(
-          image: AssetImage(imagePath),
+          image: NetworkImage(imagePath),
           fit: BoxFit.cover,
         ),
       ),

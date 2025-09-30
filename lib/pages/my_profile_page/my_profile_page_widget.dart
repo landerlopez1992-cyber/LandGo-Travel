@@ -5,6 +5,7 @@ import 'dart:io';
 import 'dart:convert';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/components/back_button_widget.dart';
+import '/components/login_required_modal.dart';
 import '/backend/supabase/supabase.dart';
 import 'my_profile_page_model.dart';
 export 'my_profile_page_model.dart';
@@ -285,6 +286,14 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
 
   // Método para activar modo de edición
   void _toggleEditMode() {
+    // Verificar si el usuario está logueado
+    final currentUser = SupaFlow.client.auth.currentUser;
+    if (currentUser == null) {
+      // Usuario no logueado - mostrar modal de login
+      _showLoginRequiredModal();
+      return;
+    }
+
     if (_isEditMode) {
       // Si está en modo edición, solo guardar si hay cambios
       if (_hasChanges) {
@@ -308,6 +317,17 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
         _tempMembership = _realMembership; // Usar valor real del usuario
       });
     }
+  }
+
+  // Método para mostrar modal de login requerido
+  void _showLoginRequiredModal() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return LoginRequiredModal();
+      },
+    );
   }
 
   // Método para guardar cambios
@@ -766,27 +786,34 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
           backgroundColor: Colors.transparent,
           child: Container(
             width: double.infinity,
-            margin: const EdgeInsets.symmetric(horizontal: 20),
+            margin: const EdgeInsets.symmetric(horizontal: 16), // Reducido para más ancho
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(20), // Más redondeado
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const SizedBox(height: 24),
-                // ICONO DE SEGURIDAD - MÁS PEQUEÑO
+                const SizedBox(height: 32), // Más espacio arriba
+                // ICONO DE SEGURIDAD - MÁS GRANDE
                 Container(
-                  width: 60,
-                  height: 60,
+                  width: 80, // Agrandado de 60 a 80
+                  height: 80, // Agrandado de 60 a 80
                   decoration: BoxDecoration(
                     color: const Color(0xFFE3F2FD), // AZUL CLARO
                     shape: BoxShape.circle,
                   ),
                   child: Center(
                     child: Container(
-                      width: 40,
-                      height: 40,
+                      width: 50, // Agrandado de 40 a 50
+                      height: 50, // Agrandado de 40 a 50
                       decoration: const BoxDecoration(
                         color: Color(0xFF2196F3), // AZUL LANDGO
                         shape: BoxShape.circle,
@@ -794,55 +821,56 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
                       child: const Icon(
                         Icons.security,
                         color: Colors.white,
-                        size: 24,
+                        size: 30, // Agrandado de 24 a 30
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
-                // TÍTULO - MÁS PEQUEÑO
+                const SizedBox(height: 24), // Más espacio
+                // TÍTULO - MÁS GRANDE
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: 24), // Más padding
                   child: Text(
                     'Email verification required',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.outfit(
                       color: Colors.black,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 22, // Agrandado de 18 a 22
+                      fontWeight: FontWeight.w700, // Más bold
                     ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                // MENSAJE - MÁS PEQUEÑO Y COMPACTO
+                const SizedBox(height: 16), // Más espacio
+                // MENSAJE - MÁS GRANDE Y LEGIBLE
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: 24), // Más padding
                   child: Text(
                     'We need to verify your identity before saving changes to your personal information.',
                     textAlign: TextAlign.center,
                     style: GoogleFonts.outfit(
                       color: Colors.black87,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
+                      fontSize: 16, // Agrandado de 14 a 16
+                      fontWeight: FontWeight.w500, // Más bold
+                      height: 1.4, // Mejor interlineado
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
-                // BOTONES - MÁS COMPACTOS
+                const SizedBox(height: 32), // Más espacio
+                // BOTONES - MÁS GRANDES Y VISIBLES
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 32), // Más padding
                   child: Row(
                     children: [
                       Expanded(
                         child: TextButton(
                           onPressed: () => Navigator.of(context).pop(),
                           style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            padding: const EdgeInsets.symmetric(vertical: 16), // Más alto
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(12), // Más redondeado
                               side: const BorderSide(
                                 color: Colors.grey,
-                                width: 1,
+                                width: 1.5, // Más grueso
                               ),
                             ),
                           ),
@@ -850,13 +878,13 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
                             'Cancel',
                             style: GoogleFonts.outfit(
                               color: Colors.black,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
+                              fontSize: 16, // Agrandado de 14 a 16
+                              fontWeight: FontWeight.w600, // Más bold
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 12),
+                      const SizedBox(width: 16), // Más espacio entre botones
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () {
@@ -866,16 +894,17 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF4DD0E1), // TURQUESA LANDGO
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                              borderRadius: BorderRadius.circular(12), // Más redondeado
                             ),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            padding: const EdgeInsets.symmetric(vertical: 16), // Más alto
+                            elevation: 2, // Sombra sutil
                           ),
                           child: Text(
                             'Send Code',
                             style: GoogleFonts.outfit(
                               color: Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                              fontSize: 16, // Agrandado de 14 a 16
+                              fontWeight: FontWeight.w700, // Más bold
                             ),
                           ),
                         ),
@@ -2009,8 +2038,8 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
         ],
       );
     } else if (_isEditMode && _hasChanges) {
-      // Botón "Save Changes" - Verde para indicar acción de guardar
-      buttonColor = const Color(0xFF4CAF50);
+      // Botón "Save Changes" - Turquesa LandGo Travel
+      buttonColor = const Color(0xFF4DD0E1);
       buttonChild = Text(
         'Save Changes',
         style: GoogleFonts.outfit(

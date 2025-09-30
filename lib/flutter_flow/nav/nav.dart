@@ -238,6 +238,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => PaymentPageWidget(),
         ),
         FFRoute(
+          name: ReviewSummaryPageWidget.routeName,
+          path: ReviewSummaryPageWidget.routePath,
+          builder: (context, params) => ReviewSummaryPageWidget(),
+        ),
+        FFRoute(
           name: PaymentSuccessPagWidget.routeName,
           path: PaymentSuccessPagWidget.routePath,
           builder: (context, params) => PaymentSuccessPagWidget(),

@@ -48,6 +48,11 @@ late VerificationCodePageModel _model;
       _focusNodes.add(FocusNode());
     }
 
+    // DEBUG: Verificar parámetros recibidos
+    print('🔍 DEBUG INIT: Email recibido: ${widget.email}');
+    print('🔍 DEBUG INIT: Type recibido: ${widget.type}');
+    print('🔍 DEBUG INIT: PendingChanges recibido: ${widget.pendingChanges}');
+
     // Cargar contador de emails
     _loadEmailCount();
 
@@ -625,12 +630,30 @@ late VerificationCodePageModel _model;
                                 // Asegurar mínimo 2 segundos de loading
                                 final stopwatch = Stopwatch()..start();
 
-                                // Enviar nuevo código usando la función de Supabase
+                                // WORKAROUND: Generar nuevo código y usar 'verification'
+                                final newResetCode = (100000 + (DateTime.now().millisecondsSinceEpoch % 900000)).toString();
+                                
+                                // Limpiar códigos anteriores para este email y tipo
+                                await SupaFlow.client.from('verification_codes')
+                                  .delete()
+                                  .eq('email', _email)
+                                  .eq('type', _type.isNotEmpty ? _type : 'password_reset');
+                                
+                                // Guardar nuevo código en verification_codes
+                                await SupaFlow.client.from('verification_codes').insert({
+                                  'email': _email,
+                                  'code': newResetCode,
+                                  'type': _type.isNotEmpty ? _type : 'password_reset',
+                                  'expires_at': DateTime.now().toUtc().add(Duration(minutes: 10)).toIso8601String(),
+                                });
+                                
+                                // Enviar usando 'verification' que funciona
                                 await SupaFlow.client.functions.invoke(
                                   'send-verification-code',
                                   body: {
                                     'email': _email,
-                                    'type': _type.isNotEmpty ? _type : 'verification',
+                                    'type': 'verification',
+                                    'code': newResetCode,
                                     'fullName': 'User',
                                   },
                                 );
