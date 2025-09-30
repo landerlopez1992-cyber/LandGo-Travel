@@ -75,6 +75,8 @@ Future<User?> emailCreateAccountFunc(
   String email,
   String password,
 ) async {
+  // Solo crear la cuenta de autenticación en Supabase
+  // El perfil se creará después desde el widget SignUp
   final AuthResponse res =
       await SupaFlow.client.auth.signUp(email: email, password: password);
 

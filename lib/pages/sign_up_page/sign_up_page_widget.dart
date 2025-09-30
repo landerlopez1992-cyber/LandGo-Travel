@@ -495,14 +495,32 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                                 );
                                 
                                 if (user != null) {
-                                  // Guardar información adicional en profiles
-                                  await SupaFlow.client.from('profiles').insert({
-                                    'id': user.uid,
-                                    'first_name': _model.textController1.text,
-                                    'last_name': _model.textController2.text,
-                                    'phone': _model.textController5.text.isNotEmpty ? _model.textController5.text : null,
-                                    'date_of_birth': _model.textController6.text.isNotEmpty ? _model.textController6.text : null,
-                                  });
+                                  try {
+                                    // Guardar información adicional en profiles
+                                    await SupaFlow.client.from('profiles').insert({
+                                      'id': user.uid,
+                                      'email': _model.textController3.text,
+                                      'full_name': '${_model.textController1.text} ${_model.textController2.text}'.trim(),
+                                      'phone': _model.textController5.text.isNotEmpty ? _model.textController5.text : null,
+                                      'date_of_birth': _model.textController6.text.isNotEmpty ? _model.textController6.text : null,
+                                      'cashback_balance': 0.0,
+                                      'membership_type': 'basic',
+                                      'created_at': DateTime.now().toIso8601String(),
+                                    });
+                                    
+                                    print('✅ User profile created successfully');
+                                  } catch (profileError) {
+                                    print('❌ Error creating profile: $profileError');
+                                    
+                                    // Mostrar error al usuario
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Error: Database error saving new user'),
+                                        backgroundColor: Color(0xFFDC2626),
+                                      ),
+                                    );
+                                    return; // Salir si hay error
+                                  }
                                   
                                   // Enviar email de confirmación
                                   await SupaFlow.client.functions.invoke(
