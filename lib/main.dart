@@ -1,5 +1,6 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
@@ -9,6 +10,7 @@ import 'auth/supabase_auth/auth_util.dart';
 
 import '/backend/supabase/supabase.dart';
 import 'backend/firebase/firebase_config.dart';
+import '/services/stripe_service.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import 'flutter_flow/flutter_flow_util.dart';
 import 'flutter_flow/internationalization.dart';
@@ -55,6 +57,11 @@ void main() async {
   await initFirebase();
 
   await SupaFlow.initialize();
+  
+  // Inicializar Stripe solo en móvil (no en web)
+  if (!kIsWeb) {
+    await StripeService.initialize();
+  }
   
   // Verificar y restaurar sesión existente
   // await _checkAndRestoreSession(); // TEMPORALMENTE COMENTADO

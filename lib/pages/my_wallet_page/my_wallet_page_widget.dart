@@ -5,6 +5,7 @@ import '/components/back_button_widget.dart';
 import '/pages/review_summary_page/review_summary_page_widget.dart';
 import 'my_wallet_page_model.dart';
 export 'my_wallet_page_model.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class MyWalletPageWidget extends StatefulWidget {
   const MyWalletPageWidget({super.key});
@@ -20,12 +21,75 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
   late MyWalletPageModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
+  
+  // Balance actual del usuario
+  double _currentBalance = 0.0;
+  bool _isLoadingBalance = true;
 
   @override
   void initState() {
     super.initState();
     _model = createModel(context, () => MyWalletPageModel());
+    _loadWalletBalance();
     WidgetsBinding.instance.addPostFrameCallback((_) => setState(() {}));
+  }
+  
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Recargar saldo cuando se regrese a esta pantalla
+    _loadWalletBalance();
+  }
+  
+  /// ✅ CARGAR SALDO DESDE SUPABASE
+  Future<void> _loadWalletBalance() async {
+    try {
+      if (mounted) {
+        setState(() {
+          _isLoadingBalance = true;
+        });
+      }
+      
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) {
+        print('❌ No user logged in');
+        if (mounted) {
+          setState(() {
+            _currentBalance = 0.0;
+            _isLoadingBalance = false;
+          });
+        }
+        return;
+      }
+      
+      print('🔍 DEBUG: Loading wallet balance for user: ${user.id}');
+      
+      final response = await Supabase.instance.client
+          .from('profiles')
+          .select('cashback_balance')
+          .eq('id', user.id)
+          .single();
+      
+      final balance = (response['cashback_balance'] as num?)?.toDouble() ?? 0.0;
+      
+      print('✅ Balance loaded: \$${balance.toStringAsFixed(2)}');
+      
+      if (mounted) {
+        setState(() {
+          _currentBalance = balance;
+          _isLoadingBalance = false;
+        });
+      }
+      
+    } catch (e) {
+      print('❌ Error loading balance: $e');
+      if (mounted) {
+        setState(() {
+          _currentBalance = 0.0;
+          _isLoadingBalance = false;
+        });
+      }
+    }
   }
 
   @override
@@ -146,14 +210,18 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
             ],
           ),
           const SizedBox(height: 16),
-          Text(
-            '\$0.00',
-            style: GoogleFonts.outfit(
-              color: Colors.white,
-              fontSize: 48,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
+          _isLoadingBalance
+            ? const CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4DD0E1)),
+              )
+            : Text(
+                '\$${_currentBalance.toStringAsFixed(2)}',
+                style: GoogleFonts.outfit(
+                  color: Colors.white,
+                  fontSize: 48,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
         ],
       ),
     );

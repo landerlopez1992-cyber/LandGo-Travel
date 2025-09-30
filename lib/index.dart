@@ -21,6 +21,7 @@ export '/user/notifications_page/notifications_page_widget.dart' show Notificati
 export '/pages/product_detail_page/product_detail_page_widget.dart' show ProductDetailPageWidget;
 export '/pages/booking_page/booking_page_widget.dart' show BookingPageWidget;
 export '/pages/review_summary_page/review_summary_page_widget.dart' show ReviewSummaryPageWidget;
+export '/pages/payment_cards_page/payment_cards_page_widget.dart' show PaymentCardsPageWidget;
 export '/pages/settings_page/settings_page_widget.dart' show SettingsPageWidget;
 export '/pages/transfer_money_page/transfer_money_page_widget.dart' show TransferMoneyPageWidget;
 export '/membership_page/membership_page/membership_page_widget.dart'

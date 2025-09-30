@@ -1,0 +1,142 @@
+# 🎨 REGLAS DE DISEÑO ABSOLUTAS - LANDGO TRAVEL
+
+## ⚠️ REGLA CRÍTICA #1: COLORES PROHIBIDOS
+
+### 🚫 COLORES ABSOLUTAMENTE PROHIBIDOS EN TODA LA APP:
+
+```dart
+// ❌ NUNCA USAR ESTOS COLORES:
+Color(0xFF4CAF50)  // ❌ Verde Material - PROHIBIDO
+Color(0xFFFF9800)  // ❌ Naranja Material - PROHIBIDO  
+Color(0xFF2196F3)  // ❌ Azul Material - PROHIBIDO
+Color(0xFF9C27B0)  // ❌ Púrpura Material - PROHIBIDO
+Color(0xFFFFEB3B)  // ❌ Amarillo Material - PROHIBIDO
+Color(0xFF00BCD4)  // ❌ Cyan Material - PROHIBIDO
+Color(0xFFF44336)  // ❌ Rojo Material - PROHIBIDO (excepto errores)
+```
+
+### ✅ COLORES ÚNICOS PERMITIDOS - LANDGO TRAVEL:
+
+```dart
+// COLORES OFICIALES LANDGO TRAVEL (ÚNICOS PERMITIDOS):
+
+// 1. FONDO Y ESTRUCTURA
+const Color(0xFF1A1A1A)  // ✅ Fondo negro principal
+const Color(0xFF2C2C2C)  // ✅ Gris oscuro para cards
+const Color(0xFF37474F)  // ✅ Azul gris oscuro para headers/inputs
+
+// 2. COLOR PRINCIPAL (ÚNICO ACENTO PERMITIDO)
+const Color(0xFF4DD0E1)  // ✅ TURQUESA - ÚNICO color de acento permitido
+                         // ✅ Usar para: botones, íconos, highlights, success, active
+
+// 3. TEXTOS
+const Color(0xFFFFFFFF)  // ✅ Blanco para textos principales
+const Colors.white70     // ✅ Blanco 70% para textos secundarios
+const Colors.white54     // ✅ Blanco 54% para hints
+const Colors.black       // ✅ Negro para texto sobre turquesa
+
+// 4. ESTADOS ESPECIALES (ÚNICOS CASOS)
+const Color(0xFFDC2626)  // ✅ Rojo SOLO para errores/cancelar
+const Colors.grey        // ✅ Gris SOLO para estados disabled
+```
+
+## 📋 REGLA #2: USO OBLIGATORIO DE COLORES
+
+### ✅ Casos de uso CORRECTOS:
+
+```dart
+// ÉXITO / CONFIRMACIÓN / ACTIVO
+Container(
+  color: const Color(0xFF4DD0E1),  // ✅ TURQUESA (no verde)
+  child: Icon(
+    Icons.check_circle,
+    color: const Color(0xFF4DD0E1),  // ✅ TURQUESA (no verde)
+  ),
+)
+
+// BOTONES PRINCIPALES
+ElevatedButton(
+  style: ElevatedButton.styleFrom(
+    backgroundColor: const Color(0xFF4DD0E1),  // ✅ TURQUESA (no naranja/azul)
+  ),
+)
+
+// HIGHLIGHTS / AMOUNTS / VALORES IMPORTANTES
+Text(
+  '\$25.00',
+  style: TextStyle(
+    color: const Color(0xFF4DD0E1),  // ✅ TURQUESA (no naranja/verde)
+  ),
+)
+```
+
+### ❌ Casos PROHIBIDOS:
+
+```dart
+// ❌ NUNCA HACER ESTO:
+Icon(Icons.check, color: Color(0xFF4CAF50))  // ❌ Verde prohibido
+ElevatedButton(backgroundColor: Color(0xFFFF9800))  // ❌ Naranja prohibido
+Text('\$25', style: TextStyle(color: Color(0xFF4CAF50)))  // ❌ Verde prohibido
+```
+
+## 🔍 REGLA #3: VERIFICACIÓN OBLIGATORIA
+
+### Antes de compilar CUALQUIER pantalla:
+
+1. ✅ Buscar `0xFF4CAF50` → Reemplazar con `0xFF4DD0E1`
+2. ✅ Buscar `0xFFFF9800` → Reemplazar con `0xFF4DD0E1`
+3. ✅ Buscar `0xFF2196F3` → Reemplazar con `0xFF4DD0E1`
+4. ✅ Buscar `Colors.green` → Reemplazar con `Color(0xFF4DD0E1)`
+5. ✅ Buscar `Colors.orange` → Reemplazar con `Color(0xFF4DD0E1)`
+6. ✅ Buscar `Colors.blue` → Reemplazar con `Color(0xFF4DD0E1)`
+
+### Comando de verificación:
+
+```bash
+# Buscar colores prohibidos en el proyecto
+grep -r "0xFF4CAF50\|0xFFFF9800\|0xFF2196F3\|Colors.green\|Colors.orange\|Colors.blue" lib/
+```
+
+## 🎯 REGLA #4: PANTALLAS ESPECÍFICAS
+
+### Payment Success (Pago Exitoso):
+- ✅ Fondo: `Color(0xFF1A1A1A)` (negro)
+- ✅ Ícono éxito: `Color(0xFF4DD0E1)` (turquesa, NO verde)
+- ✅ Botón principal: `Color(0xFF4DD0E1)` (turquesa, NO naranja)
+- ✅ Highlights (amounts, status): `Color(0xFF4DD0E1)` (turquesa)
+
+### Payment Failed (Pago Fallido):
+- ✅ Fondo: `Color(0xFF1A1A1A)` (negro)
+- ✅ Ícono error: `Color(0xFFDC2626)` (rojo - ÚNICO caso)
+- ✅ Botón reintentar: `Color(0xFF4DD0E1)` (turquesa)
+
+### My Wallet:
+- ✅ Fondo: `Color(0xFF1A1A1A)` (negro)
+- ✅ Botones: `Color(0xFF4DD0E1)` (turquesa)
+- ✅ Balance/amounts: `Color(0xFF4DD0E1)` (turquesa)
+
+## 🚨 PENALIZACIÓN POR VIOLACIÓN:
+
+**SI SE ENCUENTRA CUALQUIERA DE ESTOS COLORES:**
+- `0xFF4CAF50` (verde)
+- `0xFFFF9800` (naranja)
+- `0xFF2196F3` (azul material)
+
+**ACCIÓN OBLIGATORIA:**
+1. 🛑 DETENER compilación
+2. 🔧 REEMPLAZAR con `0xFF4DD0E1` (turquesa)
+3. ✅ VERIFICAR toda la pantalla
+4. ✅ COMPILAR de nuevo
+
+## 📱 IDENTIDAD VISUAL LANDGO TRAVEL:
+
+- **Profesional**: Negro + Turquesa
+- **Moderno**: Sin colores Material Design genéricos
+- **Consistente**: SOLO turquesa para acciones positivas
+- **Elegante**: Minimalista y oscuro
+
+---
+
+**ÚLTIMA ACTUALIZACIÓN:** 2025-01-30
+**VERSIÓN:** 2.0 - Reglas Absolutas
+**AUTOR:** LandGo Travel Team

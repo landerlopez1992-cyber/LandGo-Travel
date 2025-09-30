@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/components/back_button_widget.dart';
+import '/pages/payment_cards_page/payment_cards_page_widget.dart';
 import 'review_summary_page_model.dart';
 export 'review_summary_page_model.dart';
 
@@ -432,8 +433,22 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
-            // TODO: Process payment
-            print('Processing payment with method: $_selectedPaymentMethod');
+            print('🔍 DEBUG: Processing payment with method: $_selectedPaymentMethod');
+            print('🔍 DEBUG: Amount: $_amount');
+            
+            // Navegar a pantalla de tarjetas de pago
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PaymentCardsPageWidget(),
+                settings: RouteSettings(
+                  arguments: {
+                    'amount': _amount,
+                    'paymentMethod': _selectedPaymentMethod,
+                  },
+                ),
+              ),
+            );
           },
           child: Center(
             child: Text(

@@ -29,6 +29,7 @@
         "flutter_animate",
         "flutter_cache_manager",
         "flutter_localizations",
+        "flutter_stripe",
         "flutter_web_plugins",
         "font_awesome_flutter",
         "from_css_color",
@@ -166,6 +167,17 @@
         "json_annotation",
         "path",
         "yaml"
+      ]
+    },
+    {
+      "name": "flutter_stripe",
+      "version": "12.0.2",
+      "dependencies": [
+        "flutter",
+        "meta",
+        "stripe_android",
+        "stripe_ios",
+        "stripe_platform_interface"
       ]
     },
     {
@@ -1063,6 +1075,31 @@
       "dependencies": []
     },
     {
+      "name": "stripe_platform_interface",
+      "version": "12.0.0",
+      "dependencies": [
+        "flutter",
+        "freezed_annotation",
+        "json_annotation",
+        "meta",
+        "plugin_platform_interface"
+      ]
+    },
+    {
+      "name": "stripe_ios",
+      "version": "12.0.1",
+      "dependencies": [
+        "flutter"
+      ]
+    },
+    {
+      "name": "stripe_android",
+      "version": "12.0.1",
+      "dependencies": [
+        "flutter"
+      ]
+    },
+    {
       "name": "image_picker_windows",
       "version": "0.2.2",
       "dependencies": [
@@ -1347,6 +1384,15 @@
       "dependencies": [
         "source_span",
         "string_scanner"
+      ]
+    },
+    {
+      "name": "freezed_annotation",
+      "version": "3.1.0",
+      "dependencies": [
+        "collection",
+        "json_annotation",
+        "meta"
       ]
     },
     {

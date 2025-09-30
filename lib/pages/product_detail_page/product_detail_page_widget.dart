@@ -1,5 +1,6 @@
 import '/flutter_flow/flutter_flow_util.dart';
-import 'dart:ui';
+import '/flutter_flow/flutter_flow_icon_button.dart';
+import '/flutter_flow/flutter_flow_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'product_detail_page_model.dart';
@@ -9,7 +10,7 @@ class ProductDetailPageWidget extends StatefulWidget {
   const ProductDetailPageWidget({super.key});
 
   static String routeName = 'ProductDetailPage';
-  static String routePath = '/productDetailPage';
+  static String routePath = '/productDetail';
 
   @override
   State<ProductDetailPageWidget> createState() => _ProductDetailPageWidgetState();
@@ -24,8 +25,6 @@ class _ProductDetailPageWidgetState extends State<ProductDetailPageWidget> {
   void initState() {
     super.initState();
     _model = createModel(context, () => ProductDetailPageModel());
-
-    WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
   }
 
   @override
@@ -46,16 +45,16 @@ class _ProductDetailPageWidgetState extends State<ProductDetailPageWidget> {
         backgroundColor: Color(0xFF000000),
         body: Stack(
           children: [
-            // Imagen de fondo principal
+            // Imagen principal de fondo
             _buildHeroImage(),
             
             // Botones superiores
             _buildTopButtons(),
             
-            // Contenido principal
+            // Contenido principal (curtina)
             _buildMainContent(),
             
-            // Botón flotante Book now
+            // Botón flotante de reserva
             _buildFloatingButton(),
           ],
         ),
@@ -64,144 +63,131 @@ class _ProductDetailPageWidgetState extends State<ProductDetailPageWidget> {
   }
 
   Widget _buildHeroImage() {
-    return Container(
-      width: double.infinity,
-      height: MediaQuery.of(context).size.height * 0.6,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF4DD0E1), // Turquesa LandGo
-            Color(0xFF37474F), // Gris azulado LandGo
-          ],
+    return Positioned.fill(
+      child: Container(
+        decoration: BoxDecoration(
+          image: DecorationImage(
+            image: NetworkImage('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=1200&fit=crop&q=80'),
+            fit: BoxFit.cover,
+          ),
         ),
-      ),
-      child: Stack(
-        children: [
-          // Background image
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                image: DecorationImage(
-                  image: NetworkImage('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop'),
-                  fit: BoxFit.cover,
-                  onError: (exception, stackTrace) {
-                    print('Error loading image: $exception');
-                  },
-                ),
-              ),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [
+                Colors.black.withOpacity(0.3),
+                Colors.black.withOpacity(0.7),
+              ],
             ),
           ),
-          // Dark overlay for text readability
-          Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withOpacity(0.7),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          // Trip information overlay
-          Positioned(
-            bottom: 20,
-            left: 20,
-            right: 20,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Location and rating
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: Stack(
+            children: [
+              // Información sobre la imagen
+              Positioned(
+                left: 20,
+                right: 20,
+                bottom: 200, // Posicionado sobre la curtina
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Ubicación
                     Row(
                       children: [
                         Icon(
                           Icons.location_on,
-                          color: Colors.white,
-                          size: 16,
+                          color: Color(0xFF4CAF50),
+                          size: 20,
                         ),
-                        SizedBox(width: 4),
+                        SizedBox(width: 8),
                         Text(
                           'Bali, Indonesia',
                           style: GoogleFonts.outfit(
                             color: Colors.white,
-                            fontSize: 14,
+                            fontSize: 16,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
                       ],
                     ),
+                    SizedBox(height: 8),
+                    
+                    // Rating
                     Row(
                       children: [
                         Icon(
                           Icons.star,
-                          color: Colors.yellow,
-                          size: 16,
+                          color: Color(0xFFFFD700),
+                          size: 20,
                         ),
                         SizedBox(width: 4),
                         Text(
-                          '4.2',
+                          '4.8',
                           style: GoogleFonts.outfit(
                             color: Colors.white,
-                            fontSize: 14,
+                            fontSize: 16,
                             fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        SizedBox(width: 4),
+                        Text(
+                          '(124 reviews)',
+                          style: GoogleFonts.outfit(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 14,
                           ),
                         ),
                       ],
                     ),
+                    SizedBox(height: 12),
+                    
+                    // Título del viaje
+                    Text(
+                      'Azure Wave Island Escape',
+                      style: GoogleFonts.outfit(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    
+                    // Precio
+                    RichText(
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: 'From ',
+                            style: GoogleFonts.outfit(
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
+                          ),
+                          TextSpan(
+                            text: '\$45',
+                            style: GoogleFonts.outfit(
+                              color: Color(0xFF4DD0E1),
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          TextSpan(
+                            text: '/per person',
+                            style: GoogleFonts.outfit(
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
-                SizedBox(height: 8),
-                // Trip title
-                Text(
-                  'Azure wave island escape',
-                  style: GoogleFonts.outfit(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 4),
-                // Price
-                RichText(
-                  text: TextSpan(
-                    children: [
-                      TextSpan(
-                        text: 'From ',
-                        style: GoogleFonts.outfit(
-                          color: Colors.white,
-                          fontSize: 16,
-                        ),
-                      ),
-                      TextSpan(
-                        text: '\$45',
-                        style: GoogleFonts.outfit(
-                          color: Color(0xFF4DD0E1),
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      TextSpan(
-                        text: '/per person',
-                        style: GoogleFonts.outfit(
-                          color: Colors.white,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -233,6 +219,7 @@ class _ProductDetailPageWidgetState extends State<ProductDetailPageWidget> {
               },
             ),
           ),
+          
           // Botón de favoritos
           Container(
             width: 40,
@@ -247,9 +234,7 @@ class _ProductDetailPageWidgetState extends State<ProductDetailPageWidget> {
                 color: Colors.white,
                 size: 20,
               ),
-              onPressed: () {
-                // TODO: Add to favorites
-              },
+              onPressed: () {},
             ),
           ),
         ],
@@ -263,33 +248,44 @@ class _ProductDetailPageWidgetState extends State<ProductDetailPageWidget> {
       left: 0,
       right: 0,
       child: Container(
-        height: MediaQuery.of(context).size.height * 0.35,
+        height: MediaQuery.of(context).size.height * 0.4, // 40% de la pantalla
         decoration: BoxDecoration(
-          color: Color(0xFF1A1A1A),
+          color: Colors.white,
           borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
+            topLeft: Radius.circular(30),
+            topRight: Radius.circular(30),
           ),
         ),
         child: SingleChildScrollView(
-          padding: EdgeInsets.all(20),
+          padding: EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // About this trip
-              _buildAboutSection(),
-              SizedBox(height: 18),
+              // Handle de la curtina
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              SizedBox(height: 20),
               
-              // Gallery
+              // Sección About this trip
+              _buildAboutSection(),
+              SizedBox(height: 30),
+              
+              // Sección Gallery
               _buildGallerySection(),
-              SizedBox(height: 100), // Espacio para el botón flotante
             ],
           ),
         ),
       ),
     );
   }
-
 
   Widget _buildAboutSection() {
     return Column(
@@ -298,30 +294,49 @@ class _ProductDetailPageWidgetState extends State<ProductDetailPageWidget> {
         Text(
           'About this trip',
           style: GoogleFonts.outfit(
-            color: Colors.white,
-            fontSize: 18,
+            color: Color(0xFF1F2937),
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        SizedBox(height: 12),
+        Text(
+          'Experience the ultimate tropical getaway at Azure Wave Island Escape. This stunning destination offers pristine beaches, crystal-clear waters, and breathtaking sunsets that will leave you speechless.',
+          style: GoogleFonts.outfit(
+            color: Color(0xFF6B7280),
+            fontSize: 16,
+            height: 1.5,
+          ),
+        ),
+        SizedBox(height: 16),
+        Text(
+          'What\'s included:',
+          style: GoogleFonts.outfit(
+            color: Color(0xFF1F2937),
+            fontSize: 16,
             fontWeight: FontWeight.w600,
           ),
         ),
         SizedBox(height: 8),
-        Text(
-          'Experience the ultimate tropical getaway with pristine azure waters and stunning island views. Perfect for couples and families seeking relaxation and adventure.',
-          style: GoogleFonts.outfit(
-            color: Colors.grey[300],
-            fontSize: 14,
-            height: 1.4,
-          ),
-        ),
-        SizedBox(height: 8),
-        Text(
-          'Read more',
-          style: GoogleFonts.outfit(
-            color: Color(0xFF4DD0E1),
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
+        _buildIncludedItem('✓ Airport transfers'),
+        _buildIncludedItem('✓ 3 nights accommodation'),
+        _buildIncludedItem('✓ Daily breakfast'),
+        _buildIncludedItem('✓ Island hopping tour'),
+        _buildIncludedItem('✓ Snorkeling equipment'),
       ],
+    );
+  }
+
+  Widget _buildIncludedItem(String text) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 4),
+      child: Text(
+        text,
+        style: GoogleFonts.outfit(
+          color: Color(0xFF6B7280),
+          fontSize: 14,
+        ),
+      ),
     );
   }
 
@@ -329,55 +344,38 @@ class _ProductDetailPageWidgetState extends State<ProductDetailPageWidget> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              'Gallery',
-              style: GoogleFonts.outfit(
-                color: Colors.white,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            Text(
-              'View all',
-              style: GoogleFonts.outfit(
-                color: Color(0xFF4DD0E1),
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+        Text(
+          'Gallery',
+          style: GoogleFonts.outfit(
+            color: Color(0xFF1F2937),
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
         ),
-        SizedBox(height: 12),
-        Row(
-          children: [
-            _buildGalleryImage('https://images.unsplash.com/photo-1571896349842-33c89424de2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTYyMDF8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NTM5MzA2ODh8&ixlib=rb-4.1.0&q=80&w=1080'),
-            SizedBox(width: 12),
-            _buildGalleryImage('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTYyMDF8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NTM5MzA0ODV8&ixlib=rb-4.1.0&q=80&w=1080'),
-            SizedBox(width: 12),
-            _buildGalleryImage('https://images.unsplash.com/photo-1544551763-46a013bb70d5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTYyMDF8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NTM5MzA0ODV8&ixlib=rb-4.1.0&q=80&w=1080'),
-          ],
+        SizedBox(height: 16),
+        Container(
+          height: 120,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: 5,
+            itemBuilder: (context, index) {
+              return Container(
+                width: 120,
+                margin: EdgeInsets.only(right: 12),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(12),
+                  image: DecorationImage(
+                    image: NetworkImage('https://images.unsplash.com/photo-${1506905925346 + index}?w=300&h=300&fit=crop&q=80'),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              );
+            },
+          ),
         ),
       ],
     );
   }
-
-  Widget _buildGalleryImage(String imagePath) {
-    return Container(
-      width: 80,
-      height: 80,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        image: DecorationImage(
-          image: NetworkImage(imagePath),
-          fit: BoxFit.cover,
-        ),
-      ),
-    );
-  }
-
 
   Widget _buildFloatingButton() {
     return Positioned(
@@ -385,27 +383,33 @@ class _ProductDetailPageWidgetState extends State<ProductDetailPageWidget> {
       left: 20,
       right: 20,
       child: Container(
-        width: double.infinity,
-        height: 50,
+        height: 56,
         decoration: BoxDecoration(
           color: Color(0xFF4DD0E1),
-          borderRadius: BorderRadius.circular(25),
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0xFF4DD0E1).withOpacity(0.3),
+              blurRadius: 20,
+              offset: Offset(0, 10),
+            ),
+          ],
         ),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            borderRadius: BorderRadius.circular(25),
+            borderRadius: BorderRadius.circular(28),
             onTap: () {
-              // TODO: Navigate to booking
-              print('Book now tapped');
+              // TODO: Implementar lógica de reserva
+              print('Book now pressed');
             },
             child: Center(
               child: Text(
                 'Book now',
                 style: GoogleFonts.outfit(
-                  color: Colors.black,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ),

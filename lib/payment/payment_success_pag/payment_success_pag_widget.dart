@@ -1,40 +1,10 @@
-import '/flutter_flow/flutter_flow_theme.dart';
-import '/flutter_flow/flutter_flow_util.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
+import '/flutter_flow/flutter_flow_util.dart';
 import 'payment_success_pag_model.dart';
 export 'payment_success_pag_model.dart';
+import '/pages/my_wallet_page/my_wallet_page_widget.dart';
 
-/// Create a Payment Success Page for the LandGo Travel app.
-///
-/// At the center of the screen, show a large success icon (like a green
-/// checkmark).
-///
-/// Display a message: "Payment Successful!" followed by "Your booking has
-/// been confirmed."
-///
-/// Include a summary box with:
-/// - Booking reference number
-/// - Destination
-/// - Travel dates
-/// - Passenger name
-/// - Total paid
-///
-/// Add a button labeled "View My Bookings" to take the user to the bookings
-/// list page.
-///
-/// Use celebratory visuals or travel-themed illustrations. Keep layout clean,
-/// centered, and mobile-optimized.
-///
-/// Apply brand colors:
-/// Primary: #0077B6
-/// Secondary: #00B4D8
-/// Background: #F1FAFB
-/// Text: #023047
-/// Accent: #FFB703
 class PaymentSuccessPagWidget extends StatefulWidget {
   const PaymentSuccessPagWidget({super.key});
 
@@ -42,8 +12,7 @@ class PaymentSuccessPagWidget extends StatefulWidget {
   static String routePath = '/paymentSuccessPag';
 
   @override
-  State<PaymentSuccessPagWidget> createState() =>
-      _PaymentSuccessPagWidgetState();
+  State<PaymentSuccessPagWidget> createState() => _PaymentSuccessPagWidgetState();
 }
 
 class _PaymentSuccessPagWidgetState extends State<PaymentSuccessPagWidget> {
@@ -51,556 +20,270 @@ class _PaymentSuccessPagWidgetState extends State<PaymentSuccessPagWidget> {
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
+  // Variables para recibir parámetros del pago real
+  String _paymentIntentId = 'N/A';
+  String _chargeId = 'N/A';
+  String _customerName = 'N/A';
+  String _cardBrand = 'N/A';
+  String _cardLast4 = 'N/A';
+  String _cardExpiry = 'N/A';
+  double _amount = 0.00;
+  String _currency = 'USD';
+
   @override
   void initState() {
     super.initState();
     _model = createModel(context, () => PaymentSuccessPagModel());
+    WidgetsBinding.instance.addPostFrameCallback((_) => setState(() {}));
+  }
 
-    WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadPaymentDetails();
+  }
+
+  void _loadPaymentDetails() {
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Map<String, dynamic>) {
+      setState(() {
+        _paymentIntentId = args['paymentIntentId'] as String? ?? 'N/A';
+        _chargeId = args['chargeId'] as String? ?? 'N/A';
+        _customerName = args['customerName'] as String? ?? 'N/A';
+        _cardBrand = args['cardBrand'] as String? ?? 'N/A';
+        _cardLast4 = args['cardLast4'] as String? ?? 'N/A';
+        _cardExpiry = args['cardExpiry'] as String? ?? 'N/A';
+        _amount = double.tryParse(args['amount']?.toString() ?? '0.0') ?? 0.0;
+        _currency = args['currency'] as String? ?? 'USD';
+      });
+      print('✅ Payment details loaded: amount=\$${_amount}, card=$_cardBrand **** $_cardLast4');
+    }
   }
 
   @override
   void dispose() {
     _model.dispose();
-
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-        FocusManager.instance.primaryFocus?.unfocus();
-      },
+      onTap: () => _model.unfocusNode.canRequestFocus
+          ? FocusScope.of(context).requestFocus(_model.unfocusNode)
+          : FocusScope.of(context).unfocus(),
       child: Scaffold(
         key: scaffoldKey,
-        backgroundColor: Color(0xFFF1FAFB),
-        appBar: AppBar(
-          backgroundColor: Color(0xFFF1FAFB),
-          automaticallyImplyLeading: false,
-          title: Row(
-            mainAxisSize: MainAxisSize.max,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.flight_takeoff_rounded,
-                color: Color(0xFF0077B6),
-                size: 28.0,
-              ),
-              Text(
-                'LandGo Travel',
-                style: FlutterFlowTheme.of(context).titleLarge.override(
-                      font: GoogleFonts.interTight(
-                        fontWeight: FontWeight.bold,
-                        fontStyle:
-                            FlutterFlowTheme.of(context).titleLarge.fontStyle,
-                      ),
-                      color: Color(0xFF023047),
-                      letterSpacing: 0.0,
-                      fontWeight: FontWeight.bold,
-                      fontStyle:
-                          FlutterFlowTheme.of(context).titleLarge.fontStyle,
-                    ),
-              ),
-            ].divide(SizedBox(width: 8.0)),
-          ),
-          actions: [],
-          centerTitle: true,
-          elevation: 0.0,
-        ),
+        backgroundColor: const Color(0xFF1A1A1A), // FONDO NEGRO LANDGO
         body: SafeArea(
           top: true,
-          child: Padding(
-            padding: EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.max,
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Container(
-                  width: 120.0,
-                  height: 120.0,
-                  decoration: BoxDecoration(
-                    color: Color(0xFF00B4D8),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Align(
-                    alignment: AlignmentDirectional(0.0, 0.0),
-                    child: Icon(
-                      Icons.check_rounded,
-                      color: Color(0xFFF1FAFB),
-                      size: 60.0,
-                    ),
-                  ),
-                ),
-                Column(
-                  mainAxisSize: MainAxisSize.max,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Payment Successful!',
-                      textAlign: TextAlign.center,
-                      style:
-                          FlutterFlowTheme.of(context).headlineLarge.override(
-                                font: GoogleFonts.interTight(
-                                  fontWeight: FontWeight.bold,
-                                  fontStyle: FlutterFlowTheme.of(context)
-                                      .headlineLarge
-                                      .fontStyle,
-                                ),
-                                color: Color(0xFF023047),
-                                fontSize: 28.0,
-                                letterSpacing: 0.0,
-                                fontWeight: FontWeight.bold,
-                                fontStyle: FlutterFlowTheme.of(context)
-                                    .headlineLarge
-                                    .fontStyle,
-                              ),
-                    ),
-                    Text(
-                      'Your booking has been confirmed.',
-                      textAlign: TextAlign.center,
-                      style: FlutterFlowTheme.of(context).bodyLarge.override(
-                            font: GoogleFonts.inter(
-                              fontWeight: FlutterFlowTheme.of(context)
-                                  .bodyLarge
-                                  .fontWeight,
-                              fontStyle: FlutterFlowTheme.of(context)
-                                  .bodyLarge
-                                  .fontStyle,
-                            ),
-                            color: Color(0xFF023047),
-                            fontSize: 16.0,
-                            letterSpacing: 0.0,
-                            fontWeight: FlutterFlowTheme.of(context)
-                                .bodyLarge
-                                .fontWeight,
-                            fontStyle: FlutterFlowTheme.of(context)
-                                .bodyLarge
-                                .fontStyle,
-                          ),
-                    ),
-                  ].divide(SizedBox(height: 12.0)),
-                ),
-                Padding(
-                  padding: EdgeInsets.all(20.0),
-                  child: Container(
-                    width: double.infinity,
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 40),
+                  
+                  // ✅ Icono de éxito (TURQUESA LANDGO)
+                  Container(
+                    width: 120,
+                    height: 120,
                     decoration: BoxDecoration(
+                      color: const Color(0xFF4DD0E1).withOpacity(0.1), // TURQUESA LANDGO
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Center(
+                      child: Icon(
+                        Icons.check_circle_outline,
+                        color: Color(0xFF4DD0E1), // TURQUESA ÉXITO
+                        size: 60,
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 30),
+                  
+                  // ✅ Título
+                  Text(
+                    'Payment Successful!',
+                    style: GoogleFonts.outfit(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(16.0),
-                      border: Border.all(
-                        color: Color(0xFF00B4D8),
-                        width: 1.0,
-                      ),
-                    ),
-                    child: Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.max,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Booking Summary',
-                            style: FlutterFlowTheme.of(context)
-                                .titleMedium
-                                .override(
-                                  font: GoogleFonts.interTight(
-                                    fontWeight: FontWeight.w600,
-                                    fontStyle: FlutterFlowTheme.of(context)
-                                        .titleMedium
-                                        .fontStyle,
-                                  ),
-                                  color: Color(0xFF023047),
-                                  fontSize: 18.0,
-                                  letterSpacing: 0.0,
-                                  fontWeight: FontWeight.w600,
-                                  fontStyle: FlutterFlowTheme.of(context)
-                                      .titleMedium
-                                      .fontStyle,
-                                ),
-                          ),
-                          Column(
-                            mainAxisSize: MainAxisSize.max,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                mainAxisSize: MainAxisSize.max,
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Reference Number:',
-                                    style: FlutterFlowTheme.of(context)
-                                        .bodyMedium
-                                        .override(
-                                          font: GoogleFonts.inter(
-                                            fontWeight: FontWeight.w500,
-                                            fontStyle:
-                                                FlutterFlowTheme.of(context)
-                                                    .bodyMedium
-                                                    .fontStyle,
-                                          ),
-                                          color: Color(0xFF023047),
-                                          letterSpacing: 0.0,
-                                          fontWeight: FontWeight.w500,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMedium
-                                                  .fontStyle,
-                                        ),
-                                  ),
-                                  Text(
-                                    'LG2024-TR-8947',
-                                    style: FlutterFlowTheme.of(context)
-                                        .bodyMedium
-                                        .override(
-                                          font: GoogleFonts.inter(
-                                            fontWeight: FontWeight.w600,
-                                            fontStyle:
-                                                FlutterFlowTheme.of(context)
-                                                    .bodyMedium
-                                                    .fontStyle,
-                                          ),
-                                          color: Color(0xFF0077B6),
-                                          letterSpacing: 0.0,
-                                          fontWeight: FontWeight.w600,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMedium
-                                                  .fontStyle,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                              Divider(
-                                height: 1.0,
-                                thickness: 1.0,
-                                color: Color(0xFFE0E0E0),
-                              ),
-                              Row(
-                                mainAxisSize: MainAxisSize.max,
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Destination:',
-                                    style: FlutterFlowTheme.of(context)
-                                        .bodyMedium
-                                        .override(
-                                          font: GoogleFonts.inter(
-                                            fontWeight: FontWeight.w500,
-                                            fontStyle:
-                                                FlutterFlowTheme.of(context)
-                                                    .bodyMedium
-                                                    .fontStyle,
-                                          ),
-                                          color: Color(0xFF023047),
-                                          letterSpacing: 0.0,
-                                          fontWeight: FontWeight.w500,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMedium
-                                                  .fontStyle,
-                                        ),
-                                  ),
-                                  Text(
-                                    'Santorini, Greece',
-                                    style: FlutterFlowTheme.of(context)
-                                        .bodyMedium
-                                        .override(
-                                          font: GoogleFonts.inter(
-                                            fontWeight: FontWeight.w600,
-                                            fontStyle:
-                                                FlutterFlowTheme.of(context)
-                                                    .bodyMedium
-                                                    .fontStyle,
-                                          ),
-                                          color: Color(0xFF023047),
-                                          letterSpacing: 0.0,
-                                          fontWeight: FontWeight.w600,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMedium
-                                                  .fontStyle,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                              Divider(
-                                height: 1.0,
-                                thickness: 1.0,
-                                color: Color(0xFFE0E0E0),
-                              ),
-                              Row(
-                                mainAxisSize: MainAxisSize.max,
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Travel Dates:',
-                                    style: FlutterFlowTheme.of(context)
-                                        .bodyMedium
-                                        .override(
-                                          font: GoogleFonts.inter(
-                                            fontWeight: FontWeight.w500,
-                                            fontStyle:
-                                                FlutterFlowTheme.of(context)
-                                                    .bodyMedium
-                                                    .fontStyle,
-                                          ),
-                                          color: Color(0xFF023047),
-                                          letterSpacing: 0.0,
-                                          fontWeight: FontWeight.w500,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMedium
-                                                  .fontStyle,
-                                        ),
-                                  ),
-                                  Text(
-                                    'Dec 15 - 22, 2024',
-                                    style: FlutterFlowTheme.of(context)
-                                        .bodyMedium
-                                        .override(
-                                          font: GoogleFonts.inter(
-                                            fontWeight: FontWeight.w600,
-                                            fontStyle:
-                                                FlutterFlowTheme.of(context)
-                                                    .bodyMedium
-                                                    .fontStyle,
-                                          ),
-                                          color: Color(0xFF023047),
-                                          letterSpacing: 0.0,
-                                          fontWeight: FontWeight.w600,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMedium
-                                                  .fontStyle,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                              Divider(
-                                height: 1.0,
-                                thickness: 1.0,
-                                color: Color(0xFFE0E0E0),
-                              ),
-                              Row(
-                                mainAxisSize: MainAxisSize.max,
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Passenger:',
-                                    style: FlutterFlowTheme.of(context)
-                                        .bodyMedium
-                                        .override(
-                                          font: GoogleFonts.inter(
-                                            fontWeight: FontWeight.w500,
-                                            fontStyle:
-                                                FlutterFlowTheme.of(context)
-                                                    .bodyMedium
-                                                    .fontStyle,
-                                          ),
-                                          color: Color(0xFF023047),
-                                          letterSpacing: 0.0,
-                                          fontWeight: FontWeight.w500,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMedium
-                                                  .fontStyle,
-                                        ),
-                                  ),
-                                  Text(
-                                    'Sarah Johnson',
-                                    style: FlutterFlowTheme.of(context)
-                                        .bodyMedium
-                                        .override(
-                                          font: GoogleFonts.inter(
-                                            fontWeight: FontWeight.w600,
-                                            fontStyle:
-                                                FlutterFlowTheme.of(context)
-                                                    .bodyMedium
-                                                    .fontStyle,
-                                          ),
-                                          color: Color(0xFF023047),
-                                          letterSpacing: 0.0,
-                                          fontWeight: FontWeight.w600,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMedium
-                                                  .fontStyle,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                              Divider(
-                                height: 1.0,
-                                thickness: 1.0,
-                                color: Color(0xFFE0E0E0),
-                              ),
-                              Row(
-                                mainAxisSize: MainAxisSize.max,
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Total Paid:',
-                                    style: FlutterFlowTheme.of(context)
-                                        .bodyMedium
-                                        .override(
-                                          font: GoogleFonts.inter(
-                                            fontWeight: FontWeight.w500,
-                                            fontStyle:
-                                                FlutterFlowTheme.of(context)
-                                                    .bodyMedium
-                                                    .fontStyle,
-                                          ),
-                                          color: Color(0xFF023047),
-                                          letterSpacing: 0.0,
-                                          fontWeight: FontWeight.w500,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMedium
-                                                  .fontStyle,
-                                        ),
-                                  ),
-                                  Text(
-                                    '\$2,450.00',
-                                    style: FlutterFlowTheme.of(context)
-                                        .titleMedium
-                                        .override(
-                                          font: GoogleFonts.interTight(
-                                            fontWeight: FontWeight.bold,
-                                            fontStyle:
-                                                FlutterFlowTheme.of(context)
-                                                    .titleMedium
-                                                    .fontStyle,
-                                          ),
-                                          color: Color(0xFFFFB703),
-                                          letterSpacing: 0.0,
-                                          fontWeight: FontWeight.bold,
-                                          fontStyle:
-                                              FlutterFlowTheme.of(context)
-                                                  .titleMedium
-                                                  .fontStyle,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                            ].divide(SizedBox(height: 12.0)),
-                          ),
-                        ].divide(SizedBox(height: 16.0)),
-                      ),
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
-                Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Color(0xFF00B4D8),
-                    borderRadius: BorderRadius.circular(12.0),
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.max,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.airplane_ticket_rounded,
-                          color: Color(0xFFF1FAFB),
-                          size: 24.0,
-                        ),
-                        Expanded(
-                          child: Text(
-                            'A confirmation email has been sent to your registered email address.',
-                            textAlign: TextAlign.center,
-                            style: FlutterFlowTheme.of(context)
-                                .bodyMedium
-                                .override(
-                                  font: GoogleFonts.inter(
-                                    fontWeight: FlutterFlowTheme.of(context)
-                                        .bodyMedium
-                                        .fontWeight,
-                                    fontStyle: FlutterFlowTheme.of(context)
-                                        .bodyMedium
-                                        .fontStyle,
-                                  ),
-                                  color: Color(0xFFF1FAFB),
-                                  fontSize: 14.0,
-                                  letterSpacing: 0.0,
-                                  fontWeight: FlutterFlowTheme.of(context)
-                                      .bodyMedium
-                                      .fontWeight,
-                                  fontStyle: FlutterFlowTheme.of(context)
-                                      .bodyMedium
-                                      .fontStyle,
-                                ),
-                          ),
-                        ),
-                      ].divide(SizedBox(width: 8.0)),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // ✅ Mensaje de confirmación
+                  Text(
+                    'Your wallet has been funded successfully.',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.outfit(
+                      color: Colors.white70,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
-                ),
-                FFButtonWidget(
-                  onPressed: () {
-                    print('Button pressed ...');
-                  },
-                  text: 'View My Bookings',
-                  icon: Icon(
-                    Icons.bookmark_rounded,
-                    size: 20.0,
-                  ),
-                  options: FFButtonOptions(
+                  
+                  const SizedBox(height: 40),
+                  
+                  // ✅ Detalles del pago
+                  Container(
                     width: double.infinity,
-                    height: 56.0,
-                    padding: EdgeInsets.all(8.0),
-                    iconPadding:
-                        EdgeInsetsDirectional.fromSTEB(0.0, 0.0, 0.0, 0.0),
-                    iconColor: Color(0xFFF1FAFB),
-                    color: Color(0xFF0077B6),
-                    textStyle:
-                        FlutterFlowTheme.of(context).titleMedium.override(
-                              font: GoogleFonts.interTight(
-                                fontWeight: FontWeight.w600,
-                                fontStyle: FlutterFlowTheme.of(context)
-                                    .titleMedium
-                                    .fontStyle,
-                              ),
-                              color: Color(0xFFF1FAFB),
-                              letterSpacing: 0.0,
-                              fontWeight: FontWeight.w600,
-                              fontStyle: FlutterFlowTheme.of(context)
-                                  .titleMedium
-                                  .fontStyle,
-                            ),
-                    elevation: 0.0,
-                    borderSide: BorderSide(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2C2C2C), // GRIS OSCURO LANDGO
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Payment Details',
+                          style: GoogleFonts.outfit(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        _buildDetailRow('Payment Intent ID', _paymentIntentId),
+                        const SizedBox(height: 12),
+                        _buildDetailRow('Charge ID', _chargeId),
+                        const SizedBox(height: 12),
+                        _buildDetailRow('Customer', '$_customerName'),
+                        const SizedBox(height: 12),
+                        _buildDetailRow('Card', '$_cardBrand **** $_cardLast4'),
+                        const SizedBox(height: 12),
+                        _buildDetailRow('Expiry', _cardExpiry),
+                        const SizedBox(height: 12),
+                        _buildDetailRow('Amount', '\$${_amount.toStringAsFixed(2)} $_currency', isHighlight: true),
+                        const SizedBox(height: 12),
+                        _buildDetailRow('Status', '✅ Succeeded', isSuccess: true),
+                      ],
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 40),
+                  
+                  // ✅ Botón principal (View My Wallet)
+                  Container(
+                    width: double.infinity,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF4DD0E1), // TURQUESA LANDGO
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Material(
                       color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(16),
+                        onTap: () {
+                          // Navegar a My Wallet usando GoRouter
+                          context.goNamedAuth(
+                            MyWalletPageWidget.routeName,
+                            context.mounted,
+                          );
+                        },
+                        child: Center(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.account_balance_wallet_rounded,
+                                color: Colors.black, // ICONO NEGRO SOBRE TURQUESA
+                                size: 24,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'View My Wallet',
+                                style: GoogleFonts.outfit(
+                                  color: Colors.black, // TEXTO NEGRO SOBRE TURQUESA
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ),
-                    borderRadius: BorderRadius.circular(12.0),
                   ),
-                ),
-                Opacity(
-                  opacity: 0.8,
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8.0),
-                    child: Image.network(
-                      'https://images.unsplash.com/photo-1682946617853-adb104368281?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTYyMDF8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NTM5MDc5MzZ8&ixlib=rb-4.1.0&q=80&w=1080',
-                      width: 200.0,
-                      height: 120.0,
-                      fit: BoxFit.contain,
+                  
+                  const SizedBox(height: 16),
+                  
+                  // ✅ Botón secundario (Go to Home)
+                  Container(
+                    width: double.infinity,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(16),
+                        onTap: () {
+                          // Navegar al inicio usando GoRouter
+                          context.goNamedAuth('MainPage', context.mounted);
+                        },
+                        child: Center(
+                          child: Text(
+                            'Go to Home',
+                            style: GoogleFonts.outfit(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ].divide(SizedBox(height: 24.0)),
+                  
+                  const SizedBox(height: 100), // ESPACIO PARA BOTTOM NAV
+                ],
+              ),
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value, {bool isSuccess = false, bool isHighlight = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.outfit(
+            color: Colors.white70,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            style: GoogleFonts.outfit(
+              color: isSuccess || isHighlight
+                ? const Color(0xFF4DD0E1) // TURQUESA LANDGO (ÚNICO COLOR PERMITIDO)
+                : Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
