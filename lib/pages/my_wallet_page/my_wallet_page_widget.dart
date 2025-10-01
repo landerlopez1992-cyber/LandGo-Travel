@@ -83,67 +83,68 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
       final balance = (profileResponse['cashback_balance'] as num?)?.toDouble() ?? 0.0;
       print('✅ Balance loaded: \$${balance.toStringAsFixed(2)}');
       
-      // 2. Obtener Total Earned (cashback ganado)
-      final earnedResponse = await Supabase.instance.client
-          .from('cashback_transactions')
+      // 2. Calcular Total Enviado (últimos 30 días)
+      final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
+      final sentResponse = await Supabase.instance.client
+          .from('payments')
           .select('amount')
           .eq('user_id', user.id)
-          .eq('type', 'earned');
+          .eq('payment_method', 'wallet')
+          .gte('created_at', thirtyDaysAgo.toIso8601String());
       
-      double totalEarned = 0.0;
-      if (earnedResponse != null && earnedResponse is List) {
-        for (var tx in earnedResponse) {
-          totalEarned += (tx['amount'] as num?)?.toDouble() ?? 0.0;
-        }
+      double totalSent = 0.0;
+      for (var tx in sentResponse) {
+        totalSent += (tx['amount'] as num?)?.toDouble() ?? 0.0;
       }
-      print('✅ Total Earned: \$${totalEarned.toStringAsFixed(2)}');
+      print('✅ Total Enviado (30 días): \$${totalSent.toStringAsFixed(2)}');
       
-      // 3. Obtener Total Saved (cashback usado)
-      final savedResponse = await Supabase.instance.client
-          .from('cashback_transactions')
+      // 3. Calcular Total Recibido (últimos 30 días)
+      // Buscar transacciones donde el usuario es el receptor
+      final receivedResponse = await Supabase.instance.client
+          .from('payments')
           .select('amount')
-          .eq('user_id', user.id)
-          .eq('type', 'used');
+          .eq('related_id', user.id)
+          .eq('payment_method', 'wallet')
+          .gte('created_at', thirtyDaysAgo.toIso8601String());
       
-      double totalSaved = 0.0;
-      if (savedResponse != null && savedResponse is List) {
-        for (var tx in savedResponse) {
-          totalSaved += (tx['amount'] as num?)?.toDouble() ?? 0.0;
-        }
+      double totalReceived = 0.0;
+      for (var tx in receivedResponse) {
+        totalReceived += (tx['amount'] as num?)?.toDouble() ?? 0.0;
       }
-      print('✅ Total Saved: \$${totalSaved.toStringAsFixed(2)}');
+      print('✅ Total Recibido (30 días): \$${totalReceived.toStringAsFixed(2)}');
       
-      // 4. Obtener conteo de transacciones
+      // 4. Obtener conteo de transacciones (solo del usuario actual)
       final countResponse = await Supabase.instance.client
           .from('payments')
           .select('id')
-          .eq('user_id', user.id);
+          .eq('user_id', user.id); // SOLO transacciones donde el usuario es el user_id
       
       int transactionCount = 0;
-      if (countResponse != null && countResponse is List) {
-        transactionCount = countResponse.length;
-      }
+      transactionCount = countResponse.length;
       print('✅ Transaction Count: $transactionCount');
       
-      // 5. Obtener últimas transacciones (máximo 10)
-      final transactionsResponse = await Supabase.instance.client
+      // 5. Obtener últimas transacciones (máximo 10) pertenecientes al usuario actual
+      final recentTransactionsResponse = await Supabase.instance.client
           .from('payments')
           .select('*')
           .eq('user_id', user.id)
           .order('created_at', ascending: false)
           .limit(10);
       
-      List<Map<String, dynamic>> recentTransactions = [];
-      if (transactionsResponse != null && transactionsResponse is List) {
-        recentTransactions = List<Map<String, dynamic>>.from(transactionsResponse);
+      List<Map<String, dynamic>> recentTransactions = List<Map<String, dynamic>>.from(recentTransactionsResponse);
+      
+      // DEBUG: Mostrar detalles de cada transacción
+      print('🔍 DEBUG TRANSACTIONS:');
+      for (var tx in recentTransactions) {
+        print('  - Amount: ${tx['amount']}, Type: ${tx['related_type']}, User: ${tx['user_id']}, Related: ${tx['related_id']}');
       }
       print('✅ Recent Transactions: ${recentTransactions.length}');
       
       if (mounted) {
         setState(() {
           _currentBalance = balance;
-          _totalEarned = totalEarned;
-          _totalSaved = totalSaved;
+          _totalEarned = totalSent; // Ahora es Total Enviado
+          _totalSaved = totalReceived; // Ahora es Total Recibido
           _transactionCount = transactionCount;
           _recentTransactions = recentTransactions;
           _isLoadingBalance = false;
@@ -403,15 +404,15 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
         children: [
           _buildStatCard(
             '\$${_totalEarned.toStringAsFixed(2)}',
-            'Total Earned',
-            Icons.trending_up,
-            const Color(0xFF4DD0E1), // TURQUESA
+            'Total Enviado',
+            Icons.arrow_upward,
+            const Color(0xFFDC2626), // ROJO para enviado
           ),
           _buildStatCard(
             '\$${_totalSaved.toStringAsFixed(2)}',
-            'Total Saved',
-            Icons.savings,
-            const Color(0xFF4DD0E1), // TURQUESA  
+            'Total Recibido',
+            Icons.arrow_downward,
+            const Color(0xFF4CAF50), // VERDE para recibido
           ),
           _buildStatCard(
             '$_transactionCount',
@@ -478,12 +479,23 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
                 fontWeight: FontWeight.w600,
               ),
             ),
-            Text(
-              'View All',
-              style: GoogleFonts.outfit(
-                color: const Color(0xFF4DD0E1), // TURQUESA LANDGO
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
+            GestureDetector(
+              onTap: () async {
+                print('🔍 DEBUG: Navegando a AllTransactionsPage...');
+                try {
+                  await context.pushNamed('AllTransactionsPage');
+                  print('✅ DEBUG: Navegación exitosa a AllTransactionsPage');
+                } catch (e) {
+                  print('❌ DEBUG: Error navegando a AllTransactionsPage: $e');
+                }
+              },
+              child: Text(
+                'View All',
+                style: GoogleFonts.outfit(
+                  color: const Color(0xFF4DD0E1), // TURQUESA LANDGO
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           ],
@@ -535,16 +547,43 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
   }
   
   Widget _buildTransactionItem(Map<String, dynamic> tx) {
-    // Determinar si es crédito o débito
+    final user = Supabase.instance.client.auth.currentUser;
+    final currentUserId = user?.id;
+    
     final description = (tx['description'] ?? '').toString().toLowerCase();
     final relatedType = (tx['related_type'] ?? '').toString().toLowerCase();
     final amount = (tx['amount'] as num?)?.toDouble() ?? 0.0;
-    final isCredit = amount > 0 ||
-        description.contains('top-up') ||
-        description.contains('cashback') ||
-        relatedType.contains('refund') ||
-        relatedType.contains('transfer_in') ||
-        description.contains('transfer from');
+    final userId = tx['user_id']?.toString();
+    final relatedId = tx['related_id']?.toString();
+    final paymentMethod = (tx['payment_method'] ?? '').toString().toLowerCase();
+    
+    // Determinar si es envío, recepción o pago con Stripe
+    bool isSent = amount < 0; // débito (envío)
+    bool isReceived = amount > 0; // crédito (recepción)
+    bool isStripePayment = paymentMethod.contains('stripe') || paymentMethod.contains('card');
+    
+    // Determinar el tipo de transacción
+    String transactionType;
+    IconData typeIcon;
+    Color typeColor;
+    
+    if (isStripePayment) {
+      transactionType = 'Pago con Tarjeta';
+      typeIcon = Icons.credit_card;
+      typeColor = const Color(0xFF4DD0E1); // Turquesa
+    } else if (isSent) {
+      transactionType = 'Enviado';
+      typeIcon = Icons.arrow_upward;
+      typeColor = const Color(0xFFDC2626); // Rojo
+    } else if (isReceived) {
+      transactionType = 'Recibido';
+      typeIcon = Icons.arrow_downward;
+      typeColor = const Color(0xFF4CAF50); // Verde
+    } else {
+      transactionType = 'Transacción';
+      typeIcon = Icons.receipt_long;
+      typeColor = Colors.white;
+    }
     
     // Obtener datos de la transacción
     final status = (tx['status'] ?? 'completed').toString().toLowerCase();
@@ -562,22 +601,8 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
       statusIcon = Icons.access_time;
       statusColor = const Color(0xFFFF9800); // Naranja
     } else {
-      statusIcon = isCredit ? Icons.check_circle : Icons.send;
+      statusIcon = Icons.check_circle;
       statusColor = const Color(0xFF4CAF50); // Verde
-    }
-    
-    // Determinar icono de tipo de transacción
-    IconData typeIcon;
-    if (relatedType.contains('flight')) {
-      typeIcon = Icons.flight_takeoff;
-    } else if (relatedType.contains('hotel')) {
-      typeIcon = Icons.hotel;
-    } else if (description.contains('transfer')) {
-      typeIcon = Icons.send;
-    } else if (description.contains('top-up')) {
-      typeIcon = Icons.add_circle;
-    } else {
-      typeIcon = Icons.receipt_long;
     }
     
     return Container(
@@ -594,12 +619,12 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: const Color(0xFF4DD0E1).withValues(alpha: 0.2),
+              color: typeColor.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
             child: Icon(
               typeIcon,
-              color: const Color(0xFF4DD0E1),
+              color: typeColor,
               size: 22,
             ),
           ),
@@ -611,7 +636,7 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  recipient,
+                  transactionType,
                   style: GoogleFonts.outfit(
                     color: Colors.white,
                     fontSize: 14,
@@ -644,9 +669,9 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
           
           // Monto con color
           Text(
-            '${isCredit ? '+' : '-'}\$${amount.toStringAsFixed(2)}',
+            '${isSent ? '-' : '+'}\$${amount.abs().toStringAsFixed(2)}',
             style: GoogleFonts.outfit(
-              color: isCredit ? const Color(0xFF4CAF50) : const Color(0xFFDC2626),
+              color: isSent ? const Color(0xFFDC2626) : const Color(0xFF4CAF50),
               fontSize: 16,
               fontWeight: FontWeight.bold,
             ),

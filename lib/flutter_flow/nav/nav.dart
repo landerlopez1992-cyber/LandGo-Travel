@@ -158,6 +158,16 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => MyWalletPageWidget(),
         ),
         FFRoute(
+          name: AllTransactionsPageWidget.routeName,
+          path: AllTransactionsPageWidget.routePath,
+          builder: (context, params) => AllTransactionsPageWidget(),
+        ),
+        FFRoute(
+          name: TravelFeedPageWidget.routeName,
+          path: TravelFeedPageWidget.routePath,
+          builder: (context, params) => TravelFeedPageWidget(),
+        ),
+        FFRoute(
           name: MyProfilePageWidget.routeName,
           path: MyProfilePageWidget.routePath,
           builder: (context, params) => MyProfilePageWidget(),

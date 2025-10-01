@@ -12,6 +12,8 @@ export '/pages/login_page/login_page_widget.dart' show LoginPageWidget;
 export '/pages/sign_up_page/sign_up_page_widget.dart' show SignUpPageWidget;
 export '/pages/main_page/main_page_widget.dart' show MainPageWidget;
 export '/pages/my_wallet_page/my_wallet_page_widget.dart' show MyWalletPageWidget;
+export '/pages/all_transactions_page/all_transactions_page_widget.dart' show AllTransactionsPageWidget;
+export '/pages/travel_feed_page/travel_feed_page_widget.dart' show TravelFeedPageWidget;
 // NOTA: WalletPageWidget eliminado - solo usamos MyWalletPageWidget
 export '/pages/my_profile_page/my_profile_page_widget.dart' show MyProfilePageWidget;
 export '/pages/profile_page/profile_page_widget.dart' show ProfilePageWidget;

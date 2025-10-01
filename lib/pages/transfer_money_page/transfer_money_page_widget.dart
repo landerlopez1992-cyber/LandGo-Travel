@@ -630,7 +630,185 @@ class _TransferMoneyPageWidgetState extends State<TransferMoneyPageWidget> {
   }
 
   void _processTransfer() {
-    _showTransferLoadingModal();
+    _showTransferConfirmationModal();
+  }
+
+  // Modal de confirmación antes de transferir
+  void _showTransferConfirmationModal() {
+    final amount = double.tryParse(_model.amountController.text) ?? 0.0;
+    final selectedUser = _model.selectedUser;
+    
+    if (selectedUser == null) return;
+    
+    final recipientName = selectedUser['full_name'] ?? selectedUser['email'] ?? 'Unknown';
+    
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(24.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icono de advertencia
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFF9800).withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.warning_amber_rounded,
+                    color: Color(0xFFFF9800),
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                
+                // Título
+                Text(
+                  'Confirm Transfer',
+                  style: GoogleFonts.outfit(
+                    color: const Color(0xFF1F2937),
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                
+                // Mensaje de confirmación
+                Text(
+                  'Are you sure you want to send \$${amount.toStringAsFixed(2)} to $recipientName?',
+                  style: GoogleFonts.outfit(
+                    color: const Color(0xFF6B7280),
+                    fontSize: 16,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                
+                // Advertencia sobre reverso
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF3C7),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: const Color(0xFFF59E0B).withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.info_outline,
+                        color: Color(0xFFF59E0B),
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'This action cannot be undone',
+                          style: GoogleFonts.outfit(
+                            color: const Color(0xFF92400E),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                
+                // Botones
+                Row(
+                  children: [
+                    // Botón Cancelar
+                    Expanded(
+                      child: Container(
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF3F4F6),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () {
+                              Navigator.of(context).pop();
+                            },
+                            child: Center(
+                              child: Text(
+                                'Cancel',
+                                style: GoogleFonts.outfit(
+                                  color: const Color(0xFF6B7280),
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    
+                    // Botón Enviar
+                    Expanded(
+                      child: Container(
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4DD0E1), // TURQUESA LANDGO
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () {
+                              Navigator.of(context).pop(); // Cerrar modal de confirmación
+                              _showTransferLoadingModal(); // Mostrar modal de loading
+                            },
+                            child: Center(
+                              child: Text(
+                                'Send',
+                                style: GoogleFonts.outfit(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   // Modal de loading para transferencia
@@ -790,13 +968,22 @@ class _TransferMoneyPageWidgetState extends State<TransferMoneyPageWidget> {
         throw Exception('No puedes transferirte dinero a ti mismo');
       }
 
+      // Obtener nombre del remitente desde la base de datos
+      final senderProfile = await SupaFlow.client
+          .from('profiles')
+          .select('full_name')
+          .eq('id', currentUser.id)
+          .single();
+      
+      final senderName = senderProfile['full_name'] ?? currentUser.email?.split('@')[0] ?? 'Unknown';
+      
       // Realizar transferencia real en Supabase
       await _executeTransfer(
         senderId: currentUser.id,
         recipientId: recipientId,
         amount: amount,
         confirmationNumber: confirmationNumber,
-        senderName: currentUser.userMetadata?['full_name'] ?? 'Unknown',
+        senderName: senderName,
       );
 
       // Asegurar mínimo 3 segundos de loading
@@ -907,14 +1094,14 @@ class _TransferMoneyPageWidgetState extends State<TransferMoneyPageWidget> {
       print('✅ Balance del receptor actualizado');
       print('   Respuesta: $recipientUpdateResponse');
 
-      // 6. Crear transacción para el emisor (DEBITO)
+      // 6. Crear transacción para el emisor (DEBITO) - NEGATIVO
       print('📊 Paso 5: Creando transacción del emisor...');
       try {
         final senderTransaction = await SupaFlow.client
             .from('payments')
             .insert({
               'user_id': senderId,
-              'amount': amount,
+              'amount': -amount, // NEGATIVO para débito
               'currency': 'USD',
               'status': 'completed',
               'payment_method': 'wallet',
@@ -924,7 +1111,7 @@ class _TransferMoneyPageWidgetState extends State<TransferMoneyPageWidget> {
               'related_id': recipientId,
             })
             .select();
-        print('✅ Transacción del emisor creada');
+        print('✅ Transacción del emisor creada (DÉBITO: -\$${amount.toStringAsFixed(2)})');
         print('   Respuesta: $senderTransaction');
       } catch (e) {
         // Continuar aunque falle el registro (el balance ya se actualizó)
