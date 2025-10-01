@@ -55,7 +55,7 @@ class _EmailConfirmationPageWidgetState
       },
       child: Scaffold(
         key: scaffoldKey,
-        backgroundColor: const Color(0xFFF1F5F9), // COLORES LANDGO TRAVEL - Fondo General
+        backgroundColor: const Color(0xFF1A1A1A), // FONDO NEGRO LANDGO
         appBar: AppBar(
           backgroundColor: const Color(0xFF37474F), // COLORES LANDGO TRAVEL - Header
           elevation: 0,
@@ -130,7 +130,7 @@ class _EmailConfirmationPageWidgetState
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC), // COLORES LANDGO TRAVEL - Cards/Fondos
+                    color: const Color(0xFF2C2C2C), // GRIS OSCURO LANDGO
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: const Color(0xFFE2E8F0)),
                   ),
@@ -169,7 +169,7 @@ class _EmailConfirmationPageWidgetState
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC), // COLORES LANDGO TRAVEL - Cards/Fondos
+        color: const Color(0xFF2C2C2C), // GRIS OSCURO LANDGO
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xFFE2E8F0)),
         boxShadow: const [

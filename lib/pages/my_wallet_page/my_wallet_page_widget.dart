@@ -25,6 +25,12 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
   // Balance actual del usuario
   double _currentBalance = 0.0;
   bool _isLoadingBalance = true;
+  
+  // Estadísticas del wallet
+  double _totalEarned = 0.0;
+  double _totalSaved = 0.0;
+  int _transactionCount = 0;
+  List<Map<String, dynamic>> _recentTransactions = [];
 
   @override
   void initState() {
@@ -41,7 +47,7 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
     _loadWalletBalance();
   }
   
-  /// ✅ CARGAR SALDO DESDE SUPABASE
+  /// ✅ CARGAR SALDO Y ESTADÍSTICAS DESDE SUPABASE
   Future<void> _loadWalletBalance() async {
     try {
       if (mounted) {
@@ -56,36 +62,104 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
         if (mounted) {
           setState(() {
             _currentBalance = 0.0;
+            _totalEarned = 0.0;
+            _totalSaved = 0.0;
+            _transactionCount = 0;
+            _recentTransactions = [];
             _isLoadingBalance = false;
           });
         }
         return;
       }
       
-      print('🔍 DEBUG: Loading wallet balance for user: ${user.id}');
+      print('🔍 DEBUG: Loading wallet data for user: ${user.id}');
       
-      final response = await Supabase.instance.client
+      // 1. Obtener balance del wallet
+      final profileResponse = await Supabase.instance.client
           .from('profiles')
           .select('cashback_balance')
           .eq('id', user.id)
           .single();
       
-      final balance = (response['cashback_balance'] as num?)?.toDouble() ?? 0.0;
-      
+      final balance = (profileResponse['cashback_balance'] as num?)?.toDouble() ?? 0.0;
       print('✅ Balance loaded: \$${balance.toStringAsFixed(2)}');
+      
+      // 2. Obtener Total Earned (cashback ganado)
+      final earnedResponse = await Supabase.instance.client
+          .from('cashback_transactions')
+          .select('amount')
+          .eq('user_id', user.id)
+          .eq('type', 'earned');
+      
+      double totalEarned = 0.0;
+      if (earnedResponse != null && earnedResponse is List) {
+        for (var tx in earnedResponse) {
+          totalEarned += (tx['amount'] as num?)?.toDouble() ?? 0.0;
+        }
+      }
+      print('✅ Total Earned: \$${totalEarned.toStringAsFixed(2)}');
+      
+      // 3. Obtener Total Saved (cashback usado)
+      final savedResponse = await Supabase.instance.client
+          .from('cashback_transactions')
+          .select('amount')
+          .eq('user_id', user.id)
+          .eq('type', 'used');
+      
+      double totalSaved = 0.0;
+      if (savedResponse != null && savedResponse is List) {
+        for (var tx in savedResponse) {
+          totalSaved += (tx['amount'] as num?)?.toDouble() ?? 0.0;
+        }
+      }
+      print('✅ Total Saved: \$${totalSaved.toStringAsFixed(2)}');
+      
+      // 4. Obtener conteo de transacciones
+      final countResponse = await Supabase.instance.client
+          .from('payments')
+          .select('id')
+          .eq('user_id', user.id);
+      
+      int transactionCount = 0;
+      if (countResponse != null && countResponse is List) {
+        transactionCount = countResponse.length;
+      }
+      print('✅ Transaction Count: $transactionCount');
+      
+      // 5. Obtener últimas transacciones (máximo 10)
+      final transactionsResponse = await Supabase.instance.client
+          .from('payments')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', ascending: false)
+          .limit(10);
+      
+      List<Map<String, dynamic>> recentTransactions = [];
+      if (transactionsResponse != null && transactionsResponse is List) {
+        recentTransactions = List<Map<String, dynamic>>.from(transactionsResponse);
+      }
+      print('✅ Recent Transactions: ${recentTransactions.length}');
       
       if (mounted) {
         setState(() {
           _currentBalance = balance;
+          _totalEarned = totalEarned;
+          _totalSaved = totalSaved;
+          _transactionCount = transactionCount;
+          _recentTransactions = recentTransactions;
           _isLoadingBalance = false;
         });
       }
       
     } catch (e) {
-      print('❌ Error loading balance: $e');
+      print('❌ Error loading wallet data: $e');
       if (mounted) {
         setState(() {
           _currentBalance = 0.0;
+          _totalEarned = 0.0;
+          _totalSaved = 0.0;
+          _transactionCount = 0;
+          _recentTransactions = [];
           _isLoadingBalance = false;
         });
       }
@@ -325,19 +399,19 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _buildStatCard(
-            '\$0',
+            '\$${_totalEarned.toStringAsFixed(2)}',
             'Total Earned',
             Icons.trending_up,
             const Color(0xFF4DD0E1), // TURQUESA
           ),
           _buildStatCard(
-            '\$0',
+            '\$${_totalSaved.toStringAsFixed(2)}',
             'Total Saved',
             Icons.savings,
             const Color(0xFF4DD0E1), // TURQUESA  
           ),
           _buildStatCard(
-            '0',
+            '$_transactionCount',
             'Transactions',
             Icons.receipt_long,
             Colors.white,
@@ -412,43 +486,179 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
           ],
         ),
         const SizedBox(height: 16),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(32),
-          decoration: BoxDecoration(
-            color: const Color(0xFF2C2C2C), // GRIS OSCURO LANDGO
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Column(
-            children: [
-              const Icon(
-                Icons.receipt_long,
-                color: Colors.white70,
-                size: 48,
+        
+        // Mostrar transacciones reales o mensaje vacío
+        _recentTransactions.isEmpty
+          ? Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2C2C2C), // GRIS OSCURO LANDGO
+                borderRadius: BorderRadius.circular(16),
               ),
-              const SizedBox(height: 16),
-              Text(
-                'No transactions yet',
-                style: GoogleFonts.outfit(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
+              child: Column(
+                children: [
+                  const Icon(
+                    Icons.receipt_long,
+                    color: Colors.white70,
+                    size: 48,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No transactions yet',
+                    style: GoogleFonts.outfit(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Start booking to earn cashback!',
+                    style: GoogleFonts.outfit(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Start booking to earn cashback!',
-                style: GoogleFonts.outfit(
-                  color: Colors.white70,
-                  fontSize: 14,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
+            )
+          : Column(
+              children: _recentTransactions.map((tx) => _buildTransactionItem(tx)).toList(),
+            ),
       ],
     );
+  }
+  
+  Widget _buildTransactionItem(Map<String, dynamic> tx) {
+    // Determinar si es crédito o débito
+    final description = (tx['description'] ?? '').toString().toLowerCase();
+    final relatedType = (tx['related_type'] ?? '').toString().toLowerCase();
+    final isCredit = description.contains('top-up') || 
+                     description.contains('cashback') || 
+                     relatedType.contains('refund');
+    
+    // Obtener datos de la transacción
+    final amount = (tx['amount'] as num?)?.toDouble() ?? 0.0;
+    final status = (tx['status'] ?? 'completed').toString().toLowerCase();
+    final createdAt = tx['created_at']?.toString() ?? '';
+    final recipient = (tx['recipient'] ?? tx['description'] ?? 'Unknown').toString();
+    
+    // Determinar icono y color según estado
+    IconData statusIcon;
+    Color statusColor;
+    
+    if (status.contains('failed') || status.contains('denied')) {
+      statusIcon = Icons.cancel;
+      statusColor = const Color(0xFFDC2626); // Rojo
+    } else if (status.contains('pending')) {
+      statusIcon = Icons.access_time;
+      statusColor = const Color(0xFFFF9800); // Naranja
+    } else {
+      statusIcon = isCredit ? Icons.check_circle : Icons.send;
+      statusColor = const Color(0xFF4CAF50); // Verde
+    }
+    
+    // Determinar icono de tipo de transacción
+    IconData typeIcon;
+    if (relatedType.contains('flight')) {
+      typeIcon = Icons.flight_takeoff;
+    } else if (relatedType.contains('hotel')) {
+      typeIcon = Icons.hotel;
+    } else if (description.contains('transfer')) {
+      typeIcon = Icons.send;
+    } else if (description.contains('top-up')) {
+      typeIcon = Icons.add_circle;
+    } else {
+      typeIcon = Icons.receipt_long;
+    }
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2C2C2C), // GRIS OSCURO LANDGO
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          // Icono de tipo de transacción
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: const Color(0xFF4DD0E1).withValues(alpha: 0.2),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              typeIcon,
+              color: const Color(0xFF4DD0E1),
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 12),
+          
+          // Información de la transacción
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  recipient,
+                  style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Text(
+                      _formatTransactionDate(createdAt),
+                      style: GoogleFonts.outfit(
+                        color: Colors.white70,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Icon(
+                      statusIcon,
+                      color: statusColor,
+                      size: 16,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          
+          // Monto con color
+          Text(
+            '${isCredit ? '+' : '-'}\$${amount.toStringAsFixed(2)}',
+            style: GoogleFonts.outfit(
+              color: isCredit ? const Color(0xFF4CAF50) : const Color(0xFFDC2626),
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  String _formatTransactionDate(String? dateString) {
+    if (dateString == null || dateString.isEmpty) return 'Unknown date';
+    try {
+      final date = DateTime.parse(dateString);
+      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return '${months[date.month - 1]} ${date.day}, ${date.year} • ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return 'Unknown date';
+    }
   }
 
 

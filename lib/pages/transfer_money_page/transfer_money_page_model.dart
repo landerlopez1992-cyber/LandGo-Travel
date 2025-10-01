@@ -23,7 +23,11 @@ class TransferMoneyPageModel extends FlutterFlowModel {
   bool isSearching = false;
 
   @override
-  void initState(BuildContext context) {}
+  void initState(BuildContext context) {
+    // Inicializar controladores
+    amountController = TextEditingController();
+    searchController = TextEditingController();
+  }
 
   @override
   void dispose() {

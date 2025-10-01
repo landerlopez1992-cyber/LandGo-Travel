@@ -12,6 +12,14 @@ Future<User?> emailSignInFunc(
   final AuthResponse res = await SupaFlow.client.auth
       .signInWithPassword(email: email, password: password);
   
+  // 🔒 BLOQUEO CRÍTICO: Si el email NO está confirmado, cerrar sesión y rechazar login
+  if (res.user != null && res.user!.emailConfirmedAt == null) {
+    print('❌ LOGIN BLOQUEADO: Email no verificado para $email');
+    // Cerrar sesión inmediatamente
+    await SupaFlow.client.auth.signOut();
+    throw AuthException('Email not verified. Please check your inbox and verify your email before logging in.');
+  }
+  
   // Si el login es exitoso Y el email está confirmado, verificar si es la primera vez
   if (res.user != null && res.user!.emailConfirmedAt != null) {
     try {
@@ -64,8 +72,6 @@ Future<User?> emailSignInFunc(
       print('Error handling welcome email: $e');
       // No fallar el login por error en el email de bienvenida
     }
-  } else if (res.user != null && res.user!.emailConfirmedAt == null) {
-    print('Email not confirmed yet for $email - welcome email will be sent after confirmation and first login');
   }
   
   return res.user;
@@ -75,10 +81,13 @@ Future<User?> emailCreateAccountFunc(
   String email,
   String password,
 ) async {
-  // Solo crear la cuenta de autenticación en Supabase
-  // El perfil se creará después desde el widget SignUp
-  final AuthResponse res =
-      await SupaFlow.client.auth.signUp(email: email, password: password);
+  // Crear la cuenta SIN enviar email de confirmación automático
+  // Usamos nuestro sistema personalizado de códigos
+  final AuthResponse res = await SupaFlow.client.auth.signUp(
+    email: email, 
+    password: password,
+    emailRedirectTo: null, // No redirect automático
+  );
 
   // Return the user object regardless of email confirmation status
   // We handle email confirmation with our custom Resend system

@@ -581,50 +581,18 @@ serve(async (req) => {
     
     switch (type) {
       case 'email_confirmation':
-        const confirmationUrl = `${req.url}?userId=${userId}&email=${encodeURIComponent(email)}&fullName=${encodeURIComponent(fullName || '')}`
-        
-        emailSubject = 'LandGo Travel - Confirm Your Email Address'
-        emailHtml = generateBaseHTML(`
-          <div style="text-align: center;">
-            <div class="success-icon">✉️</div>
-            <h2 style="color: #1F2937; margin: 0 0 20px 0;">Welcome to LandGo Travel!</h2>
-          </div>
-          
-          <p>Hello <strong>${fullName || 'Traveler'}</strong>,</p>
-          <p>Thank you for signing up with LandGo Travel! To complete your account setup and start exploring amazing destinations, please confirm your email address by clicking the button below.</p>
-          
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${confirmationUrl}" class="cta-button">Confirm Email Address</a>
-          </div>
-          
-          <div class="booking-details">
-            <h3 style="color: #37474F; margin: 0 0 15px 0;">What happens next?</h3>
-            <div class="detail-row">
-              <span class="detail-label">✓ Email Confirmed</span>
-              <span class="detail-value">Your account will be activated</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">✓ Access Granted</span>
-              <span class="detail-value">Start booking amazing trips</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">✓ Welcome Benefits</span>
-              <span class="detail-value">Exclusive deals and offers</span>
-            </div>
-            <div class="detail-row">
-              <span class="detail-label">✓ Referral Program</span>
-              <span class="detail-value">Earn money by referring friends</span>
-            </div>
-          </div>
-
-          <div class="security-notice">
-            <p style="margin: 0;"><strong>Security Notice:</strong> If you didn't create an account with LandGo Travel, you can safely ignore this email. This confirmation link will expire in 24 hours for security reasons.</p>
-          </div>
-          
-          <p>Welcome to the LandGo Travel family! We're excited to help you plan your next adventure.</p>
-          <p style="margin: 20px 0 0 0;"><strong>The LandGo Travel Team</strong></p>
-        `)
-        break
+        // NO ENVIAR EMAIL - Usar sistema automático de Supabase
+        console.log('📧 Email confirmation - Using Supabase automatic system')
+        return new Response(
+          JSON.stringify({ 
+            success: true, 
+            message: 'Email confirmation will be handled by Supabase automatically'
+          }),
+          { 
+            status: 200, 
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+          }
+        )
 
       case 'welcome':
         emailSubject = 'Welcome to LandGo Travel - Your Journey Begins!'

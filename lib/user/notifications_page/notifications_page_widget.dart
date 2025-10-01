@@ -69,11 +69,11 @@ class _NotificationsPageWidgetState extends State<NotificationsPageWidget> {
   Widget _buildHeaderSection() {
     return Padding(
       padding: const EdgeInsets.all(20.0),
-      child: Column(
-        children: [
+                                  child: Column(
+                                    children: [
           // Header con botón de regreso - ESTANDARIZADO
           Row(
-            children: [
+                              children: [
               StandardBackButton(
                 onPressed: () => Navigator.of(context).pop(),
               ),
@@ -85,12 +85,12 @@ class _NotificationsPageWidgetState extends State<NotificationsPageWidget> {
           
           // Título "Notification" centrado
           Center(
-            child: Text(
+                                      child: Text(
               'Notification',
               style: GoogleFonts.outfit(
                 color: Colors.white,
                 fontSize: 28,
-                fontWeight: FontWeight.bold,
+                                                fontWeight: FontWeight.bold,
               ),
             ),
           ),
@@ -154,8 +154,8 @@ class _NotificationsPageWidgetState extends State<NotificationsPageWidget> {
                       padding: EdgeInsets.all(16.0),
                           decoration: BoxDecoration(
         color: Color(0xFF2C2C2C),
-                          borderRadius: BorderRadius.circular(12.0),
-                        ),
+                            borderRadius: BorderRadius.circular(12.0),
+                            ),
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
@@ -182,7 +182,7 @@ class _NotificationsPageWidgetState extends State<NotificationsPageWidget> {
                   style: GoogleFonts.outfit(
                             color: Colors.white,
                     fontSize: 16,
-                                              fontWeight: FontWeight.bold,
+                                                fontWeight: FontWeight.bold,
                                             ),
                                       ),
                 SizedBox(height: 4),
@@ -218,9 +218,9 @@ class _NotificationsPageWidgetState extends State<NotificationsPageWidget> {
           top: BorderSide(
             color: Color(0xFF333333),
             width: 0.5,
+                            ),
                           ),
                         ),
-                      ),
       child: SafeArea(
         bottom: true,
                           child: Padding(
@@ -269,11 +269,11 @@ class _NotificationsPageWidgetState extends State<NotificationsPageWidget> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
+                              children: [
+                                Container(
           width: 40,
           height: 40,
-          decoration: BoxDecoration(
+                                  decoration: BoxDecoration(
             color: isActive ? const Color(0xFF4DD0E1) : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
@@ -284,15 +284,15 @@ class _NotificationsPageWidgetState extends State<NotificationsPageWidget> {
           ),
         ),
         const SizedBox(height: 4),
-        Text(
+                                      Text(
           label,
-          style: TextStyle(
+                                        style: TextStyle(
             color: isActive ? const Color(0xFF4DD0E1) : Colors.white,
             fontSize: 11,
             fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
+                ),
+              ),
+            ],
     );
   }
 }

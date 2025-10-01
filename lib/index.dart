@@ -12,6 +12,7 @@ export '/pages/login_page/login_page_widget.dart' show LoginPageWidget;
 export '/pages/sign_up_page/sign_up_page_widget.dart' show SignUpPageWidget;
 export '/pages/main_page/main_page_widget.dart' show MainPageWidget;
 export '/pages/my_wallet_page/my_wallet_page_widget.dart' show MyWalletPageWidget;
+// NOTA: WalletPageWidget eliminado - solo usamos MyWalletPageWidget
 export '/pages/my_profile_page/my_profile_page_widget.dart' show MyProfilePageWidget;
 export '/pages/profile_page/profile_page_widget.dart' show ProfilePageWidget;
 export '/user/my_favorites_page/my_favorites_page_widget.dart' show MyFavoritesPageWidget;
@@ -26,7 +27,6 @@ export '/pages/settings_page/settings_page_widget.dart' show SettingsPageWidget;
 export '/pages/transfer_money_page/transfer_money_page_widget.dart' show TransferMoneyPageWidget;
 export '/membership_page/membership_page/membership_page_widget.dart'
     show MembershipPageWidget;
-export '/payment/wallet_page/wallet_page_widget.dart' show WalletPageWidget;
 export '/booking_home_page/booking_results_page/booking_results_page_widget.dart'
     show BookingResultsPageWidget;
 export '/booking_home_page/booking_details_page/booking_details_page_widget.dart'
@@ -102,6 +102,10 @@ export '/pages/reset_password_page/reset_password_page_widget.dart'
     show ResetPasswordPageWidget;
 export '/pages/verification_code_page/verification_code_page_widget.dart'
     show VerificationCodePageWidget;
+export '/pages/email_notification_page/email_notification_page_widget.dart'
+    show EmailNotificationPageWidget;
+export '/pages/transfer_success_page/transfer_success_page_widget.dart'
+    show TransferSuccessPageWidget;
 export '/booking_home_page/flight_booking_page/flight_booking_page_widget.dart'
     show FlightBookingPageWidget;
 export '/booking_home_page/hotel_booking_page/hotel_booking_page_widget.dart'

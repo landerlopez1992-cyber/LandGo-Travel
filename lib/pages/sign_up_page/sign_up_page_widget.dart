@@ -21,6 +21,7 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
   late SignUpPageModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
+  bool _isSigningUp = false;
 
   @override
   void initState() {
@@ -52,6 +53,129 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
   void dispose() {
     _model.dispose();
     super.dispose();
+  }
+
+  void _showLoadingModal() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(32.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icono de loading moderno con gradiente
+                Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFF4DD0E1), // Turquesa
+                        const Color(0xFF26C6DA), // Turquesa más oscuro
+                        const Color(0xFF00BCD4), // Cyan
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(50),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF4DD0E1).withOpacity(0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Círculo exterior animado
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: const Color(0xFF4DD0E1).withOpacity(0.3),
+                            width: 3,
+                          ),
+                        ),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 3,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            const Color(0xFF4DD0E1).withOpacity(0.7),
+                          ),
+                        ),
+                      ),
+                      // Círculo interior con gradiente
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              const Color(0xFF4DD0E1),
+                              const Color(0xFF26C6DA),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.flight_takeoff_rounded,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 24),
+                
+                // Texto de loading
+                Text(
+                  'Creating your account...',
+                  style: GoogleFonts.outfit(
+                    color: const Color(0xFF2C2C2C),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                
+                const SizedBox(height: 8),
+                
+                Text(
+                  'Please wait while we set up your LandGo Travel profile',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
+                    color: const Color(0xFF666666),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -487,53 +611,68 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                                   return;
                                 }
 
-                                // Crear cuenta
-                                final user = await authManager.createAccountWithEmail(
-                                  context,
-                                  _model.textController3.text,
-                                  _model.textController4.text,
-                                );
-                                
-                                if (user != null) {
-                                  try {
-                                    // Guardar información adicional en profiles
-                                    await SupaFlow.client.from('profiles').insert({
-                                      'id': user.uid,
-                                      'email': _model.textController3.text,
-                                      'full_name': '${_model.textController1.text} ${_model.textController2.text}'.trim(),
-                                      'phone': _model.textController5.text.isNotEmpty ? _model.textController5.text : null,
-                                      'date_of_birth': _model.textController6.text.isNotEmpty ? _model.textController6.text : null,
-                                      'cashback_balance': 0.0,
-                                      'membership_type': 'basic',
-                                      'created_at': DateTime.now().toIso8601String(),
+                                // Activar loading
+                                setState(() {
+                                  _isSigningUp = true;
+                                });
+
+                                // Mostrar modal de loading
+                                _showLoadingModal();
+
+                                // Iniciar cronómetro para mínimo 4 segundos
+                                final stopwatch = Stopwatch()..start();
+
+                                try {
+                                  // Crear cuenta
+                                  final user = await authManager.createAccountWithEmail(
+                                    context,
+                                    _model.textController3.text,
+                                    _model.textController4.text,
+                                  );
+
+                                  // Asegurar mínimo 4 segundos de loading
+                                  final elapsed = stopwatch.elapsedMilliseconds;
+                                  if (elapsed < 4000) {
+                                    await Future.delayed(Duration(milliseconds: 4000 - elapsed));
+                                  }
+
+                                  if (context.mounted) {
+                                    // Cerrar modal de loading
+                                    Navigator.of(context).pop();
+                                    
+                                    if (user != null) {
+                                      // NO llamar Edge Function - Usar sistema automático de Supabase
+                                      // El email de confirmación se enviará automáticamente
+                                      
+                                      context.pushNamed(
+                                        'EmailNotificationPage',
+                                        queryParameters: {
+                                          'email': _model.textController3.text,
+                                          'fullName': '${_model.textController1.text} ${_model.textController2.text}',
+                                        },
+                                      );
+                                    } else {
+                                      setState(() {
+                                        _isSigningUp = false;
+                                      });
+                                    }
+                                  }
+                                } catch (e) {
+                                  if (context.mounted) {
+                                    // Cerrar modal de loading
+                                    Navigator.of(context).pop();
+                                    
+                                    setState(() {
+                                      _isSigningUp = false;
                                     });
                                     
-                                    print('✅ User profile created successfully');
-                                  } catch (profileError) {
-                                    print('❌ Error creating profile: $profileError');
-                                    
-                                    // Mostrar error al usuario
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
-                                        content: Text('Error: Database error saving new user'),
+                                        content: Text('Sign up failed: ${e.toString()}'),
                                         backgroundColor: Color(0xFFDC2626),
                                       ),
                                     );
-                                    return; // Salir si hay error
                                   }
-                                  
-                                  // Enviar email de confirmación
-                                  await SupaFlow.client.functions.invoke(
-                                    'send-verification-code',
-                                    body: {
-                                      'email': _model.textController3.text,
-                                      'type': 'email_confirmation',
-                                      'userId': user.uid,
-                                      'fullName': '${_model.textController1.text} ${_model.textController2.text}',
-                                    },
-                                  );
-                                  
-                                  context.pushNamed('EmailConfirmationPage');
                                 }
                               },
                               style: ElevatedButton.styleFrom(
@@ -543,14 +682,23 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                                   borderRadius: BorderRadius.circular(12.0),
                                 ),
                               ),
-                              child: Text(
-                                'Sign up',
-                                style: GoogleFonts.inter(
-                                  color: Color(0xFFFFFFFF),
-                                  fontSize: 16.0,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
+                              child: _isSigningUp
+                                ? SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : Text(
+                                    'Sign up',
+                                    style: GoogleFonts.inter(
+                                      color: Color(0xFFFFFFFF),
+                                      fontSize: 16.0,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                             ),
                           ),
                           

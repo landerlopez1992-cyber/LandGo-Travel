@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/components/back_button_widget.dart';
 import '/backend/supabase/supabase.dart';
+import '/pages/transfer_success_page/transfer_success_page_widget.dart';
 import 'transfer_money_page_model.dart';
 export 'transfer_money_page_model.dart';
 
@@ -28,6 +29,11 @@ class _TransferMoneyPageWidgetState extends State<TransferMoneyPageWidget> {
     
     // Escuchar cambios en el campo de búsqueda
     _model.searchController.addListener(_onSearchChanged);
+    
+    // Escuchar cambios en el campo de monto para actualizar el botón
+    _model.amountController.addListener(() {
+      setState(() {}); // Actualizar UI cuando cambie el monto
+    });
     
     WidgetsBinding.instance.addPostFrameCallback((_) => setState(() {}));
   }
@@ -562,8 +568,16 @@ class _TransferMoneyPageWidgetState extends State<TransferMoneyPageWidget> {
   }
 
   Widget _buildTransferButton() {
-    final amount = double.tryParse(_model.amountController.text) ?? 0;
+    final amountText = _model.amountController.text;
+    final amount = double.tryParse(amountText) ?? 0;
     final isValid = amount > 0 && _model.selectedUser != null;
+    
+    // Debug logs
+    print('🔍 Transfer Button Debug:');
+    print('  Amount text: "$amountText"');
+    print('  Amount parsed: $amount');
+    print('  Selected user: ${_model.selectedUser != null}');
+    print('  Is valid: $isValid');
 
     return Container(
       width: double.infinity,
@@ -593,18 +607,367 @@ class _TransferMoneyPageWidgetState extends State<TransferMoneyPageWidget> {
   }
 
   void _processTransfer() {
-    // TODO: Implementar lógica de transferencia con Supabase
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Transfer functionality coming soon!',
-          style: GoogleFonts.outfit(
-            color: Colors.white,
-            fontWeight: FontWeight.w500,
+    _showTransferLoadingModal();
+  }
+
+  // Modal de loading para transferencia
+  void _showTransferLoadingModal() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(32.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icono de loading moderno con gradiente
+                Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFF4DD0E1), // Turquesa
+                        const Color(0xFF26C6DA), // Turquesa más oscuro
+                        const Color(0xFF00BCD4), // Cyan
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(50),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF4DD0E1).withOpacity(0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Círculo exterior animado
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: const Color(0xFF4DD0E1).withOpacity(0.3),
+                            width: 3,
+                          ),
+                        ),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 3,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            const Color(0xFF4DD0E1).withOpacity(0.7),
+                          ),
+                        ),
+                      ),
+                      // Círculo interior con gradiente
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              const Color(0xFF4DD0E1),
+                              const Color(0xFF26C6DA),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.send,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 24),
+                
+                // Texto de loading
+                Text(
+                  'Processing Transfer...',
+                  style: GoogleFonts.outfit(
+                    color: const Color(0xFF2C2C2C),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                
+                const SizedBox(height: 8),
+                
+                Text(
+                  'Please wait while we process your transfer',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
+                    color: const Color(0xFF666666),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
           ),
+        );
+      },
+    );
+
+    // Ejecutar transferencia después de mostrar el modal
+    _performTransfer();
+  }
+
+  // Función para realizar la transferencia
+  Future<void> _performTransfer() async {
+    try {
+      // Iniciar cronómetro para mínimo 3 segundos
+      final stopwatch = Stopwatch()..start();
+
+      // Generar número de confirmación automático
+      final confirmationNumber = _generateConfirmationNumber();
+      final currentTime = DateTime.now();
+      final recipientName = _model.selectedUser?['full_name'] ?? 'Unknown';
+      final transferAmount = _model.amountController.text;
+      final amount = double.parse(transferAmount);
+
+      // Obtener usuario actual
+      final currentUser = SupaFlow.client.auth.currentUser;
+      if (currentUser == null) {
+        throw Exception('Usuario no autenticado');
+      }
+
+      // Obtener ID del receptor
+      final recipientId = _model.selectedUser?['id'];
+      if (recipientId == null) {
+        throw Exception('ID del receptor no válido');
+      }
+
+      // Realizar transferencia real en Supabase
+      await _executeTransfer(
+        senderId: currentUser.id,
+        recipientId: recipientId,
+        amount: amount,
+        confirmationNumber: confirmationNumber,
+        senderName: currentUser.userMetadata?['full_name'] ?? 'Unknown',
+      );
+
+      // Asegurar mínimo 3 segundos de loading
+      final elapsed = stopwatch.elapsedMilliseconds;
+      if (elapsed < 3000) {
+        await Future.delayed(Duration(milliseconds: 3000 - elapsed));
+      }
+
+      if (mounted) {
+        // Cerrar modal de loading
+        Navigator.of(context).pop();
+        
+        // Navegar a pantalla de éxito
+        _showTransferSuccessScreen(
+          confirmationNumber: confirmationNumber,
+          recipientName: recipientName,
+          transferAmount: transferAmount,
+          transferTime: currentTime,
+        );
+      }
+    } catch (e) {
+      print('❌ Error en transferencia: $e');
+      if (mounted) {
+        // Cerrar modal de loading
+        Navigator.of(context).pop();
+        
+        // Mostrar error
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error processing transfer: ${e.toString()}'),
+            backgroundColor: const Color(0xFFDC2626),
+          ),
+        );
+      }
+    }
+  }
+
+  // Función para ejecutar la transferencia en Supabase
+  Future<Map<String, dynamic>> _executeTransfer({
+    required String senderId,
+    required String recipientId,
+    required double amount,
+    required String confirmationNumber,
+    required String senderName,
+  }) async {
+    try {
+      print('🔄 Iniciando transferencia:');
+      print('  Sender: $senderId');
+      print('  Recipient: $recipientId');
+      print('  Amount: \$${amount.toStringAsFixed(2)}');
+      print('  Confirmation: $confirmationNumber');
+
+      // 1. Verificar que el emisor tiene suficiente balance
+      print('📊 Paso 1: Verificando balance del emisor...');
+      final senderProfile = await SupaFlow.client
+          .from('profiles')
+          .select('cashback_balance, full_name')
+          .eq('id', senderId)
+          .single();
+
+      final currentBalance = (senderProfile['cashback_balance'] as num?)?.toDouble() ?? 0.0;
+      print('💰 Balance actual del emisor: \$${currentBalance.toStringAsFixed(2)}');
+
+      if (currentBalance < amount) {
+        throw Exception('Fondos insuficientes. Balance disponible: \$${currentBalance.toStringAsFixed(2)}');
+      }
+
+      // 2. Obtener balance del receptor
+      print('📊 Paso 2: Obteniendo balance del receptor...');
+      final recipientProfile = await SupaFlow.client
+          .from('profiles')
+          .select('cashback_balance, full_name')
+          .eq('id', recipientId)
+          .single();
+
+      final recipientBalance = (recipientProfile['cashback_balance'] as num?)?.toDouble() ?? 0.0;
+      final recipientName = recipientProfile['full_name'] ?? 'Unknown';
+      print('💰 Balance actual del receptor: \$${recipientBalance.toStringAsFixed(2)}');
+      print('👤 Nombre del receptor: $recipientName');
+
+      // 3. Calcular nuevos balances
+      final newSenderBalance = currentBalance - amount;
+      final newRecipientBalance = recipientBalance + amount;
+
+      print('💸 Nuevos balances calculados:');
+      print('  Emisor: \$${currentBalance.toStringAsFixed(2)} → \$${newSenderBalance.toStringAsFixed(2)}');
+      print('  Receptor: \$${recipientBalance.toStringAsFixed(2)} → \$${newRecipientBalance.toStringAsFixed(2)}');
+
+      // 4. Actualizar balance del emisor (DEBITAR)
+      print('📊 Paso 3: Debitando del emisor...');
+      final senderUpdateResponse = await SupaFlow.client
+          .from('profiles')
+          .update({'cashback_balance': newSenderBalance})
+          .eq('id', senderId)
+          .select();
+
+      print('✅ Balance del emisor actualizado');
+      print('   Respuesta: $senderUpdateResponse');
+
+      // 5. Actualizar balance del receptor (ACREDITAR)
+      print('📊 Paso 4: Acreditando al receptor...');
+      final recipientUpdateResponse = await SupaFlow.client
+          .from('profiles')
+          .update({'cashback_balance': newRecipientBalance})
+          .eq('id', recipientId)
+          .select();
+
+      print('✅ Balance del receptor actualizado');
+      print('   Respuesta: $recipientUpdateResponse');
+
+      // 6. Crear transacción para el emisor (DEBITO)
+      print('📊 Paso 5: Creando transacción del emisor...');
+      try {
+        final senderTransaction = await SupaFlow.client
+            .from('payments')
+            .insert({
+              'user_id': senderId,
+              'amount': -amount, // Negativo para débito
+              'currency': 'USD',
+              'status': 'completed',
+              'payment_method': 'wallet', // Valor permitido por constraint
+              'transaction_id': confirmationNumber,
+              'description': 'Transfer to $recipientName',
+              'related_type': 'transfer_out',
+              'related_id': recipientId,
+            })
+            .select();
+        print('✅ Transacción del emisor creada');
+        print('   Respuesta: $senderTransaction');
+      } catch (e) {
+        // No bloquear la transferencia por un problema de logging en payments
+        print('⚠️ No se pudo registrar transacción del emisor en payments: $e');
+      }
+
+      // 7. Crear transacción para el receptor (CREDITO)
+      print('📊 Paso 6: Creando transacción del receptor...');
+      try {
+        final recipientTransaction = await SupaFlow.client
+            .from('payments')
+            .insert({
+              'user_id': recipientId,
+              'amount': amount, // Positivo para crédito
+              'currency': 'USD',
+              'status': 'completed',
+              'payment_method': 'wallet', // Valor permitido por constraint
+              'transaction_id': confirmationNumber,
+              'description': 'Transfer from $senderName',
+              'related_type': 'transfer_in',
+              'related_id': senderId,
+            })
+            .select();
+        print('✅ Transacción del receptor creada');
+        print('   Respuesta: $recipientTransaction');
+      } catch (e) {
+        // No bloquear la transferencia por un problema de logging en payments
+        print('⚠️ No se pudo registrar transacción del receptor en payments: $e');
+      }
+
+      print('🎉 Transferencia completada exitosamente!');
+      print('   Emisor: \$${newSenderBalance.toStringAsFixed(2)}');
+      print('   Receptor: \$${newRecipientBalance.toStringAsFixed(2)}');
+
+      return {
+        'success': true,
+        'confirmation_number': confirmationNumber,
+        'sender_balance': newSenderBalance,
+        'recipient_balance': newRecipientBalance,
+      };
+    } catch (e, stackTrace) {
+      print('❌ ERROR EN TRANSFERENCIA:');
+      print('   Error: $e');
+      print('   Stack trace: $stackTrace');
+      rethrow;
+    }
+  }
+
+  // Generar número de confirmación automático
+  String _generateConfirmationNumber() {
+    final now = DateTime.now();
+    final timestamp = now.millisecondsSinceEpoch.toString().substring(8);
+    final random = (now.microsecond % 1000).toString().padLeft(3, '0');
+    return 'TRF${timestamp}${random}';
+  }
+
+  // Mostrar pantalla de transferencia exitosa
+  void _showTransferSuccessScreen({
+    required String confirmationNumber,
+    required String recipientName,
+    required String transferAmount,
+    required DateTime transferTime,
+  }) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => TransferSuccessPageWidget(
+          confirmationNumber: confirmationNumber,
+          recipientName: recipientName,
+          transferAmount: transferAmount,
+          transferTime: transferTime,
         ),
-        backgroundColor: const Color(0xFF4DD0E1), // TURQUESA
-        duration: const Duration(seconds: 2),
       ),
     );
   }

@@ -213,11 +213,6 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => MembershipPageWidget(),
         ),
         FFRoute(
-          name: WalletPageWidget.routeName,
-          path: WalletPageWidget.routePath,
-          builder: (context, params) => WalletPageWidget(),
-        ),
-        FFRoute(
           name: BookingResultsPageWidget.routeName,
           path: BookingResultsPageWidget.routePath,
           builder: (context, params) => BookingResultsPageWidget(),
@@ -438,6 +433,24 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         email: params.getParam<String>('email', ParamType.String),
         type: params.getParam<String>('type', ParamType.String),
         pendingChanges: params.getParam<String>('pendingChanges', ParamType.String),
+      ),
+    ),
+    FFRoute(
+      name: EmailNotificationPageWidget.routeName,
+      path: EmailNotificationPageWidget.routePath,
+      builder: (context, params) => EmailNotificationPageWidget(
+        email: params.getParam<String>('email', ParamType.String),
+        fullName: params.getParam<String>('fullName', ParamType.String),
+      ),
+    ),
+    FFRoute(
+      name: TransferSuccessPageWidget.routeName,
+      path: TransferSuccessPageWidget.routePath,
+      builder: (context, params) => TransferSuccessPageWidget(
+        confirmationNumber: params.getParam<String>('confirmationNumber', ParamType.String) ?? '',
+        recipientName: params.getParam<String>('recipientName', ParamType.String) ?? '',
+        transferAmount: params.getParam<String>('transferAmount', ParamType.String) ?? '',
+        transferTime: params.getParam<DateTime>('transferTime', ParamType.DateTime),
       ),
     ),
       ].map((r) => r.toRoute(appStateNotifier)).toList(),

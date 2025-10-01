@@ -145,6 +145,170 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
     }
   }
 
+  // Modal de loading para logout
+  void _showLogoutLoadingModal() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(32.0),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icono de loading moderno con gradiente
+                Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFF4DD0E1), // Turquesa
+                        const Color(0xFF26C6DA), // Turquesa más oscuro
+                        const Color(0xFF00BCD4), // Cyan
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(50),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFF4DD0E1).withOpacity(0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Círculo exterior animado
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: const Color(0xFF4DD0E1).withOpacity(0.3),
+                            width: 3,
+                          ),
+                        ),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 3,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            const Color(0xFF4DD0E1).withOpacity(0.7),
+                          ),
+                        ),
+                      ),
+                      // Círculo interior con gradiente
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              const Color(0xFF4DD0E1),
+                              const Color(0xFF26C6DA),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.logout,
+                          color: Colors.white,
+                          size: 28,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 24),
+                
+                // Texto de loading
+                Text(
+                  'Signing out...',
+                  style: GoogleFonts.outfit(
+                    color: const Color(0xFF2C2C2C),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                
+                const SizedBox(height: 8),
+                
+                Text(
+                  'Please wait while we sign you out',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
+                    color: const Color(0xFF666666),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    // Ejecutar logout después de mostrar el modal
+    _performLogout();
+  }
+
+  // Función para realizar el logout
+  Future<void> _performLogout() async {
+    try {
+      // Iniciar cronómetro para mínimo 3 segundos
+      final stopwatch = Stopwatch()..start();
+
+      // Realizar logout
+      await SupaFlow.client.auth.signOut();
+      
+      // Asegurar mínimo 3 segundos de loading
+      final elapsed = stopwatch.elapsedMilliseconds;
+      if (elapsed < 3000) {
+        await Future.delayed(Duration(milliseconds: 3000 - elapsed));
+      }
+
+      if (mounted) {
+        // Cerrar modal de loading
+        Navigator.of(context).pop();
+        
+        // Navegar a Login
+        context.goNamed('LoginPage');
+      }
+    } catch (e) {
+      if (mounted) {
+        // Cerrar modal de loading
+        Navigator.of(context).pop();
+        
+        // Mostrar error
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error signing out: ${e.toString()}'),
+            backgroundColor: const Color(0xFFDC2626),
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -298,11 +462,8 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
           onTap: () async {
             if (isLogout) {
               if (_isLoggedIn) {
-                // Usuario logueado - hacer logout
-                await SupaFlow.client.auth.signOut();
-                if (mounted) {
-                  context.goNamed('LoginPage');
-                }
+                // Usuario logueado - hacer logout con loading
+                _showLogoutLoadingModal();
               } else {
                 // Usuario invitado - ir a login
                 if (mounted) {
