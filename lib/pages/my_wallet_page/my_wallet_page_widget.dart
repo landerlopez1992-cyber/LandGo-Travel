@@ -43,8 +43,7 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Recargar saldo cuando se regrese a esta pantalla
-    _loadWalletBalance();
+    // NO recargar automáticamente - solo en initState y cuando se regrese explícitamente
   }
   
   /// ✅ CARGAR SALDO Y ESTADÍSTICAS DESDE SUPABASE
@@ -357,8 +356,12 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
               color: Colors.transparent,
               child: InkWell(
                 borderRadius: BorderRadius.circular(16),
-                onTap: () {
-                  context.pushNamed('TransferMoneyPage');
+                onTap: () async {
+                  await context.pushNamed('TransferMoneyPage');
+                  // Al regresar, refrescar datos del wallet
+                  if (mounted) {
+                    await _loadWalletBalance();
+                  }
                 },
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -535,12 +538,15 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
     // Determinar si es crédito o débito
     final description = (tx['description'] ?? '').toString().toLowerCase();
     final relatedType = (tx['related_type'] ?? '').toString().toLowerCase();
-    final isCredit = description.contains('top-up') || 
-                     description.contains('cashback') || 
-                     relatedType.contains('refund');
+    final amount = (tx['amount'] as num?)?.toDouble() ?? 0.0;
+    final isCredit = amount > 0 ||
+        description.contains('top-up') ||
+        description.contains('cashback') ||
+        relatedType.contains('refund') ||
+        relatedType.contains('transfer_in') ||
+        description.contains('transfer from');
     
     // Obtener datos de la transacción
-    final amount = (tx['amount'] as num?)?.toDouble() ?? 0.0;
     final status = (tx['status'] ?? 'completed').toString().toLowerCase();
     final createdAt = tx['created_at']?.toString() ?? '';
     final recipient = (tx['recipient'] ?? tx['description'] ?? 'Unknown').toString();

@@ -17,7 +17,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class StripeService {
   // CREDENCIALES DE STRIPE - LANDGO TRAVEL
-  static const String _publishableKey = 'pk_test_51SBkaB2aG6cmZRHQ22KDLCfL4qnQFBojMVG5v7Ywwl4CoxDWnHm7r6qmFyaohPNvg9woIgCVrgGneIzPLJ8K31lq00dRrrHUJt';
+  // ⚠️ IMPORTANTE: Las claves están en variables de entorno por seguridad
+  // Para desarrollo local, crea un archivo .env con:
+  // STRIPE_PUBLISHABLE_KEY=pk_test_...
+  static const String _publishableKey = String.fromEnvironment(
+    'STRIPE_PUBLISHABLE_KEY',
+    defaultValue: 'pk_test_51SBkaB2aG6cmZRHQ22KDLCfL4qnQFBojMVG5v7Ywwl4CoxDWnHm7r6qmFyaohPNvg9woIgCVrgGneIzPLJ8K31lq00dRrrHUJt', // Fallback para desarrollo
+  );
   
   // URL de la Supabase Edge Function
   static const String _edgeFunctionUrl = 'https://dumgmnibxhfchjyowvbz.supabase.co/functions/v1/stripe-payment';

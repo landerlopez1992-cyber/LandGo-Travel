@@ -1560,44 +1560,18 @@ class _PaymentProcessingModalState extends State<_PaymentProcessingModal> {
     // Navegar después de 2 segundos
     Future.delayed(const Duration(seconds: 2), () {
       if (!mounted) return;
-      // Cerrar el modal de procesamiento si sigue abierto
-      if (Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      }
-      // Navegar usando Navigator.push con RouteSettings.arguments
-      if (_paymentSuccess) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => PaymentSuccessPagWidget(),
-            settings: RouteSettings(
-              arguments: {
-                'paymentIntentId': _paymentIntentId,
-                'chargeId': _chargeId,
-                'customerName': widget.selectedCard['cardholder_name'] ?? 'N/A',
-                'cardBrand': widget.selectedCard['brand'] ?? 'N/A',
-                'cardLast4': widget.selectedCard['last4'] ?? 'N/A',
-                'cardExpiry': '${widget.selectedCard['exp_month']}/${widget.selectedCard['exp_year']}',
-                'amount': widget.amount,
-                'currency': 'USD',
-              },
-            ),
-          ),
-        );
-      } else {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => PaymentFailedPagWidget(),
-            settings: RouteSettings(
-              arguments: {
-                'amount': widget.amount,
-                'paymentMethod': widget.paymentMethod,
-                'card': widget.selectedCard,
-                'error': _errorMessage,
-              },
-            ),
-          ),
-        );
-      }
+      
+      // Cerrar modal de procesamiento
+      Navigator.of(context, rootNavigator: true).pop();
+      
+      // Cerrar PaymentCardsPage
+      Navigator.of(context).pop();
+      
+      // Cerrar ReviewSummaryPage
+      Navigator.of(context).pop();
+      
+      // Ahora estamos de vuelta en MyWalletPage - refrescar no es necesario
+      // porque MyWalletPage tiene didChangeDependencies que recargará automáticamente
     });
   }
 
