@@ -158,6 +158,9 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                 // Existing Grid of Buttons (Book Travel, Membership, Wallet, My Bookings)
                 _buildExistingButtonsGrid(),
                 
+                // Legal Links Section
+                _buildLegalLinksSection(),
+                
                 // Bottom spacing for navigation - AJUSTADO PARA EVITAR OVERFLOW
                 const SizedBox(height: 100),
               ],
@@ -967,6 +970,93 @@ class _MainPageWidgetState extends State<MainPageWidget> {
     );
   }
 
+  // Legal Links Section
+  Widget _buildLegalLinksSection() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
+      child: Column(
+        children: [
+          // Divider
+          Container(
+            height: 1,
+            color: Colors.white.withOpacity(0.1),
+            margin: const EdgeInsets.only(bottom: 20),
+          ),
+          
+          // Legal Links Row
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _buildLegalLink('Privacy Policy', () {
+                context.pushNamed('PrivacyPolicyPage');
+              }),
+              Container(
+                width: 1,
+                height: 16,
+                color: Colors.white.withOpacity(0.3),
+                margin: const EdgeInsets.symmetric(horizontal: 16),
+              ),
+              _buildLegalLink('Terms & Conditions', () {
+                context.pushNamed('TermsConditionsPage');
+              }),
+            ],
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // Copyright
+          Text(
+            '© 2024 LandGo Travel. All rights reserved.',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.5),
+              fontSize: 12,
+              fontWeight: FontWeight.w400,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          
+          const SizedBox(height: 8),
+          
+          // Development Status
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFF4DD0E1).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: const Color(0xFF4DD0E1).withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Text(
+              'Platform in Active Development',
+              style: TextStyle(
+                color: const Color(0xFF4DD0E1),
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLegalLink(String text, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Text(
+        text,
+        style: TextStyle(
+          color: const Color(0xFF4DD0E1),
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          decoration: TextDecoration.underline,
+          decorationColor: const Color(0xFF4DD0E1).withOpacity(0.5),
+        ),
+      ),
+    );
+  }
 
   Widget _buildNavItem(IconData icon, String label, bool isActive) {
     return Column(
