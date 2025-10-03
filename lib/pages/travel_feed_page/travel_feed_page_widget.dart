@@ -243,6 +243,8 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
   /// ✅ SELECCIONAR IMAGEN
   Future<void> _pickImage() async {
     try {
+      print('📸 DEBUG: Abriendo selector de imagen...');
+      
       final XFile? image = await _picker.pickImage(
         source: ImageSource.gallery,
         maxWidth: 1920,
@@ -251,12 +253,26 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
       );
       
       if (image != null) {
+        print('📸 DEBUG: Imagen seleccionada: ${image.path}');
+        
         setState(() {
           _selectedImage = File(image.path);
         });
+        
+        print('✅ DEBUG: Imagen mostrada instantáneamente en el modal');
+      } else {
+        print('❌ DEBUG: No se seleccionó ninguna imagen');
       }
     } catch (e) {
       print('❌ Error picking image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error selecting image: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+          ),
+        );
+      }
     }
   }
 
@@ -564,46 +580,139 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                     
                     const SizedBox(height: 16),
                     
-                    // Image preview
-                    if (_selectedImage != null)
+                    // Image preview - MOSTRAR INMEDIATAMENTE
+                    if (_selectedImage != null) ...[
+                      const SizedBox(height: 8),
                       Container(
                         height: 200,
                         width: double.infinity,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
-                          image: DecorationImage(
-                            image: FileImage(_selectedImage!),
-                            fit: BoxFit.cover,
+                          border: Border.all(
+                            color: const Color(0xFF4DD0E1),
+                            width: 2,
                           ),
                         ),
-                        child: Stack(
-                          children: [
-                            Positioned(
-                              top: 8,
-                              right: 8,
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(() {
-                                    _selectedImage = null;
-                                  });
-                                },
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Stack(
+                            children: [
+                              // Imagen de fondo
+                              Positioned.fill(
+                                child: Image.file(
+                                  _selectedImage!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Container(
+                                      color: const Color(0xFF2C2C2C),
+                                      child: const Center(
+                                        child: Icon(
+                                          Icons.error,
+                                          color: Colors.red,
+                                          size: 48,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                              
+                              // Overlay con información
+                              Positioned(
+                                top: 8,
+                                left: 8,
                                 child: Container(
-                                  padding: const EdgeInsets.all(4),
-                                  decoration: const BoxDecoration(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
                                     color: Colors.black54,
-                                    shape: BoxShape.circle,
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                                  child: const Icon(
-                                    Icons.close,
-                                    color: Colors.white,
-                                    size: 16,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(
+                                        Icons.image,
+                                        color: Colors.white,
+                                        size: 16,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        'Imagen seleccionada',
+                                        style: GoogleFonts.outfit(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
                                   ),
+                                ),
+                              ),
+                              
+                              // Botón para eliminar imagen
+                              Positioned(
+                                top: 8,
+                                right: 8,
+                                child: GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedImage = null;
+                                    });
+                                    print('🗑️ DEBUG: Imagen eliminada del preview');
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.black54,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: const Icon(
+                                      Icons.close,
+                                      color: Colors.white,
+                                      size: 18,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      // Mensaje de confirmación
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4DD0E1).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: const Color(0xFF4DD0E1).withValues(alpha: 0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.check_circle,
+                              color: Color(0xFF4DD0E1),
+                              size: 20,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Imagen lista para subir. Presiona "Post" para publicar.',
+                                style: GoogleFonts.outfit(
+                                  color: const Color(0xFF4DD0E1),
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
                                 ),
                               ),
                             ),
                           ],
                         ),
                       ),
+                    ],
                     
                     const SizedBox(height: 16),
                     
@@ -613,7 +722,7 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                         Expanded(
                           child: FFButtonWidget(
                             onPressed: _isCreatingPost ? null : _pickImage,
-                            text: 'Add Photo',
+                            text: _selectedImage != null ? 'Change Photo' : 'Add Photo',
                             icon: _isCreatingPost 
                                 ? const SizedBox(
                                     width: 20,
@@ -623,8 +732,8 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                                       color: Colors.white70,
                                     ),
                                   )
-                                : const Icon(
-                                    Icons.camera_alt,
+                                : Icon(
+                                    _selectedImage != null ? Icons.swap_horiz : Icons.camera_alt,
                                     color: Colors.white,
                                     size: 20,
                                   ),
@@ -632,7 +741,9 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                               height: 48,
                               color: _isCreatingPost 
                                   ? const Color(0xFF2C2C2C)
-                                  : const Color(0xFF37474F),
+                                  : (_selectedImage != null 
+                                      ? const Color(0xFF4DD0E1) 
+                                      : const Color(0xFF37474F)),
                               textStyle: GoogleFonts.outfit(
                                 color: _isCreatingPost ? Colors.white70 : Colors.white,
                                 fontSize: 16,

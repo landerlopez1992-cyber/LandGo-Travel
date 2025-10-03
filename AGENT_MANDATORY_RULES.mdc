@@ -1,0 +1,177 @@
+# 🚨 REGLAS MANDATORIAS DEL AGENTE - LANDGO TRAVEL
+
+## ⚠️ INSTRUCCIÓN CRÍTICA #1: LECTURA OBLIGATORIA
+
+**EL AGENTE DEBE LEER ESTAS REGLAS ANTES DE CUALQUIER TAREA.**
+
+### 🛑 PROHIBIDO ABSOLUTAMENTE:
+- Iniciar cualquier tarea sin leer estas reglas
+- Hacer cambios sin verificar funcionalidad existente
+- Eliminar archivos sin autorización explícita
+- Crear duplicados sin verificar existencia
+- Trabajar sin comunicar al usuario
+
+### ✅ OBLIGATORIO SIEMPRE:
+- Leer estas reglas completas antes de empezar
+- Buscar exhaustivamente funcionalidad existente
+- Comunicar al usuario qué se va a hacer
+- Preservar todo el trabajo existente
+- Solo modificar/mejorar, nunca eliminar sin autorización
+
+## 🔍 VERIFICACIÓN MANDATORIA ANTES DE CUALQUIER CAMBIO
+
+### 📋 CHECKLIST OBLIGATORIO:
+
+#### 1. **BÚSQUEDA EXHAUSTIVA:**
+- Buscar con nombre exacto de la funcionalidad
+- Buscar con sinónimos y términos relacionados
+- Buscar en TODAS las carpetas del proyecto
+- Usar `codebase_search` para búsqueda semántica
+- Usar `glob_file_search` para búsqueda por patrones
+- Usar `grep` para búsqueda exacta de texto
+- Leer archivos existentes completamente
+
+#### 2. **ANÁLISIS PROFUNDO:**
+- Entender qué funcionalidad ya existe
+- Identificar qué se puede mejorar vs crear nuevo
+- Verificar que NO existe un archivo similar
+- Analizar el contexto completo del proyecto
+
+#### 3. **DECISIÓN INFORMADA:**
+- ¿Existe funcionalidad similar? → MEJORAR/EXTENDER
+- ¿Existe pantalla similar? → MODIFICAR/REUTILIZAR
+- ¿Es completamente nuevo? → PREGUNTAR AL USUARIO
+
+## 🎯 FLUJO DE TRABAJO MANDATORIO
+
+### ✅ PROCESO OBLIGATORIO:
+```
+1. 📖 LEER estas reglas completas
+2. 🔍 BUSCAR exhaustivamente funcionalidad existente
+3. 📋 ANALIZAR qué se puede mejorar vs crear nuevo
+4. 💬 COMUNICAR al usuario qué se va a hacer
+5. ✅ PRESERVAR todo lo que ya funciona
+6. 🛡️ PROTEGER el código existente
+7. 🔧 IMPLEMENTAR solo mejoras/addiciones
+```
+
+## 🚫 PROHIBICIONES ABSOLUTAS
+
+### ❌ EL AGENTE NUNCA DEBE:
+- Eliminar pantallas existentes sin autorización explícita
+- Eliminar archivos de datos sin autorización explícita
+- Restaurar archivos desde Git sin autorización explícita
+- Hacer `git restore` sin autorización explícita
+- Eliminar funcionalidades implementadas sin autorización explícita
+- Crear archivos duplicados sin autorización explícita
+- Crear pantallas duplicadas sin autorización explícita
+- Asumir que algo no existe sin buscar exhaustivamente
+- Hacer cambios sin entender el contexto completo
+- Trabajar en silencio sin comunicación
+
+## ✅ OBLIGACIONES ABSOLUTAS
+
+### ✅ EL AGENTE SIEMPRE DEBE:
+- Preguntar antes de eliminar CUALQUIER archivo
+- Preguntar antes de restaurar CUALQUIER archivo
+- Preguntar antes de hacer `git restore`
+- Preguntar antes de eliminar CUALQUIER funcionalidad
+- Preguntar antes de crear CUALQUIER archivo duplicado
+- Preservar TODO el trabajo existente
+- Solo modificar/mejorar, nunca eliminar sin autorización
+- Verificar que NO existe un archivo similar antes de crear uno nuevo
+- Buscar exhaustivamente antes de crear algo nuevo
+- Comunicar al usuario qué se va a hacer antes de hacerlo
+
+## 🎯 OBJETIVO FUNDAMENTAL
+
+### 🎯 PRINCIPIO FUNDAMENTAL:
+**"MEJORAR SIN DESTRUIR - AGREGAR SIN ELIMINAR"**
+
+### ✅ OBJETIVOS:
+- Preservar TODO el trabajo realizado
+- No perder horas de desarrollo
+- Mantener funcionalidades implementadas
+- Solo agregar/mejorar, nunca eliminar sin autorización
+
+## 🚨 PENALIZACIÓN POR VIOLACIÓN
+
+### 🚫 SI EL AGENTE VIOLA CUALQUIERA DE ESTAS REGLAS:
+1. 🛑 **DETENER** inmediatamente la tarea
+2. 🔄 **RESTAURAR** el estado anterior
+3. 📋 **REPORTAR** al usuario qué se dañó
+4. 🔧 **REPARAR** el daño causado
+5. ✅ **VERIFICAR** que todo funciona como antes
+
+## 📋 CHECKLIST FINAL MANDATORIO
+
+### ✅ ANTES DE CUALQUIER MODIFICACIÓN:
+- [ ] ¿He leído estas reglas completas?
+- [ ] ¿He buscado exhaustivamente funcionalidad existente?
+- [ ] ¿He analizado qué se puede mejorar vs crear nuevo?
+- [ ] ¿He comunicado al usuario qué se va a hacer?
+- [ ] ¿Preservo todo lo que ya funciona?
+- [ ] ¿Protejo el código existente?
+- [ ] ¿Implemento solo mejoras/addiciones?
+
+## 🎨 REGLAS DE DISEÑO MANDATORIAS
+
+### 🚫 COLORES PROHIBIDOS ABSOLUTAMENTE:
+```dart
+// ❌ NUNCA USAR ESTOS COLORES:
+Color(0xFF4CAF50)  // ❌ Verde Material - PROHIBIDO
+Color(0xFFFF9800)  // ❌ Naranja Material - PROHIBIDO  
+Color(0xFF2196F3)  // ❌ Azul Material - PROHIBIDO
+Color(0xFF9C27B0)  // ❌ Púrpura Material - PROHIBIDO
+Color(0xFFFFEB3B)  // ❌ Amarillo Material - PROHIBIDO
+Color(0xFF00BCD4)  // ❌ Cyan Material - PROHIBIDO
+Color(0xFFF44336)  // ❌ Rojo Material - PROHIBIDO (excepto errores)
+```
+
+### ✅ COLORES ÚNICOS PERMITIDOS:
+```dart
+// COLORES OFICIALES LANDGO TRAVEL (ÚNICOS PERMITIDOS):
+const Color(0xFF1A1A1A)  // ✅ Fondo negro principal
+const Color(0xFF2C2C2C)  // ✅ Gris oscuro para cards
+const Color(0xFF37474F)  // ✅ Azul gris oscuro para headers/inputs
+const Color(0xFF4DD0E1)  // ✅ TURQUESA - ÚNICO color de acento permitido
+const Color(0xFFFFFFFF)  // ✅ Blanco para textos principales
+const Colors.white70     // ✅ Blanco 70% para textos secundarios
+const Colors.white54     // ✅ Blanco 54% para hints
+const Colors.black       // ✅ Negro para texto sobre turquesa
+const Color(0xFFDC2626)  // ✅ Rojo SOLO para errores/cancelar
+const Colors.grey        // ✅ Gris SOLO para estados disabled
+```
+
+## 🎯 INSTRUCCIONES FINALES MANDATORIAS
+
+**EL AGENTE DEBE ENTENDER QUE:**
+
+- 🛡️ **PROTECCIÓN** es la prioridad #1
+- 🔍 **BÚSQUEDA** exhaustiva es obligatoria
+- 💬 **COMUNICACIÓN** es esencial
+- ✅ **PRESERVACIÓN** del trabajo existente es crítica
+- 🎯 **MEJORAR** sin destruir es el objetivo
+
+**OBJETIVO:** Evitar duplicación y mantener código limpio y organizado.
+
+---
+
+## 🚨 RECORDATORIO CRÍTICO
+
+**ANTES DE CUALQUIER TAREA, EL AGENTE DEBE:**
+
+1. 📖 **LEER** estas reglas completas
+2. 🔍 **BUSCAR** exhaustivamente funcionalidad existente
+3. 📋 **ANALIZAR** qué se puede mejorar vs crear nuevo
+4. 💬 **COMUNICAR** al usuario qué se va a hacer
+5. ✅ **PRESERVAR** todo lo que ya funciona
+6. 🛡️ **PROTEGER** el código existente
+
+**NO HAY EXCEPCIONES A ESTAS REGLAS.**
+
+---
+
+**ÚLTIMA ACTUALIZACIÓN:** 2025-01-30
+**VERSIÓN:** 1.0 - Reglas Mandatorias del Agente
+**AUTOR:** LandGo Travel Team

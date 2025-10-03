@@ -1564,14 +1564,50 @@ class _PaymentProcessingModalState extends State<_PaymentProcessingModal> {
       // Cerrar modal de procesamiento
       Navigator.of(context, rootNavigator: true).pop();
       
-      // Cerrar PaymentCardsPage
-      Navigator.of(context).pop();
-      
-      // Cerrar ReviewSummaryPage
-      Navigator.of(context).pop();
-      
-      // Ahora estamos de vuelta en MyWalletPage - refrescar no es necesario
-      // porque MyWalletPage tiene didChangeDependencies que recargará automáticamente
+      if (_paymentSuccess) {
+        // Si el pago fue exitoso, navegar a la página de pago exitoso con todos los datos
+        final user = Supabase.instance.client.auth.currentUser;
+        final customerName = user?.email?.split('@')[0] ?? 'Customer';
+        final cardBrand = widget.selectedCard['brand'] ?? 'Card';
+        final cardLast4 = widget.selectedCard['last4'] ?? '****';
+        final cardExpiry = widget.selectedCard['exp_month'] != null && widget.selectedCard['exp_year'] != null
+            ? '${widget.selectedCard['exp_month']}/${widget.selectedCard['exp_year']}'
+            : 'N/A';
+        
+        // Navegar a Payment Success con todos los datos
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PaymentSuccessPagWidget(),
+            settings: RouteSettings(
+              arguments: {
+                'paymentIntentId': _paymentIntentId,
+                'chargeId': _chargeId,
+                'customerName': customerName,
+                'cardBrand': cardBrand,
+                'cardLast4': cardLast4,
+                'cardExpiry': cardExpiry,
+                'amount': widget.amount,
+                'currency': 'USD',
+              },
+            ),
+          ),
+        );
+      } else {
+        // Si el pago falló, navegar a la página de error
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PaymentFailedPagWidget(),
+            settings: RouteSettings(
+              arguments: {
+                'errorMessage': _errorMessage,
+                'amount': widget.amount,
+              },
+            ),
+          ),
+        );
+      }
     });
   }
 

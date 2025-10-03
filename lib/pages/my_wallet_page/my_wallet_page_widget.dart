@@ -36,6 +36,7 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
   void initState() {
     super.initState();
     _model = createModel(context, () => MyWalletPageModel());
+    // Cargar balance inicial
     _loadWalletBalance();
     WidgetsBinding.instance.addPostFrameCallback((_) => setState(() {}));
   }
@@ -43,7 +44,20 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // NO recargar automáticamente - solo en initState y cuando se regrese explícitamente
+    // Recargar balance cuando se regrese de una transferencia
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Solo recargar si no estamos en el estado inicial de carga
+      if (!_isLoadingBalance) {
+        _loadWalletBalance();
+      }
+    });
+  }
+  
+  /// Método público para refrescar el balance cuando sea necesario
+  Future<void> refreshBalance() async {
+    if (mounted) {
+      await _loadWalletBalance();
+    }
   }
   
   /// ✅ CARGAR SALDO Y ESTADÍSTICAS DESDE SUPABASE
@@ -359,10 +373,8 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
                 borderRadius: BorderRadius.circular(16),
                 onTap: () async {
                   await context.pushNamed('TransferMoneyPage');
-                  // Al regresar, refrescar datos del wallet
-                  if (mounted) {
-                    await _loadWalletBalance();
-                  }
+                  // NO recargar automáticamente - solo recargar si es necesario
+                  // El balance se actualizará cuando el usuario regrese de una transferencia exitosa
                 },
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,

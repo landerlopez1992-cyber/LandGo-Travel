@@ -1,0 +1,163 @@
+# 🤖 SISTEMA DE PROTECCIÓN DEL AGENTE - LANDGO TRAVEL
+
+## 🎯 INSTRUCCIONES CRÍTICAS PARA EL AGENTE
+
+### ⚠️ REGLA #1: LECTURA OBLIGATORIA DE REGLAS
+
+**ANTES DE CUALQUIER TAREA, EL AGENTE DEBE:**
+
+1. 📖 **LEER COMPLETAMENTE** `PROTECTION_RULES.mdc`
+2. 📖 **LEER COMPLETAMENTE** `LANDGO_DESIGN_RULES.mdc`
+3. 🔍 **VERIFICAR** que entiende todas las reglas
+4. ✅ **CONFIRMAR** que las va a seguir
+
+### 🛡️ REGLA #2: VERIFICACIÓN EXHAUSTIVA OBLIGATORIA
+
+**ANTES DE IMPLEMENTAR CUALQUIER FUNCIONALIDAD:**
+
+#### 1. **BÚSQUEDA EXHAUSTIVA:**
+```bash
+# El agente DEBE buscar con múltiples términos:
+- Nombre exacto de la funcionalidad
+- Sinónimos y términos relacionados
+- En TODAS las carpetas del proyecto
+- Usar codebase_search, glob_file_search, grep
+```
+
+#### 2. **ANÁLISIS PROFUNDO:**
+```bash
+# El agente DEBE:
+- Leer archivos existentes completamente
+- Entender qué funcionalidad ya existe
+- Identificar qué se puede mejorar vs crear nuevo
+```
+
+#### 3. **DECISIÓN INFORMADA:**
+```bash
+# El agente DEBE decidir:
+- ¿Existe funcionalidad similar? → MEJORAR/EXTENDER
+- ¿Existe pantalla similar? → MODIFICAR/REUTILIZAR
+- ¿Es completamente nuevo? → PREGUNTAR AL USUARIO
+```
+
+### 🚫 REGLA #3: PROHIBICIONES ABSOLUTAS
+
+**EL AGENTE NUNCA DEBE:**
+
+- ❌ Eliminar pantallas existentes sin autorización explícita
+- ❌ Eliminar archivos de datos sin autorización explícita
+- ❌ Restaurar archivos desde Git sin autorización explícita
+- ❌ Hacer `git restore` sin autorización explícita
+- ❌ Eliminar funcionalidades implementadas sin autorización explícita
+- ❌ Crear archivos duplicados sin autorización explícita
+- ❌ Crear pantallas duplicadas sin autorización explícita
+- ❌ Asumir que algo no existe sin buscar exhaustivamente
+- ❌ Hacer cambios sin entender el contexto completo
+
+### ✅ REGLA #4: OBLIGACIONES ABSOLUTAS
+
+**EL AGENTE SIEMPRE DEBE:**
+
+- ✅ Preguntar antes de eliminar CUALQUIER archivo
+- ✅ Preguntar antes de restaurar CUALQUIER archivo
+- ✅ Preguntar antes de hacer `git restore`
+- ✅ Preguntar antes de eliminar CUALQUIER funcionalidad
+- ✅ Preguntar antes de crear CUALQUIER archivo duplicado
+- ✅ Preservar TODO el trabajo existente
+- ✅ Solo modificar/mejorar, nunca eliminar sin autorización
+- ✅ Verificar que NO existe un archivo similar antes de crear uno nuevo
+- ✅ Buscar exhaustivamente antes de crear algo nuevo
+- ✅ Comunicar al usuario qué se va a hacer antes de hacerlo
+
+### 🔍 REGLA #5: FLUJO DE TRABAJO OBLIGATORIO
+
+**EL AGENTE DEBE SEGUIR ESTE FLUJO:**
+
+```
+1. 📖 LEER reglas de protección
+2. 🔍 BUSCAR exhaustivamente funcionalidad existente
+3. 📋 ANALIZAR qué se puede mejorar vs crear nuevo
+4. 💬 COMUNICAR al usuario qué se va a hacer
+5. ✅ PRESERVAR todo lo que ya funciona
+6. 🛡️ PROTEGER el código existente
+7. 🔧 IMPLEMENTAR solo mejoras/addiciones
+```
+
+### 🎯 REGLA #6: OBJETIVO FUNDAMENTAL
+
+**PRINCIPIO FUNDAMENTAL:**
+**"MEJORAR SIN DESTRUIR - AGREGAR SIN ELIMINAR"**
+
+**OBJETIVOS:**
+- Preservar TODO el trabajo realizado
+- No perder horas de desarrollo
+- Mantener funcionalidades implementadas
+- Solo agregar/mejorar, nunca eliminar sin autorización
+
+### 🚨 REGLA #7: PENALIZACIÓN POR VIOLACIÓN
+
+**SI EL AGENTE VIOLA CUALQUIERA DE ESTAS REGLAS:**
+
+1. 🛑 **DETENER** inmediatamente la tarea
+2. 🔄 **RESTAURAR** el estado anterior
+3. 📋 **REPORTAR** al usuario qué se dañó
+4. 🔧 **REPARAR** el daño causado
+5. ✅ **VERIFICAR** que todo funciona como antes
+
+### 📋 REGLA #8: CHECKLIST OBLIGATORIO
+
+**ANTES DE CUALQUIER MODIFICACIÓN, EL AGENTE DEBE VERIFICAR:**
+
+- [ ] ¿Preserva funcionalidades existentes?
+- [ ] ¿No elimina código importante?
+- [ ] ¿Mantiene consistencia visual?
+- [ ] ¿Funciona con el resto del sistema?
+- [ ] ¿No crea duplicados innecesarios?
+- [ ] ¿Ha buscado exhaustivamente funcionalidad existente?
+- [ ] ¿Ha comunicado al usuario qué se va a hacer?
+
+### 💬 REGLA #9: COMUNICACIÓN OBLIGATORIA
+
+**EL AGENTE DEBE SIEMPRE:**
+
+- 💬 Explicar qué se va a hacer ANTES de hacerlo
+- 💬 Explicar qué archivos se van a modificar
+- 💬 Explicar qué funcionalidades se van a afectar
+- 💬 Pedir confirmación antes de cambios grandes
+
+**NUNCA:**
+- ❌ Hacer cambios sin explicar
+- ❌ Eliminar sin preguntar
+- ❌ Asumir que algo se puede eliminar
+- ❌ Trabajar en silencio sin comunicación
+
+### 🎯 REGLA #10: RESUMEN EJECUTIVO
+
+**ANTES DE CUALQUIER TAREA, EL AGENTE DEBE:**
+
+1. 📖 **LEER** estas reglas completas
+2. 🔍 **BUSCAR** exhaustivamente funcionalidad existente
+3. 📋 **ANALIZAR** qué se puede mejorar vs crear nuevo
+4. 💬 **COMUNICAR** al usuario qué se va a hacer
+5. ✅ **PRESERVAR** todo lo que ya funciona
+6. 🛡️ **PROTEGER** el código existente
+
+---
+
+## 🎯 INSTRUCCIONES FINALES
+
+**EL AGENTE DEBE ENTENDER QUE:**
+
+- 🛡️ **PROTECCIÓN** es la prioridad #1
+- 🔍 **BÚSQUEDA** exhaustiva es obligatoria
+- 💬 **COMUNICACIÓN** es esencial
+- ✅ **PRESERVACIÓN** del trabajo existente es crítica
+- 🎯 **MEJORAR** sin destruir es el objetivo
+
+**OBJETIVO:** Evitar duplicación y mantener código limpio y organizado.
+
+---
+
+**ÚLTIMA ACTUALIZACIÓN:** 2025-01-30
+**VERSIÓN:** 1.0 - Sistema de Protección del Agente
+**AUTOR:** LandGo Travel Team

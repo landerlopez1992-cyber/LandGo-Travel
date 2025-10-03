@@ -1,0 +1,131 @@
+# ✅ CHECKLIST DE VERIFICACIÓN OBLIGATORIO - LANDGO TRAVEL
+
+## 🎯 INSTRUCCIONES PARA EL AGENTE
+
+### ⚠️ ANTES DE CUALQUIER TAREA, EL AGENTE DEBE:
+
+#### 1. 📖 **LEER REGLAS COMPLETAS:**
+- [ ] Leer `PROTECTION_RULES.mdc` completamente
+- [ ] Leer `LANDGO_DESIGN_RULES.mdc` completamente
+- [ ] Leer `AGENT_PROTECTION_SYSTEM.mdc` completamente
+- [ ] Confirmar que entiende todas las reglas
+
+#### 2. 🔍 **BÚSQUEDA EXHAUSTIVA OBLIGATORIA:**
+- [ ] Buscar con nombre exacto de la funcionalidad
+- [ ] Buscar con sinónimos y términos relacionados
+- [ ] Buscar en TODAS las carpetas del proyecto
+- [ ] Usar `codebase_search` para búsqueda semántica
+- [ ] Usar `glob_file_search` para búsqueda por patrones
+- [ ] Usar `grep` para búsqueda exacta de texto
+- [ ] Leer archivos existentes completamente
+
+#### 3. 📋 **ANÁLISIS PROFUNDO:**
+- [ ] Entender qué funcionalidad ya existe
+- [ ] Identificar qué se puede mejorar vs crear nuevo
+- [ ] Verificar que NO existe un archivo similar
+- [ ] Analizar el contexto completo del proyecto
+
+#### 4. 💬 **COMUNICACIÓN OBLIGATORIA:**
+- [ ] Explicar qué se va a hacer ANTES de hacerlo
+- [ ] Explicar qué archivos se van a modificar
+- [ ] Explicar qué funcionalidades se van a afectar
+- [ ] Pedir confirmación antes de cambios grandes
+
+#### 5. ✅ **VERIFICACIÓN DE PROTECCIÓN:**
+- [ ] ¿Preserva funcionalidades existentes?
+- [ ] ¿No elimina código importante?
+- [ ] ¿Mantiene consistencia visual?
+- [ ] ¿Funciona con el resto del sistema?
+- [ ] ¿No crea duplicados innecesarios?
+
+## 🚫 PROHIBICIONES ABSOLUTAS
+
+### ❌ EL AGENTE NUNCA DEBE:
+- [ ] Eliminar pantallas existentes sin autorización explícita
+- [ ] Eliminar archivos de datos sin autorización explícita
+- [ ] Restaurar archivos desde Git sin autorización explícita
+- [ ] Hacer `git restore` sin autorización explícita
+- [ ] Eliminar funcionalidades implementadas sin autorización explícita
+- [ ] Crear archivos duplicados sin autorización explícita
+- [ ] Crear pantallas duplicadas sin autorización explícita
+- [ ] Asumir que algo no existe sin buscar exhaustivamente
+- [ ] Hacer cambios sin entender el contexto completo
+- [ ] Trabajar en silencio sin comunicación
+
+## ✅ OBLIGACIONES ABSOLUTAS
+
+### ✅ EL AGENTE SIEMPRE DEBE:
+- [ ] Preguntar antes de eliminar CUALQUIER archivo
+- [ ] Preguntar antes de restaurar CUALQUIER archivo
+- [ ] Preguntar antes de hacer `git restore`
+- [ ] Preguntar antes de eliminar CUALQUIER funcionalidad
+- [ ] Preguntar antes de crear CUALQUIER archivo duplicado
+- [ ] Preservar TODO el trabajo existente
+- [ ] Solo modificar/mejorar, nunca eliminar sin autorización
+- [ ] Verificar que NO existe un archivo similar antes de crear uno nuevo
+- [ ] Buscar exhaustivamente antes de crear algo nuevo
+- [ ] Comunicar al usuario qué se va a hacer antes de hacerlo
+
+## 🎯 FLUJO DE TRABAJO OBLIGATORIO
+
+### 📋 PROCESO OBLIGATORIO:
+```
+1. 📖 LEER reglas de protección
+2. 🔍 BUSCAR exhaustivamente funcionalidad existente
+3. 📋 ANALIZAR qué se puede mejorar vs crear nuevo
+4. 💬 COMUNICAR al usuario qué se va a hacer
+5. ✅ PRESERVAR todo lo que ya funciona
+6. 🛡️ PROTEGER el código existente
+7. 🔧 IMPLEMENTAR solo mejoras/addiciones
+```
+
+## 🚨 PENALIZACIÓN POR VIOLACIÓN
+
+### 🚫 SI EL AGENTE VIOLA CUALQUIERA DE ESTAS REGLAS:
+1. 🛑 **DETENER** inmediatamente la tarea
+2. 🔄 **RESTAURAR** el estado anterior
+3. 📋 **REPORTAR** al usuario qué se dañó
+4. 🔧 **REPARAR** el daño causado
+5. ✅ **VERIFICAR** que todo funciona como antes
+
+## 🎯 OBJETIVO FUNDAMENTAL
+
+### 🎯 PRINCIPIO FUNDAMENTAL:
+**"MEJORAR SIN DESTRUIR - AGREGAR SIN ELIMINAR"**
+
+### ✅ OBJETIVOS:
+- Preservar TODO el trabajo realizado
+- No perder horas de desarrollo
+- Mantener funcionalidades implementadas
+- Solo agregar/mejorar, nunca eliminar sin autorización
+
+## 📋 CHECKLIST FINAL
+
+### ✅ ANTES DE CUALQUIER MODIFICACIÓN:
+- [ ] ¿He leído todas las reglas?
+- [ ] ¿He buscado exhaustivamente funcionalidad existente?
+- [ ] ¿He analizado qué se puede mejorar vs crear nuevo?
+- [ ] ¿He comunicado al usuario qué se va a hacer?
+- [ ] ¿Preservo todo lo que ya funciona?
+- [ ] ¿Protejo el código existente?
+- [ ] ¿Implemento solo mejoras/addiciones?
+
+---
+
+## 🎯 RESUMEN EJECUTIVO
+
+**EL AGENTE DEBE ENTENDER QUE:**
+
+- 🛡️ **PROTECCIÓN** es la prioridad #1
+- 🔍 **BÚSQUEDA** exhaustiva es obligatoria
+- 💬 **COMUNICACIÓN** es esencial
+- ✅ **PRESERVACIÓN** del trabajo existente es crítica
+- 🎯 **MEJORAR** sin destruir es el objetivo
+
+**OBJETIVO:** Evitar duplicación y mantener código limpio y organizado.
+
+---
+
+**ÚLTIMA ACTUALIZACIÓN:** 2025-01-30
+**VERSIÓN:** 1.0 - Checklist de Verificación
+**AUTOR:** LandGo Travel Team

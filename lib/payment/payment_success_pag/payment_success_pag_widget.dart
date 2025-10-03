@@ -78,23 +78,23 @@ class _PaymentSuccessPagWidgetState extends State<PaymentSuccessPagWidget> {
         body: SafeArea(
           top: true,
           child: SingleChildScrollView(
-            child: Padding(
+          child: Padding(
               padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
                   const SizedBox(height: 40),
                   
                   // ✅ Icono de éxito (TURQUESA LANDGO)
-                  Container(
+                Container(
                     width: 120,
                     height: 120,
-                    decoration: BoxDecoration(
+                  decoration: BoxDecoration(
                       color: const Color(0xFF4DD0E1).withOpacity(0.1), // TURQUESA LANDGO
-                      shape: BoxShape.circle,
-                    ),
+                    shape: BoxShape.circle,
+                  ),
                     child: const Center(
-                      child: Icon(
+                    child: Icon(
                         Icons.check_circle_outline,
                         color: Color(0xFF4DD0E1), // TURQUESA ÉXITO
                         size: 60,
@@ -105,21 +105,21 @@ class _PaymentSuccessPagWidgetState extends State<PaymentSuccessPagWidget> {
                   const SizedBox(height: 30),
                   
                   // ✅ Título
-                  Text(
-                    'Payment Successful!',
+                    Text(
+                      'Payment Successful!',
                     style: GoogleFonts.outfit(
                       color: Colors.white,
                       fontSize: 32,
-                      fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.bold,
                     ),
                   ),
                   
                   const SizedBox(height: 16),
                   
                   // ✅ Mensaje de confirmación
-                  Text(
+                    Text(
                     'Your wallet has been funded successfully.',
-                    textAlign: TextAlign.center,
+                      textAlign: TextAlign.center,
                     style: GoogleFonts.outfit(
                       color: Colors.white70,
                       fontSize: 16,
@@ -137,15 +137,15 @@ class _PaymentSuccessPagWidgetState extends State<PaymentSuccessPagWidget> {
                       color: const Color(0xFF2C2C2C), // GRIS OSCURO LANDGO
                       borderRadius: BorderRadius.circular(16),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
                           'Payment Details',
                           style: GoogleFonts.outfit(
                             color: Colors.white,
                             fontSize: 18,
-                            fontWeight: FontWeight.w600,
+                                  fontWeight: FontWeight.w600,
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -169,10 +169,10 @@ class _PaymentSuccessPagWidgetState extends State<PaymentSuccessPagWidget> {
                   const SizedBox(height: 40),
                   
                   // ✅ Botón principal (View My Wallet)
-                  Container(
-                    width: double.infinity,
+                Container(
+                  width: double.infinity,
                     height: 56,
-                    decoration: BoxDecoration(
+                  decoration: BoxDecoration(
                       color: const Color(0xFF4DD0E1), // TURQUESA LANDGO
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -182,65 +182,15 @@ class _PaymentSuccessPagWidgetState extends State<PaymentSuccessPagWidget> {
                         borderRadius: BorderRadius.circular(16),
                         onTap: () {
                           // Navegar a My Wallet usando GoRouter
-                          context.goNamedAuth(
-                            MyWalletPageWidget.routeName,
-                            context.mounted,
-                          );
-                        },
-                        child: Center(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(
-                                Icons.account_balance_wallet_rounded,
-                                color: Colors.black, // ICONO NEGRO SOBRE TURQUESA
-                                size: 24,
-                              ),
-                              const SizedBox(width: 12),
-                              Text(
-                                'View My Wallet',
-                                style: GoogleFonts.outfit(
-                                  color: Colors.black, // TEXTO NEGRO SOBRE TURQUESA
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  // ✅ Botón secundario (Go to Home)
-                  Container(
-                    width: double.infinity,
-                    height: 56,
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: Colors.white.withOpacity(0.3),
-                        width: 1,
-                      ),
-                    ),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(16),
-                        onTap: () {
-                          // Navegar al inicio usando GoRouter
-                          context.goNamedAuth('MainPage', context.mounted);
+                          context.go('/myWalletPage');
                         },
                         child: Center(
                           child: Text(
-                            'Go to Home',
+                            'Accept',
                             style: GoogleFonts.outfit(
-                              color: Colors.white,
+                              color: Colors.black, // TEXTO NEGRO SOBRE TURQUESA
                               fontSize: 18,
-                              fontWeight: FontWeight.w600,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
@@ -248,7 +198,7 @@ class _PaymentSuccessPagWidgetState extends State<PaymentSuccessPagWidget> {
                     ),
                   ),
                   
-                  const SizedBox(height: 100), // ESPACIO PARA BOTTOM NAV
+                  const SizedBox(height: 40),
                 ],
               ),
             ),
@@ -259,29 +209,35 @@ class _PaymentSuccessPagWidgetState extends State<PaymentSuccessPagWidget> {
   }
 
   Widget _buildDetailRow(String label, String value, {bool isSuccess = false, bool isHighlight = false}) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    // Acortar IDs muy largos (Payment Intent, Charge ID)
+    String displayValue = value;
+    if (label.contains('ID') && value.length > 25 && value != 'N/A') {
+      displayValue = '${value.substring(0, 20)}...';
+    }
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
           style: GoogleFonts.outfit(
             color: Colors.white70,
-            fontSize: 16,
+            fontSize: 13,
             fontWeight: FontWeight.w500,
           ),
         ),
-        Flexible(
-          child: Text(
-            value,
-            textAlign: TextAlign.right,
-            style: GoogleFonts.outfit(
-              color: isSuccess || isHighlight
-                ? const Color(0xFF4DD0E1) // TURQUESA LANDGO (ÚNICO COLOR PERMITIDO)
-                : Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+        const SizedBox(height: 4),
+        Text(
+          displayValue,
+          style: GoogleFonts.outfit(
+            color: isSuccess || isHighlight
+              ? const Color(0xFF4DD0E1) // TURQUESA LANDGO (ÚNICO COLOR PERMITIDO)
+              : Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.w600,
           ),
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
         ),
       ],
     );

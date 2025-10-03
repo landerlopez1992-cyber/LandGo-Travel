@@ -1,0 +1,185 @@
+# 🛡️ REGLAS COMPLETAS DEL SISTEMA - LANDGO TRAVEL
+
+## ⚠️ REGLA CRÍTICA #1: NO DAÑAR CÓDIGO EXISTENTE
+
+### 🚫 PROHIBIDO ABSOLUTAMENTE:
+- **Eliminar** pantallas existentes sin autorización explícita del usuario
+- **Eliminar** archivos de datos sin autorización explícita del usuario
+- **Restaurar** archivos desde Git sin autorización explícita del usuario
+- **Hacer** `git restore` sin autorización explícita del usuario
+- **Eliminar** funcionalidades implementadas sin autorización explícita del usuario
+- **Crear** archivos duplicados (ej: flight_detail_simple_2.dart, flight_detail_simple_fixed.dart)
+- **Crear** pantallas duplicadas sin autorización explícita del usuario
+
+### ✅ OBLIGATORIO SIEMPRE:
+- **Antes de eliminar** CUALQUIER archivo, preguntar al usuario
+- **Antes de restaurar** CUALQUIER archivo, preguntar al usuario
+- **Antes de hacer** `git restore`, preguntar al usuario
+- **Antes de eliminar** CUALQUIER funcionalidad, preguntar al usuario
+- **Antes de crear** CUALQUIER archivo duplicado, preguntar al usuario
+- **Preservar** TODO el trabajo existente
+- **Solo modificar/mejorar**, nunca eliminar sin autorización
+- **Verificar** que NO existe un archivo similar antes de crear uno nuevo
+
+## 🔍 REGLA #2: VERIFICACIÓN EXHAUSTIVA ANTES DE CUALQUIER CAMBIO
+
+### 📋 CHECKLIST OBLIGATORIO:
+
+#### 1. **BÚSQUEDA EXHAUSTIVA:**
+- Buscar con nombre exacto (ej: "my account")
+- Buscar con sinónimos (ej: "profile", "user", "account")
+- Buscar con términos relacionados (ej: "settings", "preferences")
+- Buscar en TODAS las carpetas del proyecto
+- Usar múltiples herramientas: codebase_search, glob_file_search, grep
+
+#### 2. **ANÁLISIS PROFUNDO:**
+- Leer archivos existentes completamente
+- Entender qué funcionalidad ya existe
+- Identificar qué se puede mejorar vs crear nuevo
+
+#### 3. **DECISIÓN INFORMADA:**
+- ¿Existe funcionalidad similar? → MEJORAR/EXTENDER
+- ¿Existe pantalla similar? → MODIFICAR/REUTILIZAR
+- ¿Es completamente nuevo? → PREGUNTAR AL USUARIO
+
+### 🚫 PROHIBIDO:
+- Crear archivos sin verificación exhaustiva
+- Asumir que algo no existe sin buscar
+- Crear duplicados de funcionalidad existente
+- Hacer cambios sin entender el contexto completo
+
+## 🎯 REGLA #3: FLUJO DE TRABAJO OBLIGATORIO
+
+### ✅ PROCESO OBLIGATORIO:
+```
+1. ¿Qué busco? → Definir términos de búsqueda
+2. ¿Dónde busco? → Todas las carpetas y archivos
+3. ¿Qué encuentro? → Analizar resultados
+4. ¿Qué hago? → Mejorar existente o preguntar antes de crear
+```
+
+### 🔍 HERRAMIENTAS DE BÚSQUEDA OBLIGATORIAS:
+1. **codebase_search** - Búsqueda semántica
+2. **glob_file_search** - Búsqueda por patrones
+3. **grep** - Búsqueda exacta de texto
+4. **read_file** - Leer archivos completos
+
+## 🛡️ REGLA #4: PROTECCIÓN ESPECIAL PARA ARCHIVOS CRÍTICOS
+
+### 📁 ARCHIVOS PROTEGIDOS:
+- Pantallas de vuelos (flight_*)
+- Pantallas de favoritos (favorite_*)
+- Pantallas de órdenes (order_*)
+- Archivos de modelos (models/*)
+- Archivos de servicios (services/*)
+- Cualquier archivo con funcionalidad implementada
+
+### ⚠️ EXCEPCIÓN:
+- Solo se puede eliminar si el usuario dice EXPLÍCITAMENTE "elimina", "borra", "quita"
+- NUNCA asumir que se puede eliminar
+- SIEMPRE preguntar antes de eliminar
+
+## 🎯 REGLA #5: OBJETIVO FUNDAMENTAL
+
+### 🎯 PRINCIPIO FUNDAMENTAL:
+**"MEJORAR SIN DESTRUIR - AGREGAR SIN ELIMINAR"**
+
+### ✅ OBJETIVOS:
+- Preservar TODO el trabajo realizado
+- No perder horas de desarrollo
+- Mantener funcionalidades implementadas
+- Solo agregar/mejorar, nunca eliminar sin autorización
+
+## 🚨 REGLA #6: PENALIZACIÓN POR VIOLACIÓN
+
+### 🚫 SI SE VIOLA CUALQUIERA DE ESTAS REGLAS:
+1. 🛑 **DETENER** inmediatamente la tarea
+2. 🔄 **RESTAURAR** el estado anterior
+3. 📋 **REPORTAR** al usuario qué se dañó
+4. 🔧 **REPARAR** el daño causado
+5. ✅ **VERIFICAR** que todo funciona como antes
+
+## 📋 REGLA #7: CHECKLIST ANTES DE CUALQUIER MODIFICACIÓN
+
+### ✅ VERIFICAR:
+- [ ] ¿Preserva funcionalidades existentes?
+- [ ] ¿No elimina código importante?
+- [ ] ¿Mantiene consistencia visual?
+- [ ] ¿Funciona con el resto del sistema?
+- [ ] ¿No crea duplicados innecesarios?
+
+## 🎯 REGLA #8: COMUNICACIÓN OBLIGATORIA
+
+### 💬 SIEMPRE COMUNICAR:
+- Qué se va a hacer ANTES de hacerlo
+- Qué archivos se van a modificar
+- Qué funcionalidades se van a afectar
+- Pedir confirmación antes de cambios grandes
+
+### 🚫 NUNCA:
+- Hacer cambios sin explicar
+- Eliminar sin preguntar
+- Asumir que algo se puede eliminar
+- Trabajar en silencio sin comunicación
+
+---
+
+## 🎨 REGLA CRÍTICA DE DISEÑO - LANDGO TRAVEL
+
+### 🚫 COLORES ABSOLUTAMENTE PROHIBIDOS EN TODA LA APP:
+
+```dart
+// ❌ NUNCA USAR ESTOS COLORES:
+Color(0xFF4CAF50)  // ❌ Verde Material - PROHIBIDO
+Color(0xFFFF9800)  // ❌ Naranja Material - PROHIBIDO  
+Color(0xFF2196F3)  // ❌ Azul Material - PROHIBIDO
+Color(0xFF9C27B0)  // ❌ Púrpura Material - PROHIBIDO
+Color(0xFFFFEB3B)  // ❌ Amarillo Material - PROHIBIDO
+Color(0xFF00BCD4)  // ❌ Cyan Material - PROHIBIDO
+Color(0xFFF44336)  // ❌ Rojo Material - PROHIBIDO (excepto errores)
+```
+
+### ✅ COLORES ÚNICOS PERMITIDOS - LANDGO TRAVEL:
+
+```dart
+// COLORES OFICIALES LANDGO TRAVEL (ÚNICOS PERMITIDOS):
+
+// 1. FONDO Y ESTRUCTURA
+const Color(0xFF1A1A1A)  // ✅ Fondo negro principal
+const Color(0xFF2C2C2C)  // ✅ Gris oscuro para cards
+const Color(0xFF37474F)  // ✅ Azul gris oscuro para headers/inputs
+
+// 2. COLOR PRINCIPAL (ÚNICO ACENTO PERMITIDO)
+const Color(0xFF4DD0E1)  // ✅ TURQUESA - ÚNICO color de acento permitido
+                         // ✅ Usar para: botones, íconos, highlights, success, active
+
+// 3. TEXTOS
+const Color(0xFFFFFFFF)  // ✅ Blanco para textos principales
+const Colors.white70     // ✅ Blanco 70% para textos secundarios
+const Colors.white54     // ✅ Blanco 54% para hints
+const Colors.black       // ✅ Negro para texto sobre turquesa
+
+// 4. ESTADOS ESPECIALES (ÚNICOS CASOS)
+const Color(0xFFDC2626)  // ✅ Rojo SOLO para errores/cancelar
+const Colors.grey        // ✅ Gris SOLO para estados disabled
+```
+
+---
+
+## 🎯 RESUMEN EJECUTIVO:
+
+**ANTES DE CUALQUIER TAREA:**
+1. 📖 **LEER** estas reglas completas
+2. 🔍 **BUSCAR** exhaustivamente funcionalidad existente
+3. 📋 **ANALIZAR** qué se puede mejorar vs crear nuevo
+4. 💬 **COMUNICAR** al usuario qué se va a hacer
+5. ✅ **PRESERVAR** todo lo que ya funciona
+6. 🛡️ **PROTEGER** el código existente
+
+**OBJETIVO:** Evitar duplicación y mantener código limpio y organizado.
+
+---
+
+**ÚLTIMA ACTUALIZACIÓN:** 2025-01-30
+**VERSIÓN:** 2.0 - Reglas Completas del Sistema
+**AUTOR:** LandGo Travel Team

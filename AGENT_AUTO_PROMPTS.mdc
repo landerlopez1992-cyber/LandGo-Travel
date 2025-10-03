@@ -1,0 +1,165 @@
+# 🤖 PROMPTS AUTOMÁTICOS DEL AGENTE - LANDGO TRAVEL
+
+## 🚨 PROMPT CRÍTICO #1: VERIFICACIÓN OBLIGATORIA
+
+**ANTES DE CUALQUIER TAREA, EL AGENTE DEBE EJECUTAR ESTE PROMPT:**
+
+```
+🔍 VERIFICACIÓN OBLIGATORIA ANTES DE INICIAR TAREA:
+
+1. ¿He leído las reglas de protección completas?
+2. ¿He buscado exhaustivamente funcionalidad existente?
+3. ¿He analizado qué se puede mejorar vs crear nuevo?
+4. ¿He comunicado al usuario qué se va a hacer?
+5. ¿Preservo todo lo que ya funciona?
+6. ¿Protejo el código existente?
+7. ¿Implemento solo mejoras/addiciones?
+
+✅ CONFIRMAR: "He leído y entiendo todas las reglas de protección"
+✅ CONFIRMAR: "He buscado exhaustivamente funcionalidad existente"
+✅ CONFIRMAR: "He comunicado al usuario qué se va a hacer"
+✅ CONFIRMAR: "Preservo todo el trabajo existente"
+```
+
+## 🛡️ PROMPT DE PROTECCIÓN
+
+**ANTES DE CUALQUIER MODIFICACIÓN, EL AGENTE DEBE EJECUTAR ESTE PROMPT:**
+
+```
+🛡️ VERIFICACIÓN DE PROTECCIÓN:
+
+❌ ¿Voy a eliminar algo existente? → SI SÍ, DETENER Y PREGUNTAR AL USUARIO
+❌ ¿Voy a crear duplicados? → SI SÍ, DETENER Y PREGUNTAR AL USUARIO
+❌ ¿Voy a restaurar archivos? → SI SÍ, DETENER Y PREGUNTAR AL USUARIO
+❌ ¿Voy a hacer git restore? → SI SÍ, DETENER Y PREGUNTAR AL USUARIO
+
+✅ ¿Voy a mejorar algo existente? → CONTINUAR
+✅ ¿Voy a agregar funcionalidad nueva? → CONTINUAR
+✅ ¿Voy a comunicar al usuario? → CONTINUAR
+✅ ¿Voy a preservar todo lo existente? → CONTINUAR
+```
+
+## 🔍 PROMPT DE BÚSQUEDA
+
+**ANTES DE CREAR CUALQUIER ARCHIVO, EL AGENTE DEBE EJECUTAR ESTE PROMPT:**
+
+```
+🔍 BÚSQUEDA EXHAUSTIVA OBLIGATORIA:
+
+1. ¿He buscado con nombre exacto de la funcionalidad?
+2. ¿He buscado con sinónimos y términos relacionados?
+3. ¿He buscado en TODAS las carpetas del proyecto?
+4. ¿He usado codebase_search, glob_file_search, grep?
+5. ¿He leído archivos existentes completamente?
+6. ¿He analizado el contexto completo del proyecto?
+
+✅ CONFIRMAR: "He buscado exhaustivamente y no existe funcionalidad similar"
+✅ CONFIRMAR: "He analizado el contexto completo del proyecto"
+✅ CONFIRMAR: "Estoy seguro de que no estoy creando duplicados"
+```
+
+## 💬 PROMPT DE COMUNICACIÓN
+
+**ANTES DE CUALQUIER CAMBIO, EL AGENTE DEBE EJECUTAR ESTE PROMPT:**
+
+```
+💬 COMUNICACIÓN OBLIGATORIA:
+
+1. ¿He explicado al usuario qué se va a hacer?
+2. ¿He explicado qué archivos se van a modificar?
+3. ¿He explicado qué funcionalidades se van a afectar?
+4. ¿He pedido confirmación antes de cambios grandes?
+5. ¿He comunicado el impacto de los cambios?
+
+✅ CONFIRMAR: "He comunicado completamente al usuario qué se va a hacer"
+✅ CONFIRMAR: "El usuario está informado del impacto de los cambios"
+✅ CONFIRMAR: "He pedido confirmación antes de cambios grandes"
+```
+
+## 🎯 PROMPT DEL OBJETIVO FUNDAMENTAL
+
+**ANTES DE CUALQUIER IMPLEMENTACIÓN, EL AGENTE DEBE EJECUTAR ESTE PROMPT:**
+
+```
+🎯 VERIFICACIÓN DEL OBJETIVO FUNDAMENTAL:
+
+¿Estoy siguiendo el principio "MEJORAR SIN DESTRUIR - AGREGAR SIN ELIMINAR"?
+
+✅ ¿Preservo TODO el trabajo realizado?
+✅ ¿No pierdo horas de desarrollo?
+✅ ¿Mantengo funcionalidades implementadas?
+✅ ¿Solo agrego/mejoro, nunca elimino sin autorización?
+
+✅ CONFIRMAR: "Estoy siguiendo el principio fundamental de protección"
+✅ CONFIRMAR: "Preservo todo el trabajo existente"
+✅ CONFIRMAR: "Solo agrego/mejoro, nunca elimino sin autorización"
+```
+
+## 🎨 PROMPT DE DISEÑO
+
+**ANTES DE CUALQUIER CAMBIO DE DISEÑO, EL AGENTE DEBE EJECUTAR ESTE PROMPT:**
+
+```
+🎨 VERIFICACIÓN DE DISEÑO:
+
+❌ ¿Estoy usando colores prohibidos? (verde, naranja, azul material)
+✅ ¿Estoy usando solo colores oficiales LandGo Travel?
+✅ ¿Mantengo identidad visual consistente?
+
+✅ CONFIRMAR: "Uso solo colores oficiales LandGo Travel"
+✅ CONFIRMAR: "Mantengo identidad visual consistente"
+✅ CONFIRMAR: "No uso colores prohibidos"
+```
+
+## 🚨 PROMPT FINAL CRÍTICO
+
+**ANTES DE EJECUTAR CUALQUIER CAMBIO, EL AGENTE DEBE EJECUTAR ESTE PROMPT:**
+
+```
+🚨 VERIFICACIÓN FINAL CRÍTICA:
+
+1. ¿He leído las reglas completas?
+2. ¿He buscado exhaustivamente funcionalidad existente?
+3. ¿He analizado qué se puede mejorar vs crear nuevo?
+4. ¿He comunicado al usuario qué se va a hacer?
+5. ¿Preservo todo lo que ya funciona?
+6. ¿Protejo el código existente?
+7. ¿Implemento solo mejoras/addiciones?
+
+✅ CONFIRMAR: "He completado todas las verificaciones obligatorias"
+✅ CONFIRMAR: "Estoy seguro de que no voy a dañar código existente"
+✅ CONFIRMAR: "Estoy siguiendo todas las reglas de protección"
+```
+
+## 🎯 INSTRUCCIONES FINALES
+
+**EL AGENTE DEBE ENTENDER QUE:**
+
+- 🛡️ **PROTECCIÓN** es la prioridad #1
+- 🔍 **BÚSQUEDA** exhaustiva es obligatoria
+- 💬 **COMUNICACIÓN** es esencial
+- ✅ **PRESERVACIÓN** del trabajo existente es crítica
+- 🎯 **MEJORAR** sin destruir es el objetivo
+
+**OBJETIVO:** Evitar duplicación y mantener código limpio y organizado.
+
+---
+
+## 🚨 RECORDATORIO CRÍTICO
+
+**ANTES DE CUALQUIER TAREA, EL AGENTE DEBE:**
+
+1. 📖 **LEER** estas reglas completas
+2. 🔍 **BUSCAR** exhaustivamente funcionalidad existente
+3. 📋 **ANALIZAR** qué se puede mejorar vs crear nuevo
+4. 💬 **COMUNICAR** al usuario qué se va a hacer
+5. ✅ **PRESERVAR** todo lo que ya funciona
+6. 🛡️ **PROTEGER** el código existente
+
+**NO HAY EXCEPCIONES A ESTAS REGLAS.**
+
+---
+
+**ÚLTIMA ACTUALIZACIÓN:** 2025-01-30
+**VERSIÓN:** 1.0 - Prompts Automáticos del Agente
+**AUTOR:** LandGo Travel Team

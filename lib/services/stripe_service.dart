@@ -291,9 +291,23 @@ class StripeService {
         if (data['success'] == true) {
           final paymentIntent = data['paymentIntent'];
           print('✅ Pago procesado exitosamente: ${paymentIntent['id']}');
+          
+          // Extraer Charge ID del PaymentIntent
+          String? chargeId;
+          if (paymentIntent['charges'] != null && 
+              paymentIntent['charges']['data'] != null && 
+              paymentIntent['charges']['data'].length > 0) {
+            chargeId = paymentIntent['charges']['data'][0]['id'];
+          } else if (paymentIntent['latest_charge'] != null) {
+            chargeId = paymentIntent['latest_charge'];
+          }
+          
+          print('✅ Charge ID extraído: $chargeId');
+          
           return {
             'success': true,
             'paymentIntentId': paymentIntent['id'],
+            'chargeId': chargeId,
             'status': paymentIntent['status'],
             'amount': amount,
             'currency': currency,

@@ -1,0 +1,189 @@
+# 🤖 VERIFICACIÓN AUTOMÁTICA DEL AGENTE - LANDGO TRAVEL
+
+## 🚨 INSTRUCCIÓN CRÍTICA #1: VERIFICACIÓN AUTOMÁTICA OBLIGATORIA
+
+**EL AGENTE DEBE EJECUTAR ESTA VERIFICACIÓN AUTOMÁTICAMENTE ANTES DE CUALQUIER TAREA.**
+
+### 📋 SISTEMA DE VERIFICACIÓN AUTOMÁTICA:
+
+#### 1. **VERIFICACIÓN DE LECTURA DE REGLAS:**
+```
+🔍 VERIFICACIÓN AUTOMÁTICA #1: LECTURA DE REGLAS
+
+✅ CONFIRMAR: "He leído las reglas de protección completas"
+✅ CONFIRMAR: "Entiendo que NO debo eliminar código existente"
+✅ CONFIRMAR: "Entiendo que DEBO buscar funcionalidad existente"
+✅ CONFIRMAR: "Entiendo que DEBO comunicar al usuario qué haré"
+
+❌ SI NO CONFIRMA: DETENER TAREA Y LEER REGLAS COMPLETAS
+```
+
+#### 2. **VERIFICACIÓN DE BÚSQUEDA EXHAUSTIVA:**
+```
+🔍 VERIFICACIÓN AUTOMÁTICA #2: BÚSQUEDA EXHAUSTIVA
+
+✅ CONFIRMAR: "He buscado con nombre exacto de la funcionalidad"
+✅ CONFIRMAR: "He buscado con sinónimos y términos relacionados"
+✅ CONFIRMAR: "He buscado en TODAS las carpetas del proyecto"
+✅ CONFIRMAR: "He usado codebase_search, glob_file_search, grep"
+✅ CONFIRMAR: "He leído archivos existentes completamente"
+
+❌ SI NO CONFIRMA: DETENER TAREA Y BUSCAR EXHAUSTIVAMENTE
+```
+
+#### 3. **VERIFICACIÓN DE ANÁLISIS PROFUNDO:**
+```
+🔍 VERIFICACIÓN AUTOMÁTICA #3: ANÁLISIS PROFUNDO
+
+✅ CONFIRMAR: "Entiendo qué funcionalidad ya existe"
+✅ CONFIRMAR: "He identificado qué se puede mejorar vs crear nuevo"
+✅ CONFIRMAR: "He verificado que NO existe un archivo similar"
+✅ CONFIRMAR: "He analizado el contexto completo del proyecto"
+
+❌ SI NO CONFIRMA: DETENER TAREA Y ANALIZAR PROFUNDAMENTE
+```
+
+#### 4. **VERIFICACIÓN DE COMUNICACIÓN:**
+```
+🔍 VERIFICACIÓN AUTOMÁTICA #4: COMUNICACIÓN
+
+✅ CONFIRMAR: "He comunicado al usuario qué se va a hacer"
+✅ CONFIRMAR: "He explicado qué archivos se van a modificar"
+✅ CONFIRMAR: "He explicado qué funcionalidades se van a afectar"
+✅ CONFIRMAR: "He pedido confirmación antes de cambios grandes"
+
+❌ SI NO CONFIRMA: DETENER TAREA Y COMUNICAR AL USUARIO
+```
+
+## 🛡️ VERIFICACIÓN AUTOMÁTICA DE PROTECCIÓN
+
+### ✅ VERIFICACIÓN AUTOMÁTICA DE PRESERVACIÓN:
+```
+🛡️ VERIFICACIÓN AUTOMÁTICA DE PROTECCIÓN:
+
+✅ ¿Preserva funcionalidades existentes?
+✅ ¿No elimina código importante?
+✅ ¿Mantiene consistencia visual?
+✅ ¿Funciona con el resto del sistema?
+✅ ¿No crea duplicados innecesarios?
+
+❌ SI ALGUNA RESPUESTA ES NO: DETENER TAREA Y REVISAR
+```
+
+## 🚫 VERIFICACIÓN AUTOMÁTICA DE PROHIBICIONES
+
+### ❌ VERIFICACIÓN AUTOMÁTICA DE PROHIBICIONES:
+```
+🚫 VERIFICACIÓN AUTOMÁTICA DE PROHIBICIONES:
+
+❌ ¿Voy a eliminar pantallas existentes sin autorización explícita?
+❌ ¿Voy a eliminar archivos de datos sin autorización explícita?
+❌ ¿Voy a restaurar archivos desde Git sin autorización explícita?
+❌ ¿Voy a hacer `git restore` sin autorización explícita?
+❌ ¿Voy a eliminar funcionalidades implementadas sin autorización explícita?
+❌ ¿Voy a crear archivos duplicados sin autorización explícita?
+❌ ¿Voy a crear pantallas duplicadas sin autorización explícita?
+❌ ¿Voy a asumir que algo no existe sin buscar exhaustivamente?
+❌ ¿Voy a hacer cambios sin entender el contexto completo?
+❌ ¿Voy a trabajar en silencio sin comunicación?
+
+❌ SI ALGUNA RESPUESTA ES SÍ: DETENER TAREA INMEDIATAMENTE
+```
+
+## ✅ VERIFICACIÓN AUTOMÁTICA DE OBLIGACIONES
+
+### ✅ VERIFICACIÓN AUTOMÁTICA DE OBLIGACIONES:
+```
+✅ VERIFICACIÓN AUTOMÁTICA DE OBLIGACIONES:
+
+✅ ¿Voy a preguntar antes de eliminar CUALQUIER archivo?
+✅ ¿Voy a preguntar antes de restaurar CUALQUIER archivo?
+✅ ¿Voy a preguntar antes de hacer `git restore`?
+✅ ¿Voy a preguntar antes de eliminar CUALQUIER funcionalidad?
+✅ ¿Voy a preguntar antes de crear CUALQUIER archivo duplicado?
+✅ ¿Voy a preservar TODO el trabajo existente?
+✅ ¿Voy a solo modificar/mejorar, nunca eliminar sin autorización?
+✅ ¿Voy a verificar que NO existe un archivo similar antes de crear uno nuevo?
+✅ ¿Voy a buscar exhaustivamente antes de crear algo nuevo?
+✅ ¿Voy a comunicar al usuario qué se va a hacer antes de hacerlo?
+
+❌ SI ALGUNA RESPUESTA ES NO: DETENER TAREA Y CORREGIR
+```
+
+## 🎯 VERIFICACIÓN AUTOMÁTICA DEL OBJETIVO FUNDAMENTAL
+
+### ✅ VERIFICACIÓN AUTOMÁTICA DEL OBJETIVO:
+```
+🎯 VERIFICACIÓN AUTOMÁTICA DEL OBJETIVO FUNDAMENTAL:
+
+✅ ¿Estoy siguiendo "MEJORAR SIN DESTRUIR - AGREGAR SIN ELIMINAR"?
+✅ ¿Preservo TODO el trabajo realizado?
+✅ ¿No pierdo horas de desarrollo?
+✅ ¿Mantengo funcionalidades implementadas?
+✅ ¿Solo agrego/mejoro, nunca elimino sin autorización?
+
+❌ SI ALGUNA RESPUESTA ES NO: DETENER TAREA Y REVISAR
+```
+
+## 🎨 VERIFICACIÓN AUTOMÁTICA DE DISEÑO
+
+### ✅ VERIFICACIÓN AUTOMÁTICA DE DISEÑO:
+```
+🎨 VERIFICACIÓN AUTOMÁTICA DE DISEÑO:
+
+❌ ¿Estoy usando colores prohibidos? (verde, naranja, azul material)
+✅ ¿Estoy usando solo colores oficiales LandGo Travel?
+✅ ¿Mantengo identidad visual consistente?
+
+❌ SI USO COLORES PROHIBIDOS: DETENER TAREA Y CORREGIR
+```
+
+## 🚨 VERIFICACIÓN AUTOMÁTICA FINAL CRÍTICA
+
+### ✅ VERIFICACIÓN AUTOMÁTICA FINAL:
+```
+🚨 VERIFICACIÓN AUTOMÁTICA FINAL CRÍTICA:
+
+1. ¿He leído las reglas completas?
+2. ¿He buscado exhaustivamente funcionalidad existente?
+3. ¿He analizado qué se puede mejorar vs crear nuevo?
+4. ¿He comunicado al usuario qué se va a hacer?
+5. ¿Preservo todo lo que ya funciona?
+6. ¿Protejo el código existente?
+7. ¿Implemento solo mejoras/addiciones?
+
+❌ SI ALGUNA RESPUESTA ES NO: DETENER TAREA Y COMPLETAR VERIFICACIÓN
+```
+
+## 🎯 INSTRUCCIONES FINALES
+
+**EL AGENTE DEBE ENTENDER QUE:**
+
+- 🛡️ **PROTECCIÓN** es la prioridad #1
+- 🔍 **BÚSQUEDA** exhaustiva es obligatoria
+- 💬 **COMUNICACIÓN** es esencial
+- ✅ **PRESERVACIÓN** del trabajo existente es crítica
+- 🎯 **MEJORAR** sin destruir es el objetivo
+
+**OBJETIVO:** Evitar duplicación y mantener código limpio y organizado.
+
+---
+
+## 🚨 RECORDATORIO CRÍTICO
+
+**ANTES DE CUALQUIER TAREA, EL AGENTE DEBE:**
+
+1. 📖 **LEER** estas reglas completas
+2. 🔍 **BUSCAR** exhaustivamente funcionalidad existente
+3. 📋 **ANALIZAR** qué se puede mejorar vs crear nuevo
+4. 💬 **COMUNICAR** al usuario qué se va a hacer
+5. ✅ **PRESERVAR** todo lo que ya funciona
+6. 🛡️ **PROTEGER** el código existente
+
+**NO HAY EXCEPCIONES A ESTAS REGLAS.**
+
+---
+
+**ÚLTIMA ACTUALIZACIÓN:** 2025-01-30
+**VERSIÓN:** 1.0 - Verificación Automática del Agente
+**AUTOR:** LandGo Travel Team
