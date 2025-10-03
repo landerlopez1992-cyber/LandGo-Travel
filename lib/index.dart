@@ -112,4 +112,8 @@ export '/booking_home_page/flight_booking_page/flight_booking_page_widget.dart'
     show FlightBookingPageWidget;
 export '/booking_home_page/hotel_booking_page/hotel_booking_page_widget.dart'
     show HotelBookingPageWidget;
+export '/pages/privacy_policy_page/privacy_policy_page_widget.dart'
+    show PrivacyPolicyPageWidget;
+export '/pages/terms_conditions_page/terms_conditions_page_widget.dart'
+    show TermsConditionsPageWidget;
 // ELIMINADAS: terms_conditions, settings, notifications, payment_method, gallery, review_summary, form_schedule

@@ -213,6 +213,16 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => SettingsPageWidget(),
         ),
         FFRoute(
+          name: PrivacyPolicyPageWidget.routeName,
+          path: PrivacyPolicyPageWidget.routePath,
+          builder: (context, params) => PrivacyPolicyPageWidget(),
+        ),
+        FFRoute(
+          name: TermsConditionsPageWidget.routeName,
+          path: TermsConditionsPageWidget.routePath,
+          builder: (context, params) => TermsConditionsPageWidget(),
+        ),
+        FFRoute(
           name: TransferMoneyPageWidget.routeName,
           path: TransferMoneyPageWidget.routePath,
           builder: (context, params) => TransferMoneyPageWidget(),

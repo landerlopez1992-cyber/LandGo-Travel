@@ -221,7 +221,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
           icon: Icons.shield_outlined,
           title: 'Privacy policy',
           onTap: () {
-            // TODO: Navigate to privacy policy
+            context.pushNamed('PrivacyPolicyPage');
           },
         ),
         
@@ -243,7 +243,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
           icon: Icons.shield_outlined,
           title: 'Terms & conditions',
           onTap: () {
-            // TODO: Navigate to terms & conditions
+            context.pushNamed('TermsConditionsPage');
           },
         ),
         

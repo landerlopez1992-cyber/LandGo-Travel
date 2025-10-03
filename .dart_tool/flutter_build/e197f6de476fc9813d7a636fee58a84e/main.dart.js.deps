@@ -1573,6 +1573,8 @@ file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/payment_cards_page/
 file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/payment_cards_page/payment_cards_page_widget.dart
 file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/payment_failed_pag/payment_failed_pag_model.dart
 file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/payment_failed_pag/payment_failed_pag_widget.dart
+file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/privacy_policy_page/privacy_policy_page_model.dart
+file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/privacy_policy_page/privacy_policy_page_widget.dart
 file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/product_detail_page/product_detail_page_model.dart
 file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/product_detail_page/product_detail_page_widget.dart
 file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/profile_page/profile_page_model.dart
@@ -1585,6 +1587,8 @@ file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/settings_page/setti
 file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/settings_page/settings_page_widget.dart
 file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/sign_up_page/sign_up_page_model.dart
 file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/sign_up_page/sign_up_page_widget.dart
+file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/terms_conditions_page/terms_conditions_page_model.dart
+file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/terms_conditions_page/terms_conditions_page_widget.dart
 file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/transfer_money_page/transfer_money_page_model.dart
 file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/transfer_money_page/transfer_money_page_widget.dart
 file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/transfer_success_page/transfer_success_page_model.dart
