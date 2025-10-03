@@ -25,23 +25,23 @@ class _NewWelcomePageWidgetState extends State<NewWelcomePageWidget> {
   
   final List<OnboardingData> _onboardingData = [
     OnboardingData(
-      title: 'Descubre destinos\nparadisíacos con LandGo Travel',
-      subtitle: 'Tu agencia de confianza con más de 10 años creando experiencias inolvidables para familias alrededor del mundo.',
+      title: 'Discover paradise\ndestinations with LandGo Travel',
+      subtitle: 'Your trusted travel agency with over 10 years creating unforgettable experiences for families around the world.',
       imageUrl: 'assets/images/1.png',
     ),
     OnboardingData(
-      title: 'Viaja en familia\ncon descuentos exclusivos',
-      subtitle: 'Ahorra hasta 50% en hoteles y vuelos. Crea recuerdos inolvidables con tus seres queridos en los mejores destinos.',
+      title: 'Travel with family\nwith exclusive discounts',
+      subtitle: 'Save up to 50% on hotels and flights. Create unforgettable memories with your loved ones in the best destinations.',
       imageUrl: 'assets/images/2.png',
     ),
     OnboardingData(
-      title: 'Gana puntos y\nreferidos en cada viaje',
-      subtitle: 'Cada compra te da puntos que puedes usar para futuros viajes. Invita amigos y gana comisiones por cada referido.',
+      title: 'Earn points and\nreferrals on every trip',
+      subtitle: 'Every purchase gives you points that you can use for future trips. Invite friends and earn commissions for each referral.',
       imageUrl: 'assets/images/3.png',
     ),
     OnboardingData(
-      title: 'Paraísos tropicales\nal alcance de tu mano',
-      subtitle: 'Únete a nuestro programa de membresías VIP y disfruta de cashback automático, soporte prioritario y descuentos adicionales.',
+      title: 'Tropical paradises\nat your fingertips',
+      subtitle: 'Join our VIP membership program and enjoy automatic cashback, priority support and additional discounts.',
       imageUrl: 'assets/images/4.png',
     ),
   ];
