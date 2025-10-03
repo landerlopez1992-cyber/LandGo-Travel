@@ -76,56 +76,98 @@ class _TermsConditionsPageWidgetState extends State<TermsConditionsPageWidget> {
                   children: [
                     _buildSection(
                       number: '1.',
-                      title: 'Acceptance of Terms',
-                      content: 'By accessing or using LandGo Travel\'s mobile application and website, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.\n\nLandGo Travel is a technology platform that provides flight search and booking services through authorized travel data providers, hotel reservation services, travel booking management tools, payment processing through Stripe, and customer support assistance.',
+                      title: 'Agreement to Terms',
+                      content: 'By accessing LandGo Travel ("Company," "we," "our") mobile application or website ("Services"), you agree to these Terms of Service ("Terms"). If you disagree with any part of these Terms, you may not access our Services.\n\nLandGo Travel is a technology platform connecting users with travel services through authorized data providers.',
                     ),
                     
                     _buildSection(
                       number: '2.',
-                      title: 'Development Status',
-                      content: 'LandGo Travel is currently in active development. Features and services may be subject to change. By using our platform, you acknowledge and accept this developmental status. We are committed to maintaining the highest standards of security and compliance in all payment processing activities.',
+                      title: 'Service Description',
+                      content: 'We provide a platform for travel search, comparison, and booking services. Our Services may include:\n\n• Flight and hotel search functionality\n• Booking management tools\n• Membership programs\n• Wallet and payment services\n\nServices are provided "as-is" and may change without notice.',
                     ),
                     
                     _buildSection(
                       number: '3.',
-                      title: 'Geographic Restrictions',
-                      content: 'LandGo Travel strictly complies with all U.S. sanctions and international regulations. We do NOT provide services to or accept bookings for destinations in jurisdictions subject to sanctions, including but not limited to:\n\n• Cuba\n• Iran\n• North Korea\n• Syria\n• Crimea, Donetsk, and Luhansk regions\n\nWe reserve the right to refuse service or cancel bookings that violate these restrictions.',
+                      title: 'User Eligibility',
+                      content: 'You must be at least 18 years old and legally capable of entering binding contracts to use our Services. By using our Services, you represent that you meet these requirements.',
                     ),
                     
                     _buildSection(
                       number: '4.',
-                      title: 'User Accounts',
-                      content: 'You must be at least 18 years old to use our services. To access certain features, you must create an account. You are responsible for maintaining the confidentiality of your account credentials, all activities that occur under your account, providing accurate and complete information, and updating your information as needed.',
+                      title: 'Account Responsibilities',
+                      content: 'You are responsible for:\n\n• Maintaining confidentiality of account credentials\n• All activities under your account\n• Providing accurate information\n• Promptly updating account information\n• Notifying us of unauthorized access\n\nWe reserve the right to suspend or terminate accounts that violate these Terms.',
                     ),
                     
                     _buildSection(
                       number: '5.',
-                      title: 'Booking and Payments',
-                      content: 'All bookings are subject to availability and confirmation. Payment processing is handled securely through Stripe. By making a booking, you agree to pay all applicable fees and charges, provide accurate payment information, and comply with the terms of the service providers (airlines, hotels).',
+                      title: 'Payments and Fees',
+                      content: 'All prices are in U.S. Dollars unless otherwise stated. You agree to:\n\n• Pay all applicable fees and charges\n• Provide valid payment information\n• Accept that prices may change without notice\n• Understand that third-party fees may apply\n\nPayment processing is handled by certified third-party processors.',
                     ),
                     
                     _buildSection(
                       number: '6.',
                       title: 'Cancellations and Refunds',
-                      content: 'Cancellation and refund policies vary by service provider and booking type. Refunds are processed according to the specific airline or hotel cancellation policy, applicable fare rules and restrictions, and processing times required by payment processors. Refund requests should be submitted through our support system.',
+                      content: 'Cancellation policies vary by service provider (airline, hotel, etc.). Refunds are subject to:\n\n• Provider-specific cancellation policies\n• Applicable fare rules and restrictions\n• Processing times (typically 7-14 business days)\n• Service fees may be non-refundable\n\nContact support for refund requests.',
                     ),
                     
                     _buildSection(
                       number: '7.',
-                      title: 'Prohibited Activities',
-                      content: 'You may not use the platform for any illegal purpose, attempt to circumvent geographic restrictions, provide false or fraudulent information, interfere with the platform\'s operation, use automated systems to access the platform, or violate any applicable laws or regulations.',
+                      title: 'Prohibited Uses',
+                      content: 'You may not:\n\n• Use Services for illegal purposes\n• Provide false or fraudulent information\n• Attempt to gain unauthorized access\n• Interfere with Services operation\n• Use automated systems or bots\n• Violate third-party rights\n• Bypass geographic restrictions',
                     ),
                     
                     _buildSection(
                       number: '8.',
-                      title: 'Limitation of Liability',
-                      content: 'LandGo Travel acts as a technology platform connecting users with travel service providers. We are not liable for flight delays, cancellations, or changes, hotel service quality or availability, travel disruptions or force majeure events, or indirect, incidental, or consequential damages.',
+                      title: 'Geographic Restrictions',
+                      content: 'We comply with all U.S. sanctions and international regulations. Services are not available in jurisdictions subject to comprehensive sanctions, including:\n\n• Cuba\n• Iran\n• North Korea\n• Syria\n• Crimea, Donetsk, Luhansk regions\n\nWe reserve the right to refuse or cancel service based on location.',
                     ),
                     
                     _buildSection(
                       number: '9.',
+                      title: 'Intellectual Property',
+                      content: 'All content, features, and functionality are owned by LandGo Travel and protected by copyright, trademark, and other laws. You may not reproduce, distribute, or create derivative works without our written permission.',
+                    ),
+                    
+                    _buildSection(
+                      number: '10.',
+                      title: 'Disclaimer of Warranties',
+                      content: 'Services are provided "AS IS" and "AS AVAILABLE" without warranties of any kind. We do not guarantee:\n\n• Uninterrupted or error-free operation\n• Accuracy of information\n• Availability of bookings\n• Quality of third-party services',
+                    ),
+                    
+                    _buildSection(
+                      number: '11.',
+                      title: 'Limitation of Liability',
+                      content: 'We act as a technology platform connecting users with travel providers. TO THE MAXIMUM EXTENT PERMITTED BY LAW, we are not liable for:\n\n• Third-party service issues (delays, cancellations)\n• Indirect or consequential damages\n• Loss of profits or data\n• Force majeure events\n\nOur total liability shall not exceed amounts paid by you in the 12 months preceding the claim.',
+                    ),
+                    
+                    _buildSection(
+                      number: '12.',
+                      title: 'Indemnification',
+                      content: 'You agree to indemnify and hold LandGo Travel harmless from any claims, damages, losses, or expenses arising from your use of Services, violation of these Terms, or infringement of third-party rights.',
+                    ),
+                    
+                    _buildSection(
+                      number: '13.',
+                      title: 'Dispute Resolution',
+                      content: 'Any disputes shall be resolved through binding arbitration in accordance with Florida state law. You waive the right to participate in class actions. These Terms are governed by the laws of Florida, United States.',
+                    ),
+                    
+                    _buildSection(
+                      number: '14.',
+                      title: 'Termination',
+                      content: 'We may suspend or terminate your access at our discretion, with or without notice, for violations of these Terms or other reasons. Upon termination, your right to use Services ceases immediately.',
+                    ),
+                    
+                    _buildSection(
+                      number: '15.',
+                      title: 'Changes to Terms',
+                      content: 'We reserve the right to modify these Terms at any time. Continued use after changes constitutes acceptance. Material changes will be notified via email or in-app notification.',
+                    ),
+                    
+                    _buildSection(
+                      number: '16.',
                       title: 'Contact Information',
-                      content: 'For questions about these Terms of Service, contact us at:\n\nLandGo Travel\n14703 Southern Blvd\nLoxahatchee, FL 33470\nWest Palm Beach, Florida, United States\n\nEmail: legal@landgotravel.com\nSupport: support@landgotravel.com',
+                      content: 'For questions regarding these Terms:\n\nLandGo Travel\n14703 Southern Blvd\nLoxahatchee, FL 33470\nUnited States\n\nEmail: legal@landgotravel.com',
                     ),
                     
                     const SizedBox(height: 40),

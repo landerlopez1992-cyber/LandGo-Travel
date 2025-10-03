@@ -79,49 +79,61 @@ class _PrivacyPolicyPageWidgetState extends State<PrivacyPolicyPageWidget> {
               _buildSection(
                 number: '1.',
                 title: 'Introduction',
-                content: 'LandGo Travel ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our mobile application and website.',
+                content: 'LandGo Travel ("Company," "we," "our," or "us") values your privacy. This Privacy Policy describes how we collect, use, and protect your personal information when you use our mobile application and website ("Services").',
               ),
               
               _buildSection(
                 number: '2.',
-                title: 'Information We Collect',
-                content: 'We collect information that you provide directly to us, including:\n\n• Personal identification information (name, email, phone number)\n• Payment information (processed securely through Stripe)\n• Travel preferences and booking history\n• Profile information and account credentials\n• Communication preferences',
+                title: 'Information Collection',
+                content: 'We collect information you provide directly:\n\n• Account information (name, email, phone)\n• Payment details (processed via secure third-party processors)\n• Travel preferences and search history\n• User-generated content and communications\n• Device information and usage data',
               ),
               
               _buildSection(
                 number: '3.',
-                title: 'How We Use Your Information',
-                content: 'We use the information we collect to:\n\n• Process your travel bookings and reservations\n• Provide customer support and respond to inquiries\n• Send booking confirmations and travel updates\n• Improve our services and user experience\n• Comply with legal obligations\n• Prevent fraud and ensure platform security',
+                title: 'Use of Information',
+                content: 'Your information is used to:\n\n• Provide and improve our Services\n• Process transactions and bookings\n• Communicate service updates and offers\n• Ensure security and prevent fraud\n• Comply with legal requirements\n• Personalize your experience',
               ),
               
               _buildSection(
                 number: '4.',
-                title: 'Payment Information',
-                content: 'All payment transactions are processed through Stripe, a PCI DSS compliant payment processor. We do not store your complete credit card information on our servers. Payment data is encrypted and securely transmitted to Stripe for processing.',
+                title: 'Payment Security',
+                content: 'Payment processing is handled by certified third-party payment processors. We do not store complete payment card information. All transactions are encrypted and comply with industry security standards (PCI DSS).',
               ),
               
               _buildSection(
                 number: '5.',
-                title: 'Data Security',
-                content: 'We implement appropriate technical and organizational security measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction. However, no method of transmission over the Internet is 100% secure.',
+                title: 'Information Sharing',
+                content: 'We may share information with:\n\n• Service providers necessary to deliver our Services\n• Payment processors for transaction completion\n• Travel partners (airlines, hotels) for booking fulfillment\n• Legal authorities when required by law\n\nWe do not sell personal information to third parties.',
               ),
               
               _buildSection(
                 number: '6.',
-                title: 'Data Sharing',
-                content: 'We may share your information with:\n\n• Travel service providers (airlines, hotels) to complete your bookings\n• Payment processors (Stripe) to process transactions\n• Law enforcement when required by law\n• Service providers who assist in operating our platform\n\nWe do not sell your personal information to third parties.',
+                title: 'Data Security',
+                content: 'We implement industry-standard security measures to protect your information. However, no system is completely secure. You are responsible for maintaining the confidentiality of your account credentials.',
               ),
               
               _buildSection(
                 number: '7.',
                 title: 'Your Rights',
-                content: 'You have the right to:\n\n• Access your personal information\n• Correct inaccurate data\n• Request deletion of your data\n• Object to data processing\n• Export your data\n• Withdraw consent',
+                content: 'Subject to applicable law, you may:\n\n• Access and review your personal information\n• Request correction of inaccurate data\n• Request deletion of your account and data\n• Opt-out of marketing communications\n• Export your data in portable format',
               ),
               
               _buildSection(
                 number: '8.',
-                title: 'Contact Us',
-                content: 'If you have questions about this Privacy Policy, contact us at:\n\nLandGo Travel\n14703 Southern Blvd\nLoxahatchee, FL 33470\nWest Palm Beach, Florida, United States\n\nEmail: privacy@landgotravel.com',
+                title: 'International Users',
+                content: 'Our Services are operated from the United States. By using our Services, you consent to the transfer and processing of your information in the United States and other countries where we operate.',
+              ),
+              
+              _buildSection(
+                number: '9.',
+                title: 'Changes to Policy',
+                content: 'We may update this Privacy Policy periodically. Continued use of our Services after changes constitutes acceptance of the updated policy. We will notify users of material changes via email or in-app notification.',
+              ),
+              
+              _buildSection(
+                number: '10.',
+                title: 'Contact Information',
+                content: 'For privacy-related inquiries:\n\nLandGo Travel\n14703 Southern Blvd\nLoxahatchee, FL 33470\nUnited States\n\nEmail: privacy@landgotravel.com',
               ),
               
               const SizedBox(height: 40),
