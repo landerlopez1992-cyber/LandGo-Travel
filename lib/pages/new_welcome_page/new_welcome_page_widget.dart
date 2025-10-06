@@ -1,6 +1,7 @@
 import '/flutter_flow/flutter_flow_util.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'new_welcome_page_model.dart';
 export 'new_welcome_page_model.dart';
 
@@ -99,6 +100,16 @@ class _NewWelcomePageWidgetState extends State<NewWelcomePageWidget> {
   }
 
   Widget _buildOnboardingPage(OnboardingData data) {
+    // 🌐 Detectar plataforma y mostrar diseño correspondiente
+    if (kIsWeb) {
+      return _buildWebOnboarding(data);
+    } else {
+      return _buildMobileOnboarding(data);
+    }
+  }
+
+  // 🌐 DISEÑO PARA WEB (Más profesional, botones centrados)
+  Widget _buildWebOnboarding(OnboardingData data) {
     return Container(
       width: double.infinity,
       height: double.infinity,
@@ -107,11 +118,168 @@ class _NewWelcomePageWidgetState extends State<NewWelcomePageWidget> {
           image: data.imageUrl.startsWith('assets/') 
               ? AssetImage(data.imageUrl) as ImageProvider
               : NetworkImage(data.imageUrl),
-          fit: BoxFit.cover, // Las fotos tienen las dimensiones exactas (1080 x 2400)
+          fit: BoxFit.cover,
+          alignment: Alignment.center, // Imagen centrada para web
         ),
       ),
       child: Container(
-        // Overlay oscuro para legibilidad del texto
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Colors.black.withOpacity(0.4),
+              Colors.black.withOpacity(0.8),
+            ],
+          ),
+        ),
+        child: Center(
+          child: Container(
+            constraints: BoxConstraints(maxWidth: 800), // Limitar ancho en web
+            padding: const EdgeInsets.symmetric(horizontal: 48.0, vertical: 64.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                // Main title
+                Text(
+                  data.title,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    color: Colors.white,
+                    fontSize: 48,
+                    fontWeight: FontWeight.bold,
+                    height: 1.2,
+                  ),
+                ),
+                
+                const SizedBox(height: 24),
+                
+                // Subtitle
+                Text(
+                  data.subtitle,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    color: Colors.white.withOpacity(0.9),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w400,
+                    height: 1.5,
+                  ),
+                ),
+                
+                const SizedBox(height: 48),
+                
+                // Page indicators
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(
+                    _onboardingData.length,
+                    (index) => Container(
+                      margin: const EdgeInsets.only(right: 8),
+                      width: _currentPage == index ? 32 : 10,
+                      height: 6,
+                      decoration: BoxDecoration(
+                        color: _currentPage == index 
+                            ? const Color(0xFF4DD0E1)
+                            : Colors.white.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(height: 48),
+                
+                // Botones centrados y con ancho limitado
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Skip button
+                    SizedBox(
+                      width: 180,
+                      height: 56,
+                      child: OutlinedButton(
+                        onPressed: () async {
+                          context.pushNamed('LoginPage');
+                        },
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: Colors.transparent,
+                          side: BorderSide(
+                            color: Colors.white.withOpacity(0.4),
+                            width: 2,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Text(
+                          'Skip',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(width: 24),
+                    
+                    // Next button
+                    SizedBox(
+                      width: 220,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: _nextPage,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF4DD0E1),
+                          foregroundColor: Colors.black,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Text(
+                          _currentPage == _onboardingData.length - 1 
+                              ? 'Get Started' 
+                              : 'Next',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            color: Colors.black,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 64),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // 📱 DISEÑO PARA MÓVIL (Diseño actual sin cambios)
+  Widget _buildMobileOnboarding(OnboardingData data) {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        image: DecorationImage(
+          image: data.imageUrl.startsWith('assets/') 
+              ? AssetImage(data.imageUrl) as ImageProvider
+              : NetworkImage(data.imageUrl),
+          fit: BoxFit.cover,
+        ),
+      ),
+      child: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -127,20 +295,16 @@ class _NewWelcomePageWidgetState extends State<NewWelcomePageWidget> {
             padding: const EdgeInsets.symmetric(horizontal: 24.0),
             child: Column(
               children: [
-                // Status bar spacer
                 const SizedBox(height: 20),
                 
-                // Spacer to push content down
                 const Expanded(
                   flex: 3,
                   child: SizedBox(),
                 ),
                 
-                // Main content
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Main title - exacto como la captura
                     Text(
                       data.title,
                       style: TextStyle(
@@ -154,7 +318,6 @@ class _NewWelcomePageWidgetState extends State<NewWelcomePageWidget> {
                     
                     const SizedBox(height: 16),
                     
-                    // Subtitle - exacto como la captura
                     Text(
                       data.subtitle,
                       style: TextStyle(
@@ -168,7 +331,6 @@ class _NewWelcomePageWidgetState extends State<NewWelcomePageWidget> {
                     
                     const SizedBox(height: 32),
                     
-                    // Page indicators - exacto como la captura
                     Row(
                       children: List.generate(
                         _onboardingData.length,
@@ -178,8 +340,8 @@ class _NewWelcomePageWidgetState extends State<NewWelcomePageWidget> {
                           height: 4,
                           decoration: BoxDecoration(
                             color: _currentPage == index 
-                                ? const Color(0xFF4DD0E1) // Verde-azulado activo
-                                : Colors.white.withOpacity(0.3), // Inactivo
+                                ? const Color(0xFF4DD0E1)
+                                : Colors.white.withOpacity(0.3),
                             borderRadius: BorderRadius.circular(2),
                           ),
                         ),
@@ -190,10 +352,8 @@ class _NewWelcomePageWidgetState extends State<NewWelcomePageWidget> {
                 
                 const SizedBox(height: 48),
                 
-                // Buttons - exactos como la captura
                 Row(
                   children: [
-                    // Skip button (outline transparente)
                     Expanded(
                       child: Container(
                         height: 56,
@@ -226,7 +386,6 @@ class _NewWelcomePageWidgetState extends State<NewWelcomePageWidget> {
                     
                     const SizedBox(width: 16),
                     
-                    // Next button (verde-azulado sólido)
                     Expanded(
                       flex: 2,
                       child: Container(
@@ -234,7 +393,7 @@ class _NewWelcomePageWidgetState extends State<NewWelcomePageWidget> {
                         child: ElevatedButton(
                           onPressed: _nextPage,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF4DD0E1), // Verde-azulado
+                            backgroundColor: const Color(0xFF4DD0E1),
                             foregroundColor: Colors.black,
                             elevation: 0,
                             shape: RoundedRectangleBorder(
