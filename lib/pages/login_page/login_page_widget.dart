@@ -206,11 +206,11 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
             child: SingleChildScrollView(
               child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                children: [
                     // Header con Skip button
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
+                    children: [
                         // Botón Skip
                         TextButton(
                           onPressed: () {
@@ -593,7 +593,7 @@ class _LoginPageWidgetState extends State<LoginPageWidget> {
                                         size: 20.0,
                                       ),
                                       SizedBox(width: 12.0),
-                                      Text(
+                            Text(
                                         'Google',
                                         style: GoogleFonts.inter(
                                           color: Color(0xFFFFFFFF),

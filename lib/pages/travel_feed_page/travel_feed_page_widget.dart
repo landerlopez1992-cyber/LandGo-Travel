@@ -7,6 +7,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'dart:typed_data';
 
 class TravelFeedPageWidget extends StatefulWidget {
   const TravelFeedPageWidget({super.key});
@@ -28,11 +30,21 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
   bool _isLoading = true;
   String _errorMessage = '';
   final TextEditingController _postController = TextEditingController();
+  final TextEditingController _commentController = TextEditingController();
+  final TextEditingController _subcommentController = TextEditingController();
   File? _selectedImage;
+  Uint8List? _selectedImageBytes; // Para web
   final ImagePicker _picker = ImagePicker();
   
   // Variables para el modal de crear post
   bool _isCreatingPost = false;
+  bool _isLoadingImage = false; // 🔄 Indicador de carga de imagen
+  
+  // Variables para etiquetado de usuarios
+  final TextEditingController _tagSearchController = TextEditingController();
+  List<Map<String, dynamic>> _tagSearchResults = [];
+  List<Map<String, dynamic>> _selectedTags = [];
+  bool _isSearchingTags = false;
 
   @override
   void initState() {
@@ -45,6 +57,9 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
   void dispose() {
     _model.dispose();
     _postController.dispose();
+    _commentController.dispose();
+    _subcommentController.dispose();
+    _tagSearchController.dispose();
     super.dispose();
   }
 
@@ -73,7 +88,7 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
       
       print('🔍 DEBUG: Loading travel feed posts...');
       
-      // Obtener posts con información del usuario
+      // Obtener posts con información del usuario, likes y comentarios
       final postsResponse = await Supabase.instance.client
           .from('travel_posts')
           .select('''
@@ -83,11 +98,31 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
               avatar_url,
               first_name,
               last_name
+            ),
+            travel_post_likes(
+              id,
+              user_id,
+              created_at
+            ),
+            travel_post_comments(
+              id,
+              user_id,
+              content,
+              created_at
             )
           ''')
           .order('created_at', ascending: false);
       
       List<Map<String, dynamic>> posts = List<Map<String, dynamic>>.from(postsResponse);
+      
+      // Procesar posts para agregar información de likes y comentarios
+      for (var post in posts) {
+        final likes = post['travel_post_likes'] as List<dynamic>? ?? [];
+        final comments = post['travel_post_comments'] as List<dynamic>? ?? [];
+        post['likes_count'] = likes.length;
+        post['user_liked'] = likes.any((like) => like['user_id'] == user.id);
+        post['comments_count'] = comments.length;
+      }
       
       print('✅ Travel Feed Posts: ${posts.length}');
       
@@ -112,7 +147,7 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
 
   /// ✅ CREAR NUEVO POST
   Future<void> _createPost() async {
-    if (_postController.text.trim().isEmpty && _selectedImage == null) {
+    if (_postController.text.trim().isEmpty && _selectedImage == null && _selectedImageBytes == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please add some text or an image to your post'),
@@ -122,12 +157,18 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
       return;
     }
 
+    // 🎯 Mostrar modal de carga hermoso
+    _showUploadingModal();
+
     // Activar estado de carga
     if (mounted) {
       setState(() {
         _isCreatingPost = true;
       });
     }
+
+    // ⏱️ Esperar mínimo 3 segundos para disfrutar la animación
+    final uploadStartTime = DateTime.now();
 
     try {
       final user = Supabase.instance.client.auth.currentUser;
@@ -146,42 +187,55 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
 
       // Subir imagen si existe
       String? imageUrl;
-      if (_selectedImage != null) {
+      if (_selectedImage != null || _selectedImageBytes != null) {
         print('📤 DEBUG: Subiendo imagen a Supabase Storage...');
         
         final fileName = '${user.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
         
-        // Subir archivo a Supabase Storage
-        final uploadResponse = await Supabase.instance.client.storage
+        try {
+          // Subir archivo a Supabase Storage (compatible con web y móvil)
+          if (kIsWeb && _selectedImageBytes != null) {
+            // Para web: usar bytes con estructura de carpetas
+            final folderPath = 'public/$fileName'; // Carpeta public para acceso directo
+            await Supabase.instance.client.storage
             .from('travel-images')
-            .upload(fileName, _selectedImage!);
+                .uploadBinary(folderPath, _selectedImageBytes!);
         
-        print('📤 DEBUG: Upload response: $uploadResponse');
-        
-        if (uploadResponse.isNotEmpty) {
-          // Obtener URL pública de la imagen
+            // Obtener URL pública de la imagen
           imageUrl = Supabase.instance.client.storage
               .from('travel-images')
-              .getPublicUrl(fileName);
+                .getPublicUrl(folderPath);
+          } else if (_selectedImage != null) {
+            // Para móvil: usar File con estructura de carpetas
+            final folderPath = 'public/$fileName'; // Carpeta public para acceso directo
+            await Supabase.instance.client.storage
+                .from('travel-images')
+                .upload(folderPath, _selectedImage!);
+            
+            // Obtener URL pública de la imagen
+            imageUrl = Supabase.instance.client.storage
+                .from('travel-images')
+                .getPublicUrl(folderPath);
+          }
           
           print('✅ DEBUG: Imagen subida exitosamente: $imageUrl');
-        } else {
-          print('❌ DEBUG: Error subiendo imagen');
-          throw Exception('Failed to upload image');
+        } catch (uploadError) {
+          print('❌ DEBUG: Error subiendo imagen: $uploadError');
+          throw Exception('Failed to upload image: $uploadError');
         }
       }
 
       print('💾 DEBUG: Creando post en base de datos...');
       print('👤 DEBUG: User ID: ${user.id}');
       print('🔐 DEBUG: Auth UID: ${Supabase.instance.client.auth.currentUser?.id}');
-      
+
       // Crear post en la base de datos
       final postData = {
-        'user_id': user.id,
-        'content': _postController.text.trim(),
-        'image_url': imageUrl,
-        'location': null, // Opcional: agregar ubicación
-        'tags': [], // Opcional: agregar tags
+            'user_id': user.id,
+            'content': _postController.text.trim(),
+            'image_url': imageUrl,
+            'location': null, // Opcional: agregar ubicación
+            'tags': [], // Opcional: agregar tags
       };
       
       print('📊 DEBUG: Post data: $postData');
@@ -203,22 +257,34 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
       // Limpiar formulario
       _postController.clear();
       _selectedImage = null;
+      _selectedImageBytes = null;
       
       // Recargar posts
       await _loadPosts();
+      
+      // ⏱️ Asegurar que el modal dure mínimo 3 segundos
+      final uploadDuration = DateTime.now().difference(uploadStartTime);
+      final minDuration = const Duration(seconds: 3);
+      if (uploadDuration < minDuration) {
+        await Future.delayed(minDuration - uploadDuration);
+      }
       
       if (mounted) {
         setState(() {
           _isCreatingPost = false;
         });
         
-        // Cerrar modal
+        // Cerrar modal de carga
+        Navigator.of(context).pop();
+        
+        // Cerrar modal de crear post
         Navigator.of(context).pop();
         
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Post created successfully!'),
-            backgroundColor: Color(0xFF4CAF50),
+            content: Text('✅ ¡Experiencia compartida exitosamente!'),
+            backgroundColor: Color(0xFF4DD0E1),
+            duration: Duration(seconds: 3),
           ),
         );
       }
@@ -230,18 +296,2772 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
           _isCreatingPost = false;
         });
         
+        // Cerrar modal de carga
+        Navigator.of(context).pop();
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error creating post: $e'),
+            content: Text('❌ Error al compartir: $e'),
             backgroundColor: const Color(0xFFDC2626),
+            duration: const Duration(seconds: 4),
           ),
         );
       }
     }
   }
 
-  /// ✅ SELECCIONAR IMAGEN
-  Future<void> _pickImage() async {
+  /// 🎨 MODAL DE CARGA HERMOSO DURANTE UPLOAD
+  void _showUploadingModal() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black87,
+      builder: (BuildContext context) {
+        return WillPopScope(
+          onWillPop: () async => false,
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            child: Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A1A1A),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: const Color(0xFF4DD0E1).withValues(alpha: 0.3),
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF4DD0E1).withValues(alpha: 0.2),
+                    blurRadius: 30,
+                    spreadRadius: 5,
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 🌍 Icono animado de avión/globo
+                  TweenAnimationBuilder(
+                    tween: Tween<double>(begin: 0, end: 1),
+                    duration: const Duration(seconds: 2),
+                    builder: (context, double value, child) {
+                      return Transform.rotate(
+                        angle: value * 2 * 3.14159,
+                        child: Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              colors: [
+                                const Color(0xFF4DD0E1),
+                                const Color(0xFF4DD0E1).withValues(alpha: 0.5),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF4DD0E1).withValues(alpha: 0.3),
+                                blurRadius: 20,
+                                spreadRadius: 5,
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.flight_takeoff,
+                            color: Colors.white,
+                            size: 50,
+                          ),
+                        ),
+                      );
+                    },
+                    onEnd: () {
+                      // Reiniciar animación
+                      if (mounted) {
+                        setState(() {});
+                      }
+                    },
+                  ),
+                  
+                  const SizedBox(height: 32),
+                  
+                  // ✨ Texto principal
+                  Text(
+                    '✨ Compartiendo tu experiencia',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.outfit(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 8),
+                  
+                  // 🎯 Texto secundario
+                  Text(
+                    'inolvidable...',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.outfit(
+                      color: const Color(0xFF4DD0E1),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 32),
+                  
+                  // 🔄 Indicador de progreso elegante
+                  SizedBox(
+                    width: 250,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: TweenAnimationBuilder(
+                        tween: Tween<double>(begin: 0, end: 1),
+                        duration: const Duration(seconds: 2),
+                        builder: (context, double value, child) {
+                          return LinearProgressIndicator(
+                            value: null, // Indeterminado
+                            minHeight: 6,
+                            backgroundColor: const Color(0xFF2C2C2C),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              const Color(0xFF4DD0E1),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 24),
+                  
+                  // 💬 Mensaje adicional
+                  Text(
+                    '🌎 Subiendo a la comunidad LandGo Travel',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.outfit(
+                      color: Colors.white70,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// 🗑️ ELIMINAR POST CON CONFIRMACIÓN
+  Future<void> _deletePost(String postId) async {
+    // Mostrar modal de confirmación
+    final confirmed = await _showDeleteConfirmationDialog();
+    if (!confirmed) return;
+
+    // Mostrar modal de carga al eliminar
+    _showDeletingModal();
+
+    try {
+      // Esperar 2 segundos para mostrar la animación
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Eliminar post de la base de datos
+      await Supabase.instance.client
+          .from('travel_posts')
+          .delete()
+          .eq('id', postId);
+
+      // Cerrar modal de carga
+      Navigator.of(context).pop();
+
+      // Recargar posts
+      await _loadPosts();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('🗑️ Post eliminado exitosamente'),
+            backgroundColor: Color(0xFFDC2626),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      print('❌ Error deleting post: $e');
+      
+      // Cerrar modal de carga
+      Navigator.of(context).pop();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error al eliminar: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  /// ✏️ EDITAR POST
+  Future<void> _editPost(Map<String, dynamic> post) async {
+    // Configurar el modal con los datos del post existente
+    _postController.text = post['content'] ?? '';
+    
+    // TODO: Cargar imagen existente si tiene
+    _selectedImage = null;
+    _selectedImageBytes = null;
+    
+    // Mostrar modal de edición
+    _showEditPostModal(post['id']);
+  }
+
+  /// ✏️ MODAL DE EDICIÓN DE POST
+  void _showEditPostModal(String postId) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => StatefulBuilder(
+        builder: (BuildContext context, StateSetter setModalState) {
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.7,
+            decoration: const BoxDecoration(
+              color: Color(0xFF1A1A1A),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Column(
+              children: [
+                // Handle bar
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white70,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                
+                // Header
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: Row(
+                    children: [
+                      Text(
+                        '✏️ Editar Post',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const Divider(color: Colors.white24),
+                
+                // Content
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      children: [
+                        // Text input
+                        Expanded(
+                          child: TextField(
+                            controller: _postController,
+                            maxLines: null,
+                            expands: true,
+                            textAlignVertical: TextAlignVertical.top,
+                            style: GoogleFonts.outfit(
+                              color: Colors.white,
+                              fontSize: 16,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: '¿Qué quieres compartir?',
+                              hintStyle: GoogleFonts.outfit(
+                                color: Colors.white54,
+                                fontSize: 16,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              filled: true,
+                              fillColor: const Color(0xFF2C2C2C),
+                              contentPadding: const EdgeInsets.all(16),
+                            ),
+                          ),
+                        ),
+                        
+                        const SizedBox(height: 16),
+                        
+                        // Image preview (if editing existing image)
+                        if (_selectedImage != null || _selectedImageBytes != null)
+                          Container(
+                            height: 120,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFF4DD0E1).withValues(alpha: 0.3),
+                                width: 2,
+                              ),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(10),
+                              child: kIsWeb && _selectedImageBytes != null
+                                  ? Image.memory(
+                                      _selectedImageBytes!,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return Container(
+                                          color: const Color(0xFF2C2C2C),
+                                          child: const Center(
+                                            child: Icon(
+                                              Icons.image_not_supported,
+                                              color: Colors.white70,
+                                              size: 48,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    )
+                                  : _selectedImage != null
+                                      ? Image.file(
+                                          _selectedImage!,
+                                          fit: BoxFit.cover,
+                                        )
+                                      : Container(
+                                          color: const Color(0xFF2C2C2C),
+                                          child: const Center(
+                                            child: Icon(
+                                              Icons.image_not_supported,
+                                              color: Colors.white70,
+                                              size: 48,
+                                            ),
+                                          ),
+                                        ),
+                            ),
+                          ),
+                        
+                        const SizedBox(height: 16),
+                        
+                        // Action buttons
+                        Row(
+                          children: [
+                            Expanded(
+                              child: FFButtonWidget(
+                                onPressed: (_isCreatingPost || _isLoadingImage) ? null : () => _pickImage(setModalState),
+                                text: _isLoadingImage 
+                                    ? 'Loading...' 
+                                    : ((_selectedImage != null || _selectedImageBytes != null) ? 'Change Photo' : 'Add Photo'),
+                                icon: (_isCreatingPost || _isLoadingImage)
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white70,
+                                        ),
+                                      )
+                                    : Icon(
+                                        (_selectedImage != null || _selectedImageBytes != null) ? Icons.swap_horiz : Icons.camera_alt,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
+                                options: FFButtonOptions(
+                                  height: 48,
+                                  color: (_isCreatingPost || _isLoadingImage)
+                                      ? const Color(0xFF2C2C2C)
+                                      : ((_selectedImage != null || _selectedImageBytes != null)
+                                          ? const Color(0xFF4DD0E1) 
+                                          : const Color(0xFF37474F)),
+                                  textStyle: GoogleFonts.outfit(
+                                    color: (_isCreatingPost || _isLoadingImage) ? Colors.white70 : Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  borderSide: const BorderSide(
+                                    color: Colors.white24,
+                                    width: 1,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: FFButtonWidget(
+                                onPressed: (_isCreatingPost || _isLoadingImage) ? null : () => _updatePost(postId),
+                                text: _isCreatingPost ? 'Guardando...' : 'Guardar',
+                                icon: _isCreatingPost 
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.white,
+                                        ),
+                                      )
+                                    : null,
+                                options: FFButtonOptions(
+                                  height: 48,
+                                  color: (_isCreatingPost || _isLoadingImage)
+                                      ? const Color(0xFF4DD0E1).withValues(alpha: 0.7)
+                                      : const Color(0xFF4DD0E1),
+                                  textStyle: GoogleFonts.outfit(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// 💾 ACTUALIZAR POST EXISTENTE
+  Future<void> _updatePost(String postId) async {
+    if (_postController.text.trim().isEmpty && _selectedImage == null && _selectedImageBytes == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please add some text or an image to your post'),
+          backgroundColor: Color(0xFFDC2626),
+        ),
+      );
+      return;
+    }
+
+    // Mostrar modal de carga específico para guardar
+    _showSavingModal();
+
+    // Activar estado de carga
+    if (mounted) {
+      setState(() {
+        _isCreatingPost = true;
+      });
+    }
+
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) return;
+
+      // Subir nueva imagen si existe
+      String? imageUrl;
+      if (_selectedImage != null || _selectedImageBytes != null) {
+        final fileName = '${user.id}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        
+        if (kIsWeb && _selectedImageBytes != null) {
+          final folderPath = 'public/$fileName';
+          await Supabase.instance.client.storage
+              .from('travel-images')
+              .uploadBinary(folderPath, _selectedImageBytes!);
+          
+          imageUrl = Supabase.instance.client.storage
+              .from('travel-images')
+              .getPublicUrl(folderPath);
+        } else if (_selectedImage != null) {
+          final folderPath = 'public/$fileName';
+          await Supabase.instance.client.storage
+              .from('travel-images')
+              .upload(folderPath, _selectedImage!);
+          
+          imageUrl = Supabase.instance.client.storage
+              .from('travel-images')
+              .getPublicUrl(folderPath);
+        }
+      }
+
+      // Actualizar post en la base de datos
+      final updateData = {
+        'content': _postController.text.trim(),
+        if (imageUrl != null) 'image_url': imageUrl,
+      };
+      
+      await Supabase.instance.client
+          .from('travel_posts')
+          .update(updateData)
+          .eq('id', postId);
+
+      // Limpiar formulario
+      _postController.clear();
+      _selectedImage = null;
+      _selectedImageBytes = null;
+      
+      // Recargar posts
+      await _loadPosts();
+      
+      if (mounted) {
+        setState(() {
+          _isCreatingPost = false;
+        });
+        
+        // Cerrar modal de carga
+        Navigator.of(context).pop();
+        
+        // Cerrar modal de edición
+        Navigator.of(context).pop();
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ ¡Post actualizado exitosamente!'),
+            backgroundColor: Color(0xFF4DD0E1),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+      
+    } catch (e) {
+      print('❌ Error updating post: $e');
+      if (mounted) {
+        setState(() {
+          _isCreatingPost = false;
+        });
+        
+        // Cerrar modal de carga
+        Navigator.of(context).pop();
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error al actualizar: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  /// ❓ MODAL DE CONFIRMACIÓN PARA ELIMINAR
+  Future<bool> _showDeleteConfirmationDialog() async {
+    return await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF1A1A1A),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: const BorderSide(
+              color: Color(0xFFDC2626),
+              width: 2,
+            ),
+          ),
+          title: Row(
+            children: [
+              const Icon(
+                Icons.warning_amber_rounded,
+                color: Color(0xFFDC2626),
+                size: 28,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                '¿Eliminar post?',
+                style: GoogleFonts.outfit(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Esta acción no se puede deshacer. El post será eliminado permanentemente.',
+            style: GoogleFonts.outfit(
+              color: Colors.white70,
+              fontSize: 16,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(
+                'Cancelar',
+                style: GoogleFonts.outfit(
+                  color: Colors.white70,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFDC2626),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text(
+                'Eliminar',
+                style: GoogleFonts.outfit(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    ) ?? false;
+  }
+
+  /// 💾 MODAL DE CARGA AL GUARDAR EDICIÓN
+  void _showSavingModal() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black87,
+      builder: (BuildContext context) {
+        return WillPopScope(
+          onWillPop: () async => false,
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            child: Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A1A1A),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: const Color(0xFF4DD0E1).withValues(alpha: 0.3),
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF4DD0E1).withValues(alpha: 0.2),
+                    blurRadius: 30,
+                    spreadRadius: 5,
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 💾 Icono animado de guardado
+                  TweenAnimationBuilder(
+                    tween: Tween<double>(begin: 0, end: 1),
+                    duration: const Duration(seconds: 2),
+                    builder: (context, double value, child) {
+                      return Transform.rotate(
+                        angle: value * 2 * 3.14159,
+                        child: Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              colors: [
+                                const Color(0xFF4DD0E1),
+                                const Color(0xFF4DD0E1).withValues(alpha: 0.5),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF4DD0E1).withValues(alpha: 0.3),
+                                blurRadius: 20,
+                                spreadRadius: 5,
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.save_alt,
+                            color: Colors.white,
+                            size: 50,
+                          ),
+                        ),
+                      );
+                    },
+                    onEnd: () {
+                      // Reiniciar animación
+                      if (mounted) {
+                        setState(() {});
+                      }
+                    },
+                  ),
+                  
+                  const SizedBox(height: 32),
+                  
+                  // 💾 Texto principal
+                  Text(
+                    '💾 Guardando tu experiencia',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.outfit(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 8),
+                  
+                  // 🎯 Texto secundario
+                  Text(
+                    'actualizada...',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.outfit(
+                      color: const Color(0xFF4DD0E1),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 32),
+                  
+                  // 🔄 Indicador de progreso elegante
+                  SizedBox(
+                    width: 250,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: const LinearProgressIndicator(
+                        value: null, // Indeterminado
+                        minHeight: 6,
+                        backgroundColor: Color(0xFF2C2C2C),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Color(0xFF4DD0E1),
+                        ),
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 24),
+                  
+                  // 💬 Mensaje adicional
+                  Text(
+                    '🌎 Actualizando en la comunidad LandGo Travel',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.outfit(
+                      color: Colors.white70,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// 🗑️ MODAL DE CARGA AL ELIMINAR (Diseño LandGo Travel)
+  void _showDeletingModal() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black87,
+      builder: (BuildContext context) {
+        return WillPopScope(
+          onWillPop: () async => false,
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            child: Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A1A1A),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: const Color(0xFF4DD0E1).withValues(alpha: 0.3),
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF4DD0E1).withValues(alpha: 0.2),
+                    blurRadius: 30,
+                    spreadRadius: 5,
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 🗑️ Icono animado de eliminación con diseño turquesa
+                  TweenAnimationBuilder(
+                    tween: Tween<double>(begin: 0, end: 1),
+                    duration: const Duration(milliseconds: 800),
+                    builder: (context, double value, child) {
+                      return Transform.scale(
+                        scale: 0.8 + (0.2 * value),
+                        child: Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              colors: [
+                                const Color(0xFF4DD0E1),
+                                const Color(0xFF4DD0E1).withValues(alpha: 0.5),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF4DD0E1).withValues(alpha: 0.3),
+                                blurRadius: 20,
+                                spreadRadius: 5,
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.delete_forever,
+                            color: Colors.white,
+                            size: 50,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  
+                  const SizedBox(height: 32),
+                  
+                  // 🗑️ Texto principal
+                  Text(
+                    '🗑️ Eliminando post...',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.outfit(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 8),
+                  
+                  // ⏱️ Texto secundario
+                  Text(
+                    'Por favor espera...',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.outfit(
+                      color: const Color(0xFF4DD0E1),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 32),
+                  
+                  // 🔄 Indicador de progreso con diseño turquesa
+                  SizedBox(
+                    width: 200,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: const LinearProgressIndicator(
+                        minHeight: 6,
+                        backgroundColor: Color(0xFF2C2C2C),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Color(0xFF4DD0E1),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// 💬 MOSTRAR MODAL DE COMENTARIOS CON LISTA
+  void _showCommentsModal(Map<String, dynamic> post) {
+    final postId = post['id']?.toString();
+    if (postId == null) return;
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => StatefulBuilder(
+        builder: (BuildContext context, StateSetter setModalState) {
+          // Función para recargar comentarios en el modal
+          Future<void> refreshComments() async {
+            setModalState(() {});
+          }
+          return Container(
+            height: MediaQuery.of(context).size.height * 0.85,
+            decoration: const BoxDecoration(
+              color: Color(0xFF1A1A1A),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: Column(
+              children: [
+                // Handle bar
+                Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white70,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                
+                // Header
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: Row(
+                    children: [
+                      Text(
+                        '💬 Comentarios (${post['comments_count'] ?? 0})',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const Divider(color: Colors.white24),
+                
+                // Lista de comentarios
+                Expanded(
+                  child: FutureBuilder<List<Map<String, dynamic>>>(
+                    future: _loadComments(postId),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(
+                          child: CircularProgressIndicator(
+                            color: Color(0xFF4DD0E1),
+                          ),
+                        );
+                      }
+                      
+                      if (snapshot.hasError) {
+                        return Center(
+                          child: Text(
+                            'Error al cargar comentarios: ${snapshot.error}',
+                            style: GoogleFonts.outfit(
+                              color: Colors.red,
+                              fontSize: 14,
+                            ),
+                          ),
+                        );
+                      }
+                      
+                      final comments = snapshot.data ?? [];
+                      
+                      if (comments.isEmpty) {
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.comment_outlined,
+                                size: 64,
+                                color: Colors.white54,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No hay comentarios aún',
+                                style: GoogleFonts.outfit(
+                                  color: Colors.white54,
+                                  fontSize: 16,
+                                ),
+                              ),
+                              Text(
+                                '¡Sé el primero en comentar!',
+                                style: GoogleFonts.outfit(
+                                  color: Colors.white38,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }
+                      
+                      return ListView.builder(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        itemCount: comments.length,
+                        itemBuilder: (context, index) {
+                          final comment = comments[index];
+                          return _buildCommentItem(comment, postId, refreshComments);
+                        },
+                      );
+                    },
+                  ),
+                ),
+                
+                const Divider(color: Colors.white24),
+                
+                // Input para escribir comentario
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2C2C2C),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color(0xFF4DD0E1).withValues(alpha: 0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: TextField(
+                          maxLines: 3,
+                          maxLength: 500,
+                          textAlignVertical: TextAlignVertical.top,
+                          style: GoogleFonts.outfit(
+                            color: Colors.white,
+                            fontSize: 16,
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Escribe tu comentario...',
+                            hintStyle: GoogleFonts.outfit(
+                              color: Colors.white54,
+                              fontSize: 16,
+                            ),
+                            border: InputBorder.none,
+                            counterStyle: GoogleFonts.outfit(
+                              color: Colors.white54,
+                              fontSize: 12,
+                            ),
+                          ),
+                          controller: _commentController,
+                          onChanged: (_) => setModalState(() {}),
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 16),
+                      
+                      // Botones
+                      Row(
+                        children: [
+                          Expanded(
+                            child: FFButtonWidget(
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                                _commentController.clear();
+                              },
+                              text: 'Cancelar',
+                              options: FFButtonOptions(
+                                height: 48,
+                                color: const Color(0xFF37474F),
+                                textStyle: GoogleFonts.outfit(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: FFButtonWidget(
+                              onPressed: _commentController.text.trim().isEmpty 
+                                  ? null 
+                                  : () => _postComment(postId, post['profiles']['full_name'] ?? 'Usuario'),
+                              text: 'Comentar',
+                              options: FFButtonOptions(
+                                height: 48,
+                                color: _commentController.text.trim().isEmpty
+                                    ? const Color(0xFF4DD0E1).withValues(alpha: 0.7)
+                                    : const Color(0xFF4DD0E1),
+                                textStyle: GoogleFonts.outfit(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// 📝 CARGAR COMENTARIOS DE UN POST
+  Future<List<Map<String, dynamic>>> _loadComments(String postId) async {
+    try {
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      
+      final response = await Supabase.instance.client
+          .from('travel_post_comments')
+          .select('''
+            id,
+            user_id,
+            content,
+            created_at,
+            profiles!travel_post_comments_user_id_fkey(
+              full_name,
+              avatar_url
+            )
+          ''')
+          .eq('post_id', postId)
+          .order('created_at', ascending: true);
+
+      // Procesar comentarios para agregar datos de likes
+      List<Map<String, dynamic>> processedComments = [];
+      
+      for (var comment in response) {
+        final commentId = comment['id'];
+        
+        // Cargar likes para este comentario
+        final likesResponse = await Supabase.instance.client
+            .from('travel_comment_likes')
+            .select('user_id')
+            .eq('comment_id', commentId);
+        
+        final likesCount = likesResponse.length;
+        final userLiked = currentUser != null && 
+            likesResponse.any((like) => like['user_id'] == currentUser.id);
+        
+        // Agregar datos de likes al comentario
+        comment['likes_count'] = likesCount;
+        comment['user_liked'] = userLiked;
+        
+        processedComments.add(comment);
+      }
+
+      return processedComments;
+    } catch (e) {
+      print('❌ Error loading comments: $e');
+      return [];
+    }
+  }
+
+  /// 📝 CARGAR RESPUESTAS (SUBCOMENTARIOS) DE UN COMENTARIO
+  Future<List<Map<String, dynamic>>> _loadReplies(String commentId) async {
+    try {
+      final response = await Supabase.instance.client
+          .from('travel_comment_replies')
+          .select('''
+            id,
+            content,
+            created_at,
+            user_id,
+            profiles!travel_comment_replies_user_id_fkey(
+              full_name,
+              avatar_url
+            )
+          ''')
+          .eq('comment_id', commentId)
+          .order('created_at', ascending: true);
+
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      print('❌ Error loading replies: $e');
+      return [];
+    }
+  }
+
+  /// 🏗️ CONSTRUIR ITEM DE COMENTARIO
+  Widget _buildCommentItem(Map<String, dynamic> comment, String postId, VoidCallback refreshCallback) {
+    final profile = comment['profiles'] ?? {};
+    final userName = profile['full_name'] ?? 'Usuario';
+    final avatarUrl = profile['avatar_url'];
+    final content = comment['content'] ?? '';
+    final createdAt = comment['created_at']?.toString() ?? '';
+    final commentId = comment['id']?.toString() ?? '';
+    final userId = comment['user_id']?.toString() ?? '';
+    
+    // Datos de likes del comentario
+    final likesCount = comment['likes_count'] ?? 0;
+    final userLiked = comment['user_liked'] ?? false;
+    
+    // Verificar si es el usuario actual
+    final currentUser = Supabase.instance.client.auth.currentUser;
+    final isCurrentUser = currentUser?.id == userId;
+    
+    // Formatear fecha
+    String formattedDate = '';
+    if (createdAt.isNotEmpty) {
+      try {
+        final date = DateTime.parse(createdAt);
+        final now = DateTime.now();
+        final difference = now.difference(date);
+        
+        if (difference.inMinutes < 1) {
+          formattedDate = 'Ahora';
+        } else if (difference.inMinutes < 60) {
+          formattedDate = '${difference.inMinutes}m';
+        } else if (difference.inHours < 24) {
+          formattedDate = '${difference.inHours}h';
+        } else if (difference.inDays < 7) {
+          formattedDate = '${difference.inDays}d';
+        } else {
+          formattedDate = '${date.day}/${date.month}/${date.year}';
+        }
+      } catch (e) {
+        formattedDate = '';
+      }
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2C2C2C),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: const Color(0xFF4DD0E1).withValues(alpha: 0.1),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header del comentario
+          Row(
+            children: [
+              // Avatar
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: const Color(0xFF4DD0E1),
+                backgroundImage: avatarUrl != null 
+                    ? NetworkImage(avatarUrl) 
+                    : null,
+                child: avatarUrl == null 
+                    ? Text(
+                        userName.isNotEmpty ? userName[0].toUpperCase() : 'U',
+                        style: GoogleFonts.outfit(
+                          color: Colors.black,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )
+                    : null,
+              ),
+              const SizedBox(width: 12),
+              
+              // Nombre y fecha
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      userName,
+                      style: GoogleFonts.outfit(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    if (formattedDate.isNotEmpty)
+                      Text(
+                        formattedDate,
+                        style: GoogleFonts.outfit(
+                          color: Colors.white54,
+                          fontSize: 12,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              
+              // Menú de opciones (solo para el usuario actual)
+              if (isCurrentUser)
+                PopupMenuButton<String>(
+                  icon: const Icon(
+                    Icons.more_vert,
+                    color: Colors.white70,
+                    size: 20,
+                  ),
+                  color: const Color(0xFF2C2C2C),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  onSelected: (value) {
+                    if (value == 'edit') {
+                      _editComment(comment, refreshCallback);
+                    } else if (value == 'delete') {
+                      _deleteComment(commentId, refreshCallback);
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem<String>(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.edit,
+                            color: Color(0xFF4DD0E1),
+                            size: 18,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Editar',
+                            style: GoogleFonts.outfit(
+                              color: Colors.white,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem<String>(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.delete,
+                            color: Color(0xFFDC2626),
+                            size: 18,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Eliminar',
+                            style: GoogleFonts.outfit(
+                              color: Colors.white,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+            ],
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // Contenido del comentario
+          Text(
+            content,
+            style: GoogleFonts.outfit(
+              color: Colors.white,
+              fontSize: 15,
+              height: 1.4,
+            ),
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // Acciones del comentario (like y comentar)
+          Row(
+            children: [
+              // Botón de Me Gusta
+              GestureDetector(
+                onTap: () => _toggleCommentLike(commentId, userLiked, refreshCallback),
+                child: Row(
+                  children: [
+                    Icon(
+                      userLiked ? Icons.favorite : Icons.favorite_border,
+                      color: userLiked ? const Color(0xFF4DD0E1) : Colors.white70,
+                      size: 18,
+                    ),
+                    if (likesCount > 0) ...[
+                      const SizedBox(width: 4),
+                      Text(
+                        '$likesCount',
+                        style: GoogleFonts.outfit(
+                          color: userLiked ? const Color(0xFF4DD0E1) : Colors.white70,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              
+              const SizedBox(width: 20),
+              
+              // Botón de Comentar (Subcomentario)
+              GestureDetector(
+                onTap: () => _showSubcommentModal(comment, postId, refreshCallback),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.reply,
+                      color: Colors.white70,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Comentar',
+                      style: GoogleFonts.outfit(
+                        color: Colors.white70,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+
+      const SizedBox(height: 8),
+
+      // Lista de subcomentarios (respuestas)
+      FutureBuilder<List<Map<String, dynamic>>>(
+        future: _loadReplies(commentId),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const SizedBox.shrink();
+          }
+          if (snapshot.hasError) {
+            return const SizedBox.shrink();
+          }
+          final replies = snapshot.data ?? [];
+          if (replies.isEmpty) return const SizedBox.shrink();
+
+          return Padding(
+            padding: const EdgeInsets.only(top: 4, left: 36),
+            child: Column(
+              children: replies.map((reply) {
+                final rProfile = reply['profiles'] ?? {};
+                final rName = rProfile['full_name'] ?? 'Usuario';
+                final rAvatar = rProfile['avatar_url'];
+                final rContent = reply['content'] ?? '';
+                final rCreatedAt = reply['created_at']?.toString() ?? '';
+
+                String rDate = '';
+                if (rCreatedAt.isNotEmpty) {
+                  try {
+                    final d = DateTime.parse(rCreatedAt);
+                    final diff = DateTime.now().difference(d);
+                    if (diff.inMinutes < 1) {
+                      rDate = 'Ahora';
+                    } else if (diff.inMinutes < 60) {
+                      rDate = '${diff.inMinutes}m';
+                    } else if (diff.inHours < 24) {
+                      rDate = '${diff.inHours}h';
+                    } else if (diff.inDays < 7) {
+                      rDate = '${diff.inDays}d';
+                    } else {
+                      rDate = '${d.day}/${d.month}/${d.year}';
+                    }
+                  } catch (_) {}
+                }
+
+                return Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(top: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1A1A1A),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: const Color(0xFF4DD0E1).withValues(alpha: 0.08),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(
+                        radius: 14,
+                        backgroundColor: const Color(0xFF4DD0E1),
+                        backgroundImage: rAvatar != null ? NetworkImage(rAvatar) : null,
+                        child: rAvatar == null
+                            ? Text(
+                                rName.isNotEmpty ? rName[0].toUpperCase() : 'U',
+                                style: GoogleFonts.outfit(
+                                  color: Colors.black,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              )
+                            : null,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    rName,
+                                    style: GoogleFonts.outfit(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                if (rDate.isNotEmpty)
+                                  Text(
+                                    rDate,
+                                    style: GoogleFonts.outfit(
+                                      color: Colors.white54,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              rContent,
+                              style: GoogleFonts.outfit(
+                                color: Colors.white,
+                                fontSize: 14,
+                                height: 1.35,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// ❤️ TOGGLE LIKE DE COMENTARIO
+  Future<void> _toggleCommentLike(String commentId, bool currentLiked, [VoidCallback? refreshCallback]) async {
+    try {
+      print('🔄 Toggle comment like - CommentId: $commentId, CurrentLiked: $currentLiked');
+      
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) {
+        print('❌ Usuario no autenticado');
+        return;
+      }
+
+      if (currentLiked) {
+        // Quitar like
+        await Supabase.instance.client
+            .from('travel_comment_likes')
+            .delete()
+            .eq('comment_id', commentId)
+            .eq('user_id', user.id);
+        print('❤️ Like removido del comentario $commentId');
+      } else {
+        // Agregar like
+        await Supabase.instance.client
+            .from('travel_comment_likes')
+            .insert({
+              'comment_id': commentId,
+              'user_id': user.id,
+            });
+        print('❤️ Like agregado al comentario $commentId');
+      }
+      
+      // Refrescar modal de comentarios si está abierto
+      if (refreshCallback != null) {
+        refreshCallback();
+      }
+      
+    } catch (e) {
+      print('❌ Error toggling comment like: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al actualizar like: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  /// ✏️ EDITAR COMENTARIO
+  void _editComment(Map<String, dynamic> comment, [VoidCallback? refreshCallback]) {
+    final commentId = comment['id']?.toString();
+    final currentContent = comment['content'] ?? '';
+    
+    if (commentId == null) return;
+
+    // Crear controlador temporal para el modal
+    final editController = TextEditingController(text: currentContent);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Dialog(
+            backgroundColor: const Color(0xFF1A1A1A),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A1A1A),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: const Color(0xFF4DD0E1).withValues(alpha: 0.3),
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF4DD0E1).withValues(alpha: 0.2),
+                    blurRadius: 20,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.edit,
+                        color: Color(0xFF4DD0E1),
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'Editar Comentario',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white70),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 20),
+                  
+                  // Campo de texto
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2C2C2C),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFF4DD0E1).withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: TextField(
+                      controller: editController,
+                      maxLines: 3,
+                      maxLength: 500,
+                      style: GoogleFonts.outfit(
+                        color: Colors.white,
+                        fontSize: 16,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Edita tu comentario...',
+                        hintStyle: GoogleFonts.outfit(
+                          color: Colors.white54,
+                          fontSize: 16,
+                        ),
+                        border: InputBorder.none,
+                        counterStyle: GoogleFonts.outfit(
+                          color: Colors.white54,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 20),
+                  
+                  // Botones
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FFButtonWidget(
+                          onPressed: () => Navigator.of(context).pop(),
+                          text: 'Cancelar',
+                          options: FFButtonOptions(
+                            height: 48,
+                            color: const Color(0xFF37474F),
+                            textStyle: GoogleFonts.outfit(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FFButtonWidget(
+                          onPressed: editController.text.trim().isEmpty 
+                              ? null 
+                              : () => _updateComment(commentId, editController.text.trim(), refreshCallback),
+                          text: 'Guardar',
+                          options: FFButtonOptions(
+                            height: 48,
+                            color: editController.text.trim().isEmpty
+                                ? const Color(0xFF4DD0E1).withValues(alpha: 0.7)
+                                : const Color(0xFF4DD0E1),
+                            textStyle: GoogleFonts.outfit(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// 🗑️ ELIMINAR COMENTARIO
+  void _deleteComment(String commentId, [VoidCallback? refreshCallback]) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1A1A1A),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Row(
+          children: [
+            const Icon(
+              Icons.delete_forever,
+              color: Color(0xFF4DD0E1),
+              size: 24,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Eliminar Comentario',
+              style: GoogleFonts.outfit(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          '¿Estás seguro de que quieres eliminar este comentario? Esta acción no se puede deshacer.',
+          style: GoogleFonts.outfit(
+            color: Colors.white70,
+            fontSize: 14,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              'Cancelar',
+              style: GoogleFonts.outfit(
+                color: Colors.white54,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.of(context).pop();
+              await _confirmDeleteComment(commentId, refreshCallback);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4DD0E1),
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              'Eliminar',
+              style: GoogleFonts.outfit(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// ✅ CONFIRMAR ELIMINACIÓN DE COMENTARIO
+  Future<void> _confirmDeleteComment(String commentId, [VoidCallback? refreshCallback]) async {
+    try {
+      // Mostrar modal de carga
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1A1A),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: const Color(0xFF4DD0E1).withValues(alpha: 0.3),
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF4DD0E1).withValues(alpha: 0.2),
+                  blurRadius: 20,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Ícono animado
+                TweenAnimationBuilder<double>(
+                  duration: const Duration(seconds: 2),
+                  tween: Tween(begin: 0.5, end: 1.0),
+                  builder: (context, value, child) {
+                    return Transform.scale(
+                      scale: value,
+                      child: Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              const Color(0xFF4DD0E1),
+                              const Color(0xFF4DD0E1).withValues(alpha: 0.7),
+                            ],
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.delete_forever,
+                          color: Colors.black,
+                          size: 30,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                
+                const SizedBox(height: 24),
+                
+                Text(
+                  '🗑️ Eliminando comentario...',
+                  style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                
+                const SizedBox(height: 12),
+                
+                Text(
+                  'Por favor espera...',
+                  style: GoogleFonts.outfit(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+                
+                const SizedBox(height: 20),
+                
+                // Barra de progreso
+                Container(
+                  width: double.infinity,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2C2C2C),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                  child: LinearProgressIndicator(
+                    backgroundColor: Colors.transparent,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      const Color(0xFF4DD0E1),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      // Esperar 2 segundos
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Eliminar comentario
+      await Supabase.instance.client
+          .from('travel_post_comments')
+          .delete()
+          .eq('id', commentId);
+
+      // Cerrar modal de carga
+      if (mounted) Navigator.of(context).pop();
+
+      // Recargar posts para actualizar contadores
+      await _loadPosts();
+      
+      // Refrescar modal de comentarios si está abierto
+      if (refreshCallback != null) {
+        refreshCallback();
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ Comentario eliminado exitosamente'),
+            backgroundColor: const Color(0xFF4DD0E1),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+      
+    } catch (e) {
+      print('❌ Error deleting comment: $e');
+      
+      // Cerrar modal de carga si está abierto
+      if (mounted) Navigator.of(context).pop();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al eliminar comentario: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  /// 💾 ACTUALIZAR COMENTARIO
+  Future<void> _updateComment(String commentId, String newContent, [VoidCallback? refreshCallback]) async {
+    try {
+      // Mostrar modal de carga
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1A1A),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: const Color(0xFF4DD0E1).withValues(alpha: 0.3),
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF4DD0E1).withValues(alpha: 0.2),
+                  blurRadius: 20,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Ícono animado
+                TweenAnimationBuilder<double>(
+                  duration: const Duration(seconds: 2),
+                  tween: Tween(begin: 0.5, end: 1.0),
+                  builder: (context, value, child) {
+                    return Transform.scale(
+                      scale: value,
+                      child: Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              const Color(0xFF4DD0E1),
+                              const Color(0xFF4DD0E1).withValues(alpha: 0.7),
+                            ],
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.save_alt,
+                          color: Colors.black,
+                          size: 30,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                
+                const SizedBox(height: 24),
+                
+                Text(
+                  '💾 Guardando comentario...',
+                  style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                
+                const SizedBox(height: 12),
+                
+                Text(
+                  'Por favor espera...',
+                  style: GoogleFonts.outfit(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+                
+                const SizedBox(height: 20),
+                
+                // Barra de progreso
+                Container(
+                  width: double.infinity,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2C2C2C),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                  child: LinearProgressIndicator(
+                    backgroundColor: Colors.transparent,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      const Color(0xFF4DD0E1),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      // Esperar 2 segundos
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Actualizar comentario
+      await Supabase.instance.client
+          .from('travel_post_comments')
+          .update({'content': newContent})
+          .eq('id', commentId);
+
+      // Cerrar modales
+      if (mounted) {
+        Navigator.of(context).pop(); // Cerrar modal de carga
+        Navigator.of(context).pop(); // Cerrar modal de edición
+      }
+
+      // Recargar posts para actualizar
+      await _loadPosts();
+      
+      // Refrescar modal de comentarios si está abierto
+      if (refreshCallback != null) {
+        refreshCallback();
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ Comentario actualizado exitosamente'),
+            backgroundColor: const Color(0xFF4DD0E1),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+      
+    } catch (e) {
+      print('❌ Error updating comment: $e');
+      
+      // Cerrar modales si están abiertos
+      if (mounted) {
+        Navigator.of(context).pop(); // Cerrar modal de carga
+        Navigator.of(context).pop(); // Cerrar modal de edición
+      }
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al actualizar comentario: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  /// 💬 MOSTRAR MODAL DE SUBCOMENTARIO
+  void _showSubcommentModal(Map<String, dynamic> comment, String postId, [VoidCallback? refreshCallback]) {
+    final commentId = comment['id']?.toString();
+    final profile = comment['profiles'] ?? {};
+    final userName = profile['full_name'] ?? 'Usuario';
+    
+    if (commentId == null) return;
+
+    // Usar controlador separado para subcomentarios
+    _subcommentController.clear();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) {
+          return Dialog(
+            backgroundColor: const Color(0xFF1A1A1A),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A1A1A),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: const Color(0xFF4DD0E1).withValues(alpha: 0.3),
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF4DD0E1).withValues(alpha: 0.2),
+                    blurRadius: 20,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.reply,
+                        color: Color(0xFF4DD0E1),
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Responder a $userName',
+                          style: GoogleFonts.outfit(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white70),
+                        onPressed: () => Navigator.of(context).pop(),
+                      ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Comentario original (preview)
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2C2C2C),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: const Color(0xFF4DD0E1).withValues(alpha: 0.2),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      comment['content'] ?? '',
+                      style: GoogleFonts.outfit(
+                        color: Colors.white70,
+                        fontSize: 14,
+                        fontStyle: FontStyle.italic,
+                      ),
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // Campo de texto
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2C2C2C),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: const Color(0xFF4DD0E1).withValues(alpha: 0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: TextField(
+                      controller: _subcommentController,
+                      maxLines: 3,
+                      maxLength: 500,
+                      style: GoogleFonts.outfit(
+                        color: Colors.white,
+                        fontSize: 16,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Escribe tu respuesta...',
+                        hintStyle: GoogleFonts.outfit(
+                          color: Colors.white54,
+                          fontSize: 16,
+                        ),
+                        border: InputBorder.none,
+                        counterStyle: GoogleFonts.outfit(
+                          color: Colors.white54,
+                          fontSize: 12,
+                        ),
+                      ),
+                      onChanged: (_) => setModalState(() {}),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 20),
+                  
+                  // Botones
+                  Row(
+                    children: [
+                      Expanded(
+                        child: FFButtonWidget(
+                          onPressed: () => Navigator.of(context).pop(),
+                          text: 'Cancelar',
+                          options: FFButtonOptions(
+                            height: 48,
+                            color: const Color(0xFF37474F),
+                            textStyle: GoogleFonts.outfit(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FFButtonWidget(
+                          onPressed: _subcommentController.text.trim().isEmpty 
+                              ? null 
+                              : () => _postSubcomment(postId, commentId, _subcommentController.text.trim(), userName, refreshCallback),
+                          text: 'Responder',
+                          options: FFButtonOptions(
+                            height: 48,
+                            color: _subcommentController.text.trim().isEmpty
+                                ? const Color(0xFF4DD0E1).withValues(alpha: 0.7)
+                                : const Color(0xFF4DD0E1),
+                            textStyle: GoogleFonts.outfit(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  /// 📝 PUBLICAR SUBCOMENTARIO
+  Future<void> _postSubcomment(String postId, String commentId, String content, String originalUserName, [VoidCallback? refreshCallback]) async {
+    try {
+      // Mostrar modal de carga
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1A1A1A),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: const Color(0xFF4DD0E1).withValues(alpha: 0.3),
+                width: 2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF4DD0E1).withValues(alpha: 0.2),
+                  blurRadius: 20,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Ícono animado
+                TweenAnimationBuilder<double>(
+                  duration: const Duration(seconds: 2),
+                  tween: Tween(begin: 0.5, end: 1.0),
+                  builder: (context, value, child) {
+                    return Transform.scale(
+                      scale: value,
+                      child: Container(
+                        width: 60,
+                        height: 60,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              const Color(0xFF4DD0E1),
+                              const Color(0xFF4DD0E1).withValues(alpha: 0.7),
+                            ],
+                          ),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.reply,
+                          color: Colors.black,
+                          size: 30,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                
+                const SizedBox(height: 24),
+                
+                Text(
+                  '💬 Respondiendo a $originalUserName...',
+                  style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                
+                const SizedBox(height: 12),
+                
+                Text(
+                  'Por favor espera...',
+                  style: GoogleFonts.outfit(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+                
+                const SizedBox(height: 20),
+                
+                // Barra de progreso
+                Container(
+                  width: double.infinity,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2C2C2C),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                  child: LinearProgressIndicator(
+                    backgroundColor: Colors.transparent,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      const Color(0xFF4DD0E1),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      // Esperar 2 segundos
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Publicar subcomentario
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) throw Exception('Usuario no autenticado');
+
+      await Supabase.instance.client
+          .from('travel_comment_replies')
+          .insert({
+            'comment_id': commentId,
+            'user_id': user.id,
+            'content': content,
+          });
+
+      // Cerrar modales
+      if (mounted) {
+        Navigator.of(context).pop(); // Cerrar modal de carga
+        Navigator.of(context).pop(); // Cerrar modal de subcomentario
+      }
+
+      // Recargar posts para actualizar
+      await _loadPosts();
+      
+      // Refrescar modal de comentarios si está abierto
+      if (refreshCallback != null) {
+        refreshCallback();
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ Respuesta publicada exitosamente'),
+            backgroundColor: const Color(0xFF4DD0E1),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+      
+    } catch (e) {
+      print('❌ Error posting subcomment: $e');
+      
+      // Cerrar modales si están abiertos
+      if (mounted) {
+        Navigator.of(context).pop(); // Cerrar modal de carga
+        Navigator.of(context).pop(); // Cerrar modal de subcomentario
+      }
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al publicar respuesta: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  /// 💬 MODAL DE CARGA AL COMENTAR
+  void _showCommentingModal(String postOwnerName) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black87,
+      builder: (BuildContext context) {
+        return WillPopScope(
+          onWillPop: () async => false,
+          child: Dialog(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            child: Container(
+              padding: const EdgeInsets.all(32),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A1A1A),
+                borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: const Color(0xFF4DD0E1).withValues(alpha: 0.3),
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF4DD0E1).withValues(alpha: 0.2),
+                    blurRadius: 30,
+                    spreadRadius: 5,
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 💬 Icono animado de comentario
+                  TweenAnimationBuilder(
+                    tween: Tween<double>(begin: 0, end: 1),
+                    duration: const Duration(seconds: 2),
+                    builder: (context, double value, child) {
+                      return Transform.rotate(
+                        angle: value * 2 * 3.14159,
+                        child: Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            gradient: LinearGradient(
+                              colors: [
+                                const Color(0xFF4DD0E1),
+                                const Color(0xFF4DD0E1).withValues(alpha: 0.5),
+                              ],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFF4DD0E1).withValues(alpha: 0.3),
+                                blurRadius: 20,
+                                spreadRadius: 5,
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.chat_bubble,
+                            color: Colors.white,
+                            size: 50,
+                          ),
+                        ),
+                      );
+                    },
+                    onEnd: () {
+                      // Reiniciar animación
+                      if (mounted) {
+                        setState(() {});
+                      }
+                    },
+                  ),
+                  
+                  const SizedBox(height: 32),
+                  
+                  // 💬 Texto principal
+                  Text(
+                    '💬 Comentando la experiencia',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.outfit(
+                      color: Colors.white,
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 8),
+                  
+                  // 🎯 Texto secundario
+                  Text(
+                    'de $postOwnerName...',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.outfit(
+                      color: const Color(0xFF4DD0E1),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 32),
+                  
+                  // 🔄 Indicador de progreso elegante
+                  SizedBox(
+                    width: 250,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: const LinearProgressIndicator(
+                        value: null, // Indeterminado
+                        minHeight: 6,
+                        backgroundColor: Color(0xFF2C2C2C),
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Color(0xFF4DD0E1),
+                        ),
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(height: 24),
+                  
+                  // 💬 Mensaje adicional
+                  Text(
+                    '🌎 Compartiendo tu opinión en LandGo Travel',
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.outfit(
+                      color: Colors.white70,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// 💬 CREAR COMENTARIO
+  Future<void> _postComment(String postId, String postOwnerName) async {
+    if (_commentController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor escribe un comentario'),
+          backgroundColor: Color(0xFFDC2626),
+        ),
+      );
+      return;
+    }
+
+    // Mostrar modal de carga
+    _showCommentingModal(postOwnerName);
+
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) return;
+
+      // Esperar 2 segundos para mostrar la animación
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Crear comentario en la base de datos
+      await Supabase.instance.client
+          .from('travel_post_comments')
+          .insert({
+            'post_id': postId,
+            'user_id': user.id,
+            'content': _commentController.text.trim(),
+          });
+
+      // Limpiar input
+      _commentController.clear();
+
+      // Cerrar modal de carga
+      Navigator.of(context).pop();
+
+      // Cerrar modal de comentarios
+      Navigator.of(context).pop();
+
+      // Recargar posts para actualizar contadores
+      await _loadPosts();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ ¡Comentario publicado exitosamente!'),
+            backgroundColor: Color(0xFF4DD0E1),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      
+    } catch (e) {
+      print('❌ Error posting comment: $e');
+      
+      // Cerrar modal de carga
+      Navigator.of(context).pop();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Error al comentar: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
+
+  /// ❤️ MANEJAR ME GUSTA (LIKE/UNLIKE)
+  Future<void> _toggleLike(String postId, bool currentLiked) async {
+    try {
+      print('🔄 Iniciando toggle like - PostId: $postId, CurrentLiked: $currentLiked');
+      
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) {
+        print('❌ Usuario no autenticado');
+        return;
+      }
+
+      print('✅ Usuario autenticado: ${user.id}');
+
+      if (currentLiked) {
+        // Quitar like
+        print('🗑️ Removiendo like...');
+        await Supabase.instance.client
+            .from('travel_post_likes')
+            .delete()
+            .eq('post_id', postId)
+            .eq('user_id', user.id);
+        print('❤️ Like removido del post $postId');
+      } else {
+        // Agregar like
+        print('➕ Agregando like...');
+        await Supabase.instance.client
+            .from('travel_post_likes')
+            .insert({
+              'post_id': postId,
+              'user_id': user.id,
+            });
+        print('❤️ Like agregado al post $postId');
+      }
+
+      // Recargar posts para actualizar contadores
+      print('🔄 Recargando posts...');
+      await _loadPosts();
+      print('✅ Posts recargados exitosamente');
+      
+    } catch (e) {
+      print('❌ Error toggling like: $e');
+      print('❌ Stack trace: ${StackTrace.current}');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al actualizar me gusta: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
+  /// ✅ SELECCIONAR IMAGEN CON INDICADOR DE CARGA (Compatible Web y Móvil)
+  Future<void> _pickImage([StateSetter? setModalState]) async {
     try {
       print('📸 DEBUG: Abriendo selector de imagen...');
       
@@ -255,17 +3075,91 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
       if (image != null) {
         print('📸 DEBUG: Imagen seleccionada: ${image.path}');
         
-        setState(() {
-          _selectedImage = File(image.path);
+        // 🔄 Función helper para actualizar ambos estados
+        void updateState(VoidCallback fn) {
+          if (mounted) {
+            setState(fn);
+            setModalState?.call(fn);
+          }
+        }
+        
+        // 🔄 Activar indicador de carga
+        updateState(() {
+          _isLoadingImage = true;
+          _selectedImage = null; // Limpiar imagen anterior
+          _selectedImageBytes = null;
         });
         
-        print('✅ DEBUG: Imagen mostrada instantáneamente en el modal');
+        print('🔄 DEBUG: Indicador de carga activado');
+        
+        // 📸 Cargar la imagen según la plataforma
+        if (kIsWeb) {
+          // Para web: cargar como bytes
+          final bytes = await image.readAsBytes();
+          print('✅ DEBUG: Bytes cargados, tamaño: ${bytes.length}');
+          
+          // ⏱️ Simular tiempo de procesamiento realista
+          await Future.delayed(const Duration(milliseconds: 800));
+          
+          updateState(() {
+            _selectedImageBytes = bytes;
+          });
+          
+          print('✅ DEBUG: Imagen asignada a _selectedImageBytes');
+          
+          // ⏱️ Tiempo adicional para mostrar que la imagen está lista
+          await Future.delayed(const Duration(milliseconds: 300));
+          
+          updateState(() {
+            _isLoadingImage = false;
+          });
+          
+          print('✅ DEBUG: Imagen cargada como bytes para web - Loading finalizado');
+        } else {
+          // Para móvil: cargar como File
+          final file = File(image.path);
+          
+          // ⏱️ Simular tiempo de procesamiento realista
+          await Future.delayed(const Duration(milliseconds: 800));
+          
+          updateState(() {
+            _selectedImage = file;
+          });
+          
+          print('✅ DEBUG: Imagen asignada a _selectedImage');
+          
+          // ⏱️ Tiempo adicional para mostrar que la imagen está lista
+          await Future.delayed(const Duration(milliseconds: 300));
+          
+          updateState(() {
+            _isLoadingImage = false;
+          });
+          
+          print('✅ DEBUG: Imagen cargada como File para móvil - Loading finalizado');
+        }
+        
+        print('✅ DEBUG: Imagen cargada y mostrada en el modal');
       } else {
         print('❌ DEBUG: No se seleccionó ninguna imagen');
+        if (mounted) {
+        setState(() {
+            _isLoadingImage = false;
+          });
+          setModalState?.call(() {
+            _isLoadingImage = false;
+        });
+        }
       }
     } catch (e) {
       print('❌ Error picking image: $e');
       if (mounted) {
+        setState(() {
+          _isLoadingImage = false;
+        });
+        setModalState?.call(() {
+          _isLoadingImage = false;
+        });
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error selecting image: $e'),
@@ -468,7 +3362,9 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => Container(
+      builder: (context) => StatefulBuilder(
+        builder: (BuildContext context, StateSetter setModalState) {
+          return Container(
         height: MediaQuery.of(context).size.height * 0.7,
         decoration: const BoxDecoration(
           color: Color(0xFF1A1A1A),
@@ -544,9 +3440,9 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                       ),
                     )
                   : Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        children: [
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
                     // Text input
                     TextField(
                       controller: _postController,
@@ -580,8 +3476,79 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                     
                     const SizedBox(height: 16),
                     
-                    // Image preview - MOSTRAR INMEDIATAMENTE
-                    if (_selectedImage != null) ...[
+                    // 🔄 INDICADOR DE CARGA DE IMAGEN
+                    if (_isLoadingImage) ...[
+                      const SizedBox(height: 8),
+                      Container(
+                        height: 200,
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          color: const Color(0xFF2C2C2C),
+                          border: Border.all(
+                            color: const Color(0xFF4DD0E1),
+                            width: 2,
+                          ),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Indicador de carga circular con animación
+                            const SizedBox(
+                              width: 80,
+                              height: 80,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 6,
+                                color: Color(0xFF4DD0E1),
+                                backgroundColor: Colors.white24,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            
+                            // Texto de carga principal
+                            Text(
+                              '🔄 Loading Image...',
+                              style: GoogleFonts.outfit(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            
+                            // Texto de carga secundario
+                            Text(
+                              'Processing your photo\nPlease wait...',
+                              style: GoogleFonts.outfit(
+                                color: Colors.white70,
+                                fontSize: 14,
+                                height: 1.4,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: 16),
+                            
+                            // Barra de progreso animada
+                            Container(
+                              width: 200,
+                              height: 4,
+                              decoration: BoxDecoration(
+                                color: Colors.white24,
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                              child: const LinearProgressIndicator(
+                                backgroundColor: Colors.transparent,
+                                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4DD0E1)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    
+                    // Image preview - MOSTRAR CUANDO ESTÉ CARGADA
+                    if (!_isLoadingImage && (_selectedImage != null || _selectedImageBytes != null)) ...[
                       const SizedBox(height: 8),
                       Container(
                         height: 200,
@@ -595,26 +3562,65 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(10),
-                          child: Stack(
-                            children: [
-                              // Imagen de fondo
+                        child: Stack(
+                          children: [
+                              // Imagen de fondo (compatible web y móvil)
                               Positioned.fill(
-                                child: Image.file(
-                                  _selectedImage!,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Container(
-                                      color: const Color(0xFF2C2C2C),
-                                      child: const Center(
-                                        child: Icon(
-                                          Icons.error,
-                                          color: Colors.red,
-                                          size: 48,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                ),
+                                child: kIsWeb
+                                    ? (_selectedImageBytes != null
+                                        ? Image.memory(
+                                            _selectedImageBytes!,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) {
+                                              return Container(
+                                                color: const Color(0xFF2C2C2C),
+                                                child: const Center(
+                                                  child: Icon(
+                                                    Icons.error,
+                                                    color: Colors.red,
+                                                    size: 48,
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          )
+                                        : Container(
+                                            color: const Color(0xFF2C2C2C),
+                                            child: const Center(
+                                              child: Icon(
+                                                Icons.image_not_supported,
+                                                color: Colors.white70,
+                                                size: 48,
+                                              ),
+                                            ),
+                                          ))
+                                    : (_selectedImage != null
+                                        ? Image.file(
+                                            _selectedImage!,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (context, error, stackTrace) {
+                                              return Container(
+                                                color: const Color(0xFF2C2C2C),
+                                                child: const Center(
+                                                  child: Icon(
+                                                    Icons.error,
+                                                    color: Colors.red,
+                                                    size: 48,
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          )
+                                        : Container(
+                                            color: const Color(0xFF2C2C2C),
+                                            child: const Center(
+                                              child: Icon(
+                                                Icons.image_not_supported,
+                                                color: Colors.white70,
+                                                size: 48,
+                                              ),
+                                            ),
+                                          )),
                               ),
                               
                               // Overlay con información
@@ -650,33 +3656,34 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                               ),
                               
                               // Botón para eliminar imagen
-                              Positioned(
-                                top: 8,
-                                right: 8,
-                                child: GestureDetector(
-                                  onTap: () {
-                                    setState(() {
-                                      _selectedImage = null;
-                                    });
+                            Positioned(
+                              top: 8,
+                              right: 8,
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _selectedImage = null;
+                                      _selectedImageBytes = null;
+                                  });
                                     print('🗑️ DEBUG: Imagen eliminada del preview');
-                                  },
-                                  child: Container(
+                                },
+                                child: Container(
                                     padding: const EdgeInsets.all(6),
-                                    decoration: const BoxDecoration(
-                                      color: Colors.black54,
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: const Icon(
-                                      Icons.close,
-                                      color: Colors.white,
+                                  decoration: const BoxDecoration(
+                                    color: Colors.black54,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.close,
+                                    color: Colors.white,
                                       size: 18,
-                                    ),
                                   ),
                                 ),
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
                         ),
+                      ),
                       ),
                       const SizedBox(height: 8),
                       
@@ -721,9 +3728,11 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                       children: [
                         Expanded(
                           child: FFButtonWidget(
-                            onPressed: _isCreatingPost ? null : _pickImage,
-                            text: _selectedImage != null ? 'Change Photo' : 'Add Photo',
-                            icon: _isCreatingPost 
+                            onPressed: (_isCreatingPost || _isLoadingImage) ? null : () => _pickImage(setModalState),
+                            text: _isLoadingImage 
+                                ? 'Loading...' 
+                                : ((_selectedImage != null || _selectedImageBytes != null) ? 'Change Photo' : 'Add Photo'),
+                            icon: (_isCreatingPost || _isLoadingImage)
                                 ? const SizedBox(
                                     width: 20,
                                     height: 20,
@@ -733,19 +3742,19 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                                     ),
                                   )
                                 : Icon(
-                                    _selectedImage != null ? Icons.swap_horiz : Icons.camera_alt,
-                                    color: Colors.white,
-                                    size: 20,
-                                  ),
+                                    (_selectedImage != null || _selectedImageBytes != null) ? Icons.swap_horiz : Icons.camera_alt,
+                              color: Colors.white,
+                              size: 20,
+                            ),
                             options: FFButtonOptions(
                               height: 48,
-                              color: _isCreatingPost 
+                              color: (_isCreatingPost || _isLoadingImage)
                                   ? const Color(0xFF2C2C2C)
-                                  : (_selectedImage != null 
+                                  : ((_selectedImage != null || _selectedImageBytes != null)
                                       ? const Color(0xFF4DD0E1) 
                                       : const Color(0xFF37474F)),
                               textStyle: GoogleFonts.outfit(
-                                color: _isCreatingPost ? Colors.white70 : Colors.white,
+                                color: (_isCreatingPost || _isLoadingImage) ? Colors.white70 : Colors.white,
                                 fontSize: 16,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -760,7 +3769,7 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: FFButtonWidget(
-                            onPressed: _isCreatingPost ? null : _createPost,
+                            onPressed: (_isCreatingPost || _isLoadingImage) ? null : _createPost,
                             text: _isCreatingPost ? 'Posting...' : 'Post',
                             icon: _isCreatingPost 
                                 ? const SizedBox(
@@ -774,7 +3783,7 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                                 : null,
                             options: FFButtonOptions(
                               height: 48,
-                              color: _isCreatingPost 
+                              color: (_isCreatingPost || _isLoadingImage)
                                   ? const Color(0xFF4DD0E1).withValues(alpha: 0.7)
                                   : const Color(0xFF4DD0E1),
                               textStyle: GoogleFonts.outfit(
@@ -794,6 +3803,8 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
             ),
           ],
         ),
+          );
+        },
       ),
     );
   }
@@ -806,6 +3817,11 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
     final content = post['content'] ?? '';
     final imageUrl = post['image_url'];
     final createdAt = post['created_at']?.toString() ?? '';
+    
+    // Datos de likes y comentarios
+    final likesCount = post['likes_count'] ?? 0;
+    final userLiked = post['user_liked'] ?? false;
+    final commentsCount = post['comments_count'] ?? 0;
     
     return Container(
       padding: const EdgeInsets.all(16),
@@ -874,14 +3890,79 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                 ),
               ),
               
-              // Botón de opciones
-              IconButton(
+              // ⚙️ Menú de opciones (solo para posts del usuario actual)
+              Builder(
+                builder: (context) {
+                  final currentUser = Supabase.instance.client.auth.currentUser;
+                  final isOwner = currentUser != null && post['user_id'] == currentUser.id;
+                  
+                  if (!isOwner) {
+                    return const SizedBox.shrink(); // No mostrar si no es el dueño
+                  }
+                  
+                  return PopupMenuButton<String>(
                 icon: const Icon(
                   Icons.more_vert,
                   color: Colors.white70,
                   size: 20,
                 ),
-                onPressed: () {},
+                    color: const Color(0xFF2C2C2C),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    onSelected: (value) {
+                      if (value == 'edit') {
+                        _editPost(post);
+                      } else if (value == 'delete') {
+                        _deletePost(post['id']);
+                      }
+                    },
+                    itemBuilder: (BuildContext context) => [
+                      PopupMenuItem<String>(
+                        value: 'edit',
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.edit,
+                              color: Color(0xFF4DD0E1),
+                              size: 18,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Editar',
+                              style: GoogleFonts.outfit(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      PopupMenuItem<String>(
+                        value: 'delete',
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.delete,
+                              color: Color(0xFFDC2626),
+                              size: 18,
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Eliminar',
+                              style: GoogleFonts.outfit(
+                                color: const Color(0xFFDC2626),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
               ),
             ],
           ),
@@ -920,21 +4001,61 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
           // Acciones del post
           Row(
             children: [
+              // ❤️ Botón de Me Gusta con contador
+          Row(
+            children: [
               IconButton(
-                icon: const Icon(
-                  Icons.favorite_border,
-                  color: Colors.white70,
-                  size: 20,
-                ),
-                onPressed: () {},
+                    icon: Icon(
+                      userLiked ? Icons.favorite : Icons.favorite_border,
+                      color: userLiked ? const Color(0xFF4DD0E1) : Colors.white70,
+                      size: 24,
+                    ),
+                    onPressed: () {
+                      try {
+                        final postId = post['id']?.toString();
+                        if (postId != null && postId.isNotEmpty) {
+                          _toggleLike(postId, userLiked);
+                        } else {
+                          print('❌ Post ID inválido: ${post['id']}');
+                        }
+                      } catch (e) {
+                        print('❌ Error en botón like: $e');
+                      }
+                    },
+                  ),
+                  if (likesCount > 0)
+                    Text(
+                      '$likesCount',
+                      style: GoogleFonts.outfit(
+                        color: userLiked ? const Color(0xFF4DD0E1) : Colors.white70,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                ],
               ),
+              
+              // 💬 Botón de Comentarios con contador
+              Row(
+                children: [
               IconButton(
                 icon: const Icon(
                   Icons.comment_outlined,
                   color: Colors.white70,
-                  size: 20,
-                ),
-                onPressed: () {},
+                      size: 24,
+                    ),
+                    onPressed: () => _showCommentsModal(post),
+                  ),
+                  if (commentsCount > 0)
+                    Text(
+                      '$commentsCount',
+                      style: GoogleFonts.outfit(
+                        color: Colors.white70,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                ],
               ),
               IconButton(
                 icon: const Icon(

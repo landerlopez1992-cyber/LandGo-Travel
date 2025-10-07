@@ -201,16 +201,16 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                 end: AlignmentDirectional(0, 1.0),
               ),
             ),
-            child: Padding(
+          child: Padding(
               padding: EdgeInsetsDirectional.fromSTEB(24.0, 40.0, 24.0, 24.0),
-              child: SingleChildScrollView(
-                child: Column(
+            child: SingleChildScrollView(
+              child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                children: [
                     // Header con Skip button
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
+                    children: [
                         // Botón Skip
                         TextButton(
                           onPressed: () {
@@ -286,7 +286,7 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           // Campo First Name
-                          Text(
+                      Text(
                             'First name',
                             style: GoogleFonts.inter(
                               color: Color(0xFFFFFFFF),
@@ -305,16 +305,16 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                               ),
                             ),
                             child: TextFormField(
-                              controller: _model.textController1,
-                              focusNode: _model.textFieldFocusNode1,
-                              autofocus: false,
-                              textInputAction: TextInputAction.next,
-                              obscureText: false,
+                          controller: _model.textController1,
+                          focusNode: _model.textFieldFocusNode1,
+                          autofocus: false,
+                          textInputAction: TextInputAction.next,
+                          obscureText: false,
                               style: GoogleFonts.inter(
                                 color: Color(0xFFFFFFFF),
                                 fontSize: 16.0,
                               ),
-                              decoration: InputDecoration(
+                          decoration: InputDecoration(
                                 hintText: 'Dev',
                                 hintStyle: GoogleFonts.inter(
                                   color: Color(0xFF888888),
@@ -349,16 +349,16 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                               ),
                             ),
                             child: TextFormField(
-                              controller: _model.textController2,
-                              focusNode: _model.textFieldFocusNode2,
-                              autofocus: false,
-                              textInputAction: TextInputAction.next,
-                              obscureText: false,
+                          controller: _model.textController2,
+                          focusNode: _model.textFieldFocusNode2,
+                          autofocus: false,
+                          textInputAction: TextInputAction.next,
+                          obscureText: false,
                               style: GoogleFonts.inter(
                                 color: Color(0xFFFFFFFF),
                                 fontSize: 16.0,
                               ),
-                              decoration: InputDecoration(
+                          decoration: InputDecoration(
                                 hintText: 'Cooper',
                                 hintStyle: GoogleFonts.inter(
                                   color: Color(0xFF888888),
@@ -393,16 +393,16 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                               ),
                             ),
                             child: TextFormField(
-                              controller: _model.textController3,
-                              focusNode: _model.textFieldFocusNode3,
-                              autofocus: false,
+                          controller: _model.textController3,
+                          focusNode: _model.textFieldFocusNode3,
+                          autofocus: false,
                               textInputAction: TextInputAction.next,
                               obscureText: false,
                               style: GoogleFonts.inter(
                                 color: Color(0xFFFFFFFF),
                                 fontSize: 16.0,
                               ),
-                              decoration: InputDecoration(
+                          decoration: InputDecoration(
                                 hintText: 'devcooper@gmail.com',
                                 hintStyle: GoogleFonts.inter(
                                   color: Color(0xFF888888),
@@ -455,17 +455,17 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                                 ),
                                 border: InputBorder.none,
                                 contentPadding: EdgeInsetsDirectional.fromSTEB(16.0, 16.0, 16.0, 16.0),
-                                suffixIcon: InkWell(
-                                  onTap: () => safeSetState(
+                            suffixIcon: InkWell(
+                              onTap: () => safeSetState(
                                     () => _model.passwordVisibility = !_model.passwordVisibility,
-                                  ),
-                                  focusNode: FocusNode(skipTraversal: true),
-                                  child: Icon(
-                                    _model.passwordVisibility
-                                        ? Icons.visibility_outlined
-                                        : Icons.visibility_off_outlined,
+                              ),
+                              focusNode: FocusNode(skipTraversal: true),
+                              child: Icon(
+                                _model.passwordVisibility
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
                                     color: Color(0xFF888888),
-                                    size: 20.0,
+                                size: 20.0,
                                   ),
                                 ),
                               ),
@@ -798,8 +798,8 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                                   borderRadius: BorderRadius.circular(12.0),
                                   border: Border.all(
                                     color: Color(0xFF404040),
-                                    width: 1.0,
-                                  ),
+                        width: 1.0,
+                      ),
                                 ),
                                 child: ElevatedButton(
                                   onPressed: () async {
@@ -814,9 +814,9 @@ class _SignUpPageWidgetState extends State<SignUpPageWidget> {
                                     backgroundColor: Colors.transparent,
                                     shadowColor: Colors.transparent,
                                     shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12.0),
-                                    ),
-                                  ),
+                      borderRadius: BorderRadius.circular(12.0),
+                    ),
+                  ),
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
