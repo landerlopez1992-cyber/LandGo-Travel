@@ -63,6 +63,91 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
     super.dispose();
   }
 
+  /// 🔍 BÚSQUEDA DE USUARIOS EN TIEMPO REAL PARA ETIQUETAR
+  void _onTagSearchChanged() async {
+    final query = _tagSearchController.text.trim();
+    
+    if (query.isEmpty) {
+      setState(() {
+        _tagSearchResults = [];
+        _isSearchingTags = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isSearchingTags = true;
+    });
+
+    try {
+      // Obtener ID del usuario actual
+      final currentUserId = Supabase.instance.client.auth.currentUser?.id;
+      
+      // Buscar en la tabla profiles por nombre completo, email o teléfono
+      // EXCLUIR al usuario actual de los resultados
+      final response = await Supabase.instance.client
+          .from('profiles')
+          .select('id, full_name, email, phone, avatar_url, first_name, last_name')
+          .or('full_name.ilike.%$query%,email.ilike.%$query%,phone.ilike.%$query%,first_name.ilike.%$query%,last_name.ilike.%$query%')
+          .neq('id', currentUserId ?? '')
+          .limit(10);
+
+      setState(() {
+        _tagSearchResults = List<Map<String, dynamic>>.from(response);
+        _isSearchingTags = false;
+      });
+    } catch (e) {
+      print('Error searching users for tags: $e');
+      setState(() {
+        _tagSearchResults = [];
+        _isSearchingTags = false;
+      });
+    }
+  }
+
+  /// ➕ AGREGAR USUARIO A ETIQUETAS
+  void _addTag(Map<String, dynamic> user) {
+    // Verificar si ya está etiquetado
+    if (!_selectedTags.any((tag) => tag['id'] == user['id'])) {
+      setState(() {
+        _selectedTags.add(user);
+      });
+      _tagSearchController.clear();
+      _tagSearchResults = [];
+    }
+  }
+
+  /// ➖ REMOVER USUARIO DE ETIQUETAS
+  void _removeTag(Map<String, dynamic> user) {
+    setState(() {
+      _selectedTags.removeWhere((tag) => tag['id'] == user['id']);
+    });
+  }
+
+  /// 🏷️ GENERAR TEXTO DE ETIQUETAS PARA MOSTRAR EN POST
+  String _generateTagsText(List<dynamic> taggedUsers) {
+    if (taggedUsers.isEmpty) return '';
+    
+    // Filtrar usuarios con nombres válidos
+    final validUsers = taggedUsers.where((user) => 
+      user['full_name'] != null && 
+      user['full_name'].toString().trim().isNotEmpty
+    ).toList();
+    
+    if (validUsers.isEmpty) return '';
+    
+    if (validUsers.length == 1) {
+      return '${validUsers[0]['full_name']} está en esta experiencia';
+    } else if (validUsers.length == 2) {
+      return '${validUsers[0]['full_name']} está junto a ${validUsers[1]['full_name']}';
+    } else {
+      final firstUser = validUsers[0]['full_name'];
+      final secondUser = validUsers[1]['full_name'];
+      final remainingCount = validUsers.length - 2;
+      return '$firstUser está junto a $secondUser y $remainingCount personas más';
+    }
+  }
+
   /// ✅ CARGAR POSTS DESDE SUPABASE
   Future<void> _loadPosts() async {
     try {
@@ -88,7 +173,7 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
       
       print('🔍 DEBUG: Loading travel feed posts...');
       
-      // Obtener posts con información del usuario, likes y comentarios
+      // Obtener posts con información del usuario, likes, comentarios y etiquetas
       final postsResponse = await Supabase.instance.client
           .from('travel_posts')
           .select('''
@@ -109,19 +194,52 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
               user_id,
               content,
               created_at
+            ),
+            travel_post_tags(
+              id,
+              tagged_user_id
             )
           ''')
           .order('created_at', ascending: false);
       
       List<Map<String, dynamic>> posts = List<Map<String, dynamic>>.from(postsResponse);
       
-      // Procesar posts para agregar información de likes y comentarios
+      // Procesar posts para agregar información de likes, comentarios y etiquetas
       for (var post in posts) {
         final likes = post['travel_post_likes'] as List<dynamic>? ?? [];
         final comments = post['travel_post_comments'] as List<dynamic>? ?? [];
+        final tags = post['travel_post_tags'] as List<dynamic>? ?? [];
+        
         post['likes_count'] = likes.length;
         post['user_liked'] = likes.any((like) => like['user_id'] == user.id);
         post['comments_count'] = comments.length;
+        
+        // Procesar etiquetas - cargar nombres por separado
+        final taggedUserIds = tags.map((tag) => tag['tagged_user_id']).toList();
+        List<Map<String, dynamic>> taggedUsers = [];
+        
+        if (taggedUserIds.isNotEmpty) {
+          try {
+            final profilesResponse = await Supabase.instance.client
+                .from('profiles')
+                .select('id, full_name, first_name, last_name, avatar_url')
+                .inFilter('id', taggedUserIds);
+            
+            taggedUsers = List<Map<String, dynamic>>.from(profilesResponse);
+          } catch (e) {
+            print('Error loading tagged user profiles: $e');
+            // Fallback: crear usuarios con solo ID
+            taggedUsers = taggedUserIds.map((id) => {
+              'id': id,
+              'full_name': 'Usuario',
+              'first_name': '',
+              'last_name': '',
+              'avatar_url': null
+            }).toList();
+          }
+        }
+        
+        post['tagged_users'] = taggedUsers;
       }
       
       print('✅ Travel Feed Posts: ${posts.length}');
@@ -247,6 +365,23 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
             .select();
         
         print('✅ DEBUG: Post creado exitosamente: $insertResponse');
+        
+        // Guardar etiquetas si hay usuarios seleccionados
+        if (_selectedTags.isNotEmpty && insertResponse.isNotEmpty) {
+          final postId = insertResponse[0]['id'];
+          print('🏷️ DEBUG: Guardando ${_selectedTags.length} etiquetas para post $postId');
+          
+          for (final tag in _selectedTags) {
+            await Supabase.instance.client
+                .from('travel_post_tags')
+                .insert({
+                  'post_id': postId,
+                  'tagged_user_id': tag['id']
+                });
+          }
+          
+          print('✅ DEBUG: Etiquetas guardadas exitosamente');
+        }
       } catch (insertError) {
         print('❌ DEBUG: Error insertando post: $insertError');
         print('❌ DEBUG: Error type: ${insertError.runtimeType}');
@@ -258,6 +393,9 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
       _postController.clear();
       _selectedImage = null;
       _selectedImageBytes = null;
+      _selectedTags.clear();
+      _tagSearchController.clear();
+      _tagSearchResults.clear();
       
       // Recargar posts
       await _loadPosts();
@@ -516,6 +654,12 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
     // Configurar el modal con los datos del post existente
     _postController.text = post['content'] ?? '';
     
+    // Cargar etiquetas existentes
+    _selectedTags.clear();
+    if (post['tagged_users'] != null && (post['tagged_users'] as List).isNotEmpty) {
+      _selectedTags.addAll(post['tagged_users']);
+    }
+    
     // TODO: Cargar imagen existente si tiene
     _selectedImage = null;
     _selectedImageBytes = null;
@@ -533,7 +677,7 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
       builder: (context) => StatefulBuilder(
         builder: (BuildContext context, StateSetter setModalState) {
           return Container(
-            height: MediaQuery.of(context).size.height * 0.7,
+            height: MediaQuery.of(context).size.height * 0.85,
             decoration: const BoxDecoration(
               color: Color(0xFF1A1A1A),
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -575,11 +719,12 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                 
                 const Divider(color: Colors.white24),
                 
-                // Content
+                // Content - SCROLLABLE
                 Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
                       children: [
                         // Text input
                         Expanded(
@@ -606,6 +751,217 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                               fillColor: const Color(0xFF2C2C2C),
                               contentPadding: const EdgeInsets.all(16),
                             ),
+                          ),
+                        ),
+                        
+                        const SizedBox(height: 16),
+                        
+                        // 🏷️ SECCIÓN DE ETIQUETADO DE USUARIOS EN EDITAR
+                        Container(
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2C2C2C),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.white24),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Header de etiquetado
+                              Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.person_add,
+                                      color: Color(0xFF4DD0E1),
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Tag Friends',
+                                      style: GoogleFonts.outfit(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    if (_selectedTags.isNotEmpty)
+                                      Text(
+                                        '${_selectedTags.length}',
+                                        style: GoogleFonts.outfit(
+                                          color: const Color(0xFF4DD0E1),
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              
+                              // Campo de búsqueda
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 16),
+                                child: TextField(
+                                  controller: _tagSearchController,
+                                  onChanged: (value) {
+                                    setModalState(() {});
+                                    _onTagSearchChanged();
+                                  },
+                                  style: GoogleFonts.outfit(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                  ),
+                                  decoration: InputDecoration(
+                                    hintText: 'Search users to tag...',
+                                    hintStyle: GoogleFonts.outfit(
+                                      color: Colors.white54,
+                                      fontSize: 14,
+                                    ),
+                                    prefixIcon: const Icon(
+                                      Icons.search,
+                                      color: Color(0xFF4DD0E1),
+                                      size: 20,
+                                    ),
+                                    suffixIcon: _isSearchingTags
+                                        ? const SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: Color(0xFF4DD0E1),
+                                            ),
+                                          )
+                                        : null,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: const BorderSide(color: Colors.white24),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: const BorderSide(color: Colors.white24),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                      borderSide: const BorderSide(color: Color(0xFF4DD0E1)),
+                                    ),
+                                    filled: true,
+                                    fillColor: const Color(0xFF1A1A1A),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  ),
+                                ),
+                              ),
+                              
+                              // Resultados de búsqueda
+                              if (_tagSearchResults.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Container(
+                                  constraints: const BoxConstraints(maxHeight: 120),
+                                  child: ListView.builder(
+                                    shrinkWrap: true,
+                                    itemCount: _tagSearchResults.length,
+                                    itemBuilder: (context, index) {
+                                      final user = _tagSearchResults[index];
+                                      return ListTile(
+                                        dense: true,
+                                        leading: CircleAvatar(
+                                          radius: 16,
+                                          backgroundColor: const Color(0xFF4DD0E1),
+                                          backgroundImage: user['avatar_url'] != null
+                                              ? NetworkImage(user['avatar_url'])
+                                              : null,
+                                          child: user['avatar_url'] == null
+                                              ? Text(
+                                                  (user['full_name'] ?? 'U')[0].toUpperCase(),
+                                                  style: GoogleFonts.outfit(
+                                                    color: Colors.white,
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                                )
+                                              : null,
+                                        ),
+                                        title: Text(
+                                          user['full_name'] ?? 'Usuario',
+                                          style: GoogleFonts.outfit(
+                                            color: Colors.white,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                        subtitle: Text(
+                                          user['email'] ?? '',
+                                          style: GoogleFonts.outfit(
+                                            color: Colors.white70,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                        trailing: const Icon(
+                                          Icons.add_circle_outline,
+                                          color: Color(0xFF4DD0E1),
+                                          size: 20,
+                                        ),
+                                        onTap: () {
+                                          setModalState(() {
+                                            _addTag(user);
+                                          });
+                                        },
+                                      );
+                                    },
+                                  ),
+                                ),
+                              ],
+                              
+                              // Usuarios etiquetados
+                              if (_selectedTags.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                                  child: Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: _selectedTags.map((user) {
+                                      return Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF4DD0E1),
+                                          borderRadius: BorderRadius.circular(16),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Text(
+                                              user['full_name'] ?? 'Usuario',
+                                              style: GoogleFonts.outfit(
+                                                color: Colors.black,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 4),
+                                            GestureDetector(
+                                              onTap: () {
+                                                setModalState(() {
+                                                  _removeTag(user);
+                                                });
+                                              },
+                                              child: const Icon(
+                                                Icons.close,
+                                                color: Colors.black,
+                                                size: 16,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }).toList(),
+                                  ),
+                                ),
+                              ],
+                              
+                              const SizedBox(height: 16),
+                            ],
                           ),
                         ),
                         
@@ -811,10 +1167,38 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
           .update(updateData)
           .eq('id', postId);
 
+      // Actualizar etiquetas si hay cambios
+      if (_selectedTags.isNotEmpty) {
+        // Eliminar etiquetas existentes
+        await Supabase.instance.client
+            .from('travel_post_tags')
+            .delete()
+            .eq('post_id', postId);
+        
+        // Agregar nuevas etiquetas
+        for (final tag in _selectedTags) {
+          await Supabase.instance.client
+              .from('travel_post_tags')
+              .insert({
+                'post_id': postId,
+                'tagged_user_id': tag['id']
+              });
+        }
+      } else {
+        // Si no hay etiquetas seleccionadas, eliminar todas las existentes
+        await Supabase.instance.client
+            .from('travel_post_tags')
+            .delete()
+            .eq('post_id', postId);
+      }
+
       // Limpiar formulario
       _postController.clear();
       _selectedImage = null;
       _selectedImageBytes = null;
+      _selectedTags.clear();
+      _tagSearchController.clear();
+      _tagSearchResults.clear();
       
       // Recargar posts
       await _loadPosts();
@@ -1216,7 +1600,7 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
             setModalState(() {});
           }
           return Container(
-            height: MediaQuery.of(context).size.height * 0.85,
+            height: MediaQuery.of(context).size.height * 0.9,
             decoration: const BoxDecoration(
               color: Color(0xFF1A1A1A),
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -1258,9 +1642,10 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                 
                 const Divider(color: Colors.white24),
                 
-                // Lista de comentarios
+                // Lista de comentarios - SCROLLABLE
                 Expanded(
-                  child: FutureBuilder<List<Map<String, dynamic>>>(
+                  child: SingleChildScrollView(
+                    child: FutureBuilder<List<Map<String, dynamic>>>(
                     future: _loadComments(postId),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
@@ -1324,6 +1709,7 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                         },
                       );
                     },
+                    ),
                   ),
                 ),
                 
@@ -1480,22 +1866,57 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
   /// 📝 CARGAR RESPUESTAS (SUBCOMENTARIOS) DE UN COMENTARIO
   Future<List<Map<String, dynamic>>> _loadReplies(String commentId) async {
     try {
-      final response = await Supabase.instance.client
+      // 1) Cargar replies sin joins (para evitar errores de relación)
+      final repliesResponse = await Supabase.instance.client
           .from('travel_comment_replies')
-          .select('''
-            id,
-            content,
-            created_at,
-            user_id,
-            profiles!travel_comment_replies_user_id_fkey(
-              full_name,
-              avatar_url
-            )
-          ''')
+          .select('id, content, created_at, user_id')
           .eq('comment_id', commentId)
           .order('created_at', ascending: true);
 
-      return List<Map<String, dynamic>>.from(response);
+      final List<Map<String, dynamic>> replies =
+          List<Map<String, dynamic>>.from(repliesResponse);
+
+      if (replies.isEmpty) return replies;
+
+      // 2) Obtener perfiles para los user_id involucrados
+      final userIds = replies
+          .map((r) => r['user_id'])
+          .where((id) => id != null)
+          .toSet()
+          .toList();
+
+      Map<String, Map<String, dynamic>> userIdToProfile = {};
+      if (userIds.isNotEmpty) {
+        try {
+          final profilesResponse = await Supabase.instance.client
+              .from('profiles')
+              .select('id, full_name, avatar_url')
+              .inFilter('id', userIds);
+
+          final profilesList =
+              List<Map<String, dynamic>>.from(profilesResponse);
+          for (final p in profilesList) {
+            final pid = p['id'];
+            if (pid != null) {
+              userIdToProfile[pid] = p;
+            }
+          }
+        } catch (e) {
+          // Si falla la carga de perfiles, continuamos sin romper la UI
+          print('⚠️ Error loading reply profiles: $e');
+        }
+      }
+
+      // 3) Adjuntar perfiles a cada reply para la UI
+      for (final reply in replies) {
+        final uid = reply['user_id'];
+        reply['profiles'] = userIdToProfile[uid] ?? {
+          'full_name': 'Usuario',
+          'avatar_url': null,
+        };
+      }
+
+      return replies;
     } catch (e) {
       print('❌ Error loading replies: $e');
       return [];
@@ -1739,129 +2160,129 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
               ),
             ],
           ),
-        ],
-      ),
+        
+          const SizedBox(height: 8),
 
-      const SizedBox(height: 8),
+          // Lista de subcomentarios (respuestas)
+          FutureBuilder<List<Map<String, dynamic>>>(
+            future: _loadReplies(commentId),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const SizedBox.shrink();
+              }
+              if (snapshot.hasError) {
+                return const SizedBox.shrink();
+              }
+              final replies = snapshot.data ?? [];
+              if (replies.isEmpty) return const SizedBox.shrink();
 
-      // Lista de subcomentarios (respuestas)
-      FutureBuilder<List<Map<String, dynamic>>>(
-        future: _loadReplies(commentId),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const SizedBox.shrink();
-          }
-          if (snapshot.hasError) {
-            return const SizedBox.shrink();
-          }
-          final replies = snapshot.data ?? [];
-          if (replies.isEmpty) return const SizedBox.shrink();
+              return Padding(
+                padding: const EdgeInsets.only(top: 4, left: 36),
+                child: Column(
+                  children: replies.map((reply) {
+                    final rProfile = reply['profiles'] ?? {};
+                    final rName = rProfile['full_name'] ?? 'Usuario';
+                    final rAvatar = rProfile['avatar_url'];
+                    final rContent = reply['content'] ?? '';
+                    final rCreatedAt = reply['created_at']?.toString() ?? '';
 
-          return Padding(
-            padding: const EdgeInsets.only(top: 4, left: 36),
-            child: Column(
-              children: replies.map((reply) {
-                final rProfile = reply['profiles'] ?? {};
-                final rName = rProfile['full_name'] ?? 'Usuario';
-                final rAvatar = rProfile['avatar_url'];
-                final rContent = reply['content'] ?? '';
-                final rCreatedAt = reply['created_at']?.toString() ?? '';
-
-                String rDate = '';
-                if (rCreatedAt.isNotEmpty) {
-                  try {
-                    final d = DateTime.parse(rCreatedAt);
-                    final diff = DateTime.now().difference(d);
-                    if (diff.inMinutes < 1) {
-                      rDate = 'Ahora';
-                    } else if (diff.inMinutes < 60) {
-                      rDate = '${diff.inMinutes}m';
-                    } else if (diff.inHours < 24) {
-                      rDate = '${diff.inHours}h';
-                    } else if (diff.inDays < 7) {
-                      rDate = '${diff.inDays}d';
-                    } else {
-                      rDate = '${d.day}/${d.month}/${d.year}';
+                    String rDate = '';
+                    if (rCreatedAt.isNotEmpty) {
+                      try {
+                        final d = DateTime.parse(rCreatedAt);
+                        final diff = DateTime.now().difference(d);
+                        if (diff.inMinutes < 1) {
+                          rDate = 'Ahora';
+                        } else if (diff.inMinutes < 60) {
+                          rDate = '${diff.inMinutes}m';
+                        } else if (diff.inHours < 24) {
+                          rDate = '${diff.inHours}h';
+                        } else if (diff.inDays < 7) {
+                          rDate = '${diff.inDays}d';
+                        } else {
+                          rDate = '${d.day}/${d.month}/${d.year}';
+                        }
+                      } catch (_) {}
                     }
-                  } catch (_) {}
-                }
 
-                return Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(top: 8),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1A1A1A),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: const Color(0xFF4DD0E1).withValues(alpha: 0.08),
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      CircleAvatar(
-                        radius: 14,
-                        backgroundColor: const Color(0xFF4DD0E1),
-                        backgroundImage: rAvatar != null ? NetworkImage(rAvatar) : null,
-                        child: rAvatar == null
-                            ? Text(
-                                rName.isNotEmpty ? rName[0].toUpperCase() : 'U',
-                                style: GoogleFonts.outfit(
-                                  color: Colors.black,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              )
-                            : null,
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: Text(
-                                    rName,
-                                    style: GoogleFonts.outfit(
-                                      color: Colors.white,
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ),
-                                if (rDate.isNotEmpty)
-                                  Text(
-                                    rDate,
-                                    style: GoogleFonts.outfit(
-                                      color: Colors.white54,
-                                      fontSize: 11,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              rContent,
-                              style: GoogleFonts.outfit(
-                                color: Colors.white,
-                                fontSize: 14,
-                                height: 1.35,
-                              ),
-                            ),
-                          ],
+                    return Container(
+                      width: double.infinity,
+                      margin: const EdgeInsets.only(top: 8),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1A1A1A),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: const Color(0xFF4DD0E1).withValues(alpha: 0.08),
+                          width: 1,
                         ),
                       ),
-                    ],
-                  ),
-                );
-              }).toList(),
-            ),
-          );
-        },
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CircleAvatar(
+                            radius: 14,
+                            backgroundColor: const Color(0xFF4DD0E1),
+                            backgroundImage: rAvatar != null ? NetworkImage(rAvatar) : null,
+                            child: rAvatar == null
+                                ? Text(
+                                    rName.isNotEmpty ? rName[0].toUpperCase() : 'U',
+                                    style: GoogleFonts.outfit(
+                                      color: Colors.black,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        rName,
+                                        style: GoogleFonts.outfit(
+                                          color: Colors.white,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ),
+                                    if (rDate.isNotEmpty)
+                                      Text(
+                                        rDate,
+                                        style: GoogleFonts.outfit(
+                                          color: Colors.white54,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                                const SizedBox(height: 6),
+                                Text(
+                                  rContent,
+                                  style: GoogleFonts.outfit(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    height: 1.35,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }
@@ -2761,6 +3182,9 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
         refreshCallback();
       }
 
+      // Limpiar el campo del subcomentario para evitar que quede texto previo
+      _subcommentController.clear();
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -3365,7 +3789,7 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
       builder: (context) => StatefulBuilder(
         builder: (BuildContext context, StateSetter setModalState) {
           return Container(
-        height: MediaQuery.of(context).size.height * 0.7,
+        height: MediaQuery.of(context).size.height * 0.85,
         decoration: const BoxDecoration(
           color: Color(0xFF1A1A1A),
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -3439,7 +3863,8 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                         ],
                       ),
                     )
-                  : Padding(
+                  : SingleChildScrollView(
+              child: Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
@@ -3471,6 +3896,217 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                         ),
                         filled: true,
                         fillColor: const Color(0xFF2C2C2C),
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 16),
+                    
+                    // 🏷️ SECCIÓN DE ETIQUETADO DE USUARIOS
+                    Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2C2C2C),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white24),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Header de etiquetado
+                          Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.person_add,
+                                  color: Color(0xFF4DD0E1),
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Tag Friends',
+                                  style: GoogleFonts.outfit(
+                                    color: Colors.white,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const Spacer(),
+                                if (_selectedTags.isNotEmpty)
+                                  Text(
+                                    '${_selectedTags.length}',
+                                    style: GoogleFonts.outfit(
+                                      color: const Color(0xFF4DD0E1),
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                          
+                          // Campo de búsqueda
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: TextField(
+                              controller: _tagSearchController,
+                              onChanged: (value) {
+                                setModalState(() {});
+                                _onTagSearchChanged();
+                              },
+                              style: GoogleFonts.outfit(
+                                color: Colors.white,
+                                fontSize: 14,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: 'Search users to tag...',
+                                hintStyle: GoogleFonts.outfit(
+                                  color: Colors.white54,
+                                  fontSize: 14,
+                                ),
+                                prefixIcon: const Icon(
+                                  Icons.search,
+                                  color: Color(0xFF4DD0E1),
+                                  size: 20,
+                                ),
+                                suffixIcon: _isSearchingTags
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Color(0xFF4DD0E1),
+                                        ),
+                                      )
+                                    : null,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: const BorderSide(color: Colors.white24),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: const BorderSide(color: Colors.white24),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                  borderSide: const BorderSide(color: Color(0xFF4DD0E1)),
+                                ),
+                                filled: true,
+                                fillColor: const Color(0xFF1A1A1A),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              ),
+                            ),
+                          ),
+                          
+                          // Resultados de búsqueda
+                          if (_tagSearchResults.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Container(
+                              constraints: const BoxConstraints(maxHeight: 120),
+                              child: ListView.builder(
+                                shrinkWrap: true,
+                                itemCount: _tagSearchResults.length,
+                                itemBuilder: (context, index) {
+                                  final user = _tagSearchResults[index];
+                                  return ListTile(
+                                    dense: true,
+                                    leading: CircleAvatar(
+                                      radius: 16,
+                                      backgroundColor: const Color(0xFF4DD0E1),
+                                      backgroundImage: user['avatar_url'] != null
+                                          ? NetworkImage(user['avatar_url'])
+                                          : null,
+                                      child: user['avatar_url'] == null
+                                          ? Text(
+                                              (user['full_name'] ?? 'U')[0].toUpperCase(),
+                                              style: GoogleFonts.outfit(
+                                                color: Colors.white,
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.bold,
+                                              ),
+                                            )
+                                          : null,
+                                    ),
+                                    title: Text(
+                                      user['full_name'] ?? 'Usuario',
+                                      style: GoogleFonts.outfit(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    subtitle: Text(
+                                      user['email'] ?? '',
+                                      style: GoogleFonts.outfit(
+                                        color: Colors.white70,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    trailing: const Icon(
+                                      Icons.add_circle_outline,
+                                      color: Color(0xFF4DD0E1),
+                                      size: 20,
+                                    ),
+                                    onTap: () {
+                                      setModalState(() {
+                                        _addTag(user);
+                                      });
+                                    },
+                                  );
+                                },
+                              ),
+                            ),
+                          ],
+                          
+                          // Usuarios etiquetados
+                          if (_selectedTags.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: _selectedTags.map((user) {
+                                  return Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF4DD0E1),
+                                      borderRadius: BorderRadius.circular(16),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          user['full_name'] ?? 'Usuario',
+                                          style: GoogleFonts.outfit(
+                                            color: Colors.black,
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        GestureDetector(
+                                          onTap: () {
+                                            setModalState(() {
+                                              _removeTag(user);
+                                            });
+                                          },
+                                          child: const Icon(
+                                            Icons.close,
+                                            color: Colors.black,
+                                            size: 16,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ),
+                          ],
+                          
+                          const SizedBox(height: 16),
+                        ],
                       ),
                     ),
                     
@@ -3799,6 +4435,7 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                     ),
                   ],
                 ),
+                ),
               ),
             ),
           ],
@@ -3886,6 +4523,19 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                         fontSize: 12,
                       ),
                     ),
+                    // 🏷️ Etiquetas de usuarios - DESPUÉS DEL NOMBRE
+                    if (post['tagged_users'] != null && (post['tagged_users'] as List).isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        _generateTagsText(post['tagged_users']),
+                        style: GoogleFonts.outfit(
+                          color: const Color(0xFF4DD0E1),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          height: 1.2,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
