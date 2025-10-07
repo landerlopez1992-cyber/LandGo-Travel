@@ -51,6 +51,15 @@ class _NewWelcomePageWidgetState extends State<NewWelcomePageWidget> {
   void initState() {
     super.initState();
     _model = createModel(context, () => NewWelcomePageModel());
+    
+    // 🌐 Para web: redirigir directo a LOGIN
+    if (kIsWeb) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.go('/loginPage');
+      });
+      return;
+    }
+    
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
   }
 
@@ -101,9 +110,12 @@ class _NewWelcomePageWidgetState extends State<NewWelcomePageWidget> {
 
   Widget _buildOnboardingPage(OnboardingData data) {
     // 🌐 Detectar plataforma y mostrar diseño correspondiente
+    print('🔍 DEBUG: kIsWeb = $kIsWeb');
     if (kIsWeb) {
+      print('🌐 Usando diseño WEB');
       return _buildWebOnboarding(data);
     } else {
+      print('📱 Usando diseño MÓVIL');
       return _buildMobileOnboarding(data);
     }
   }
