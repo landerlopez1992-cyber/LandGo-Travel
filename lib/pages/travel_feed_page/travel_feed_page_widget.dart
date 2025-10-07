@@ -857,7 +857,9 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                               if (_tagSearchResults.isNotEmpty) ...[
                                 const SizedBox(height: 8),
                                 Container(
-                                  constraints: const BoxConstraints(maxHeight: 120),
+                                  constraints: BoxConstraints(
+                                    maxHeight: (MediaQuery.of(context).size.height - MediaQuery.of(context).viewInsets.bottom) * 0.3,
+                                  ),
                                   child: ListView.builder(
                                     shrinkWrap: true,
                                     itemCount: _tagSearchResults.length,
@@ -1093,6 +1095,7 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                           ],
                         ),
                       ],
+                    ),
                     ),
                   ),
                 ),
@@ -1717,7 +1720,12 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                 
                 // Input para escribir comentario
                 Padding(
-                  padding: const EdgeInsets.all(20),
+                  padding: EdgeInsets.only(
+                    left: 20,
+                    right: 20,
+                    top: 20,
+                    bottom: MediaQuery.of(context).viewInsets.bottom + 20,
+                  ),
                   child: Column(
                     children: [
                       Container(
@@ -4002,7 +4010,9 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                           if (_tagSearchResults.isNotEmpty) ...[
                             const SizedBox(height: 8),
                             Container(
-                              constraints: const BoxConstraints(maxHeight: 120),
+                              constraints: BoxConstraints(
+                                maxHeight: (MediaQuery.of(context).size.height - MediaQuery.of(context).viewInsets.bottom) * 0.3,
+                              ),
                               child: ListView.builder(
                                 shrinkWrap: true,
                                 itemCount: _tagSearchResults.length,
