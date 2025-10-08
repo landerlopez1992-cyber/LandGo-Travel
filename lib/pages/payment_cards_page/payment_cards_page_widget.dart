@@ -58,6 +58,14 @@ class _PaymentCardsPageWidgetState extends State<PaymentCardsPageWidget> {
     _loadParameters();
   }
 
+  @override
+  void didUpdateWidget(covariant PaymentCardsPageWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Recargar cuando el widget se actualiza (ej: cuando regresas de AddCardPage)
+    print('🔍 DEBUG: Widget updated - reloading payment methods');
+    _loadSavedCards();
+  }
+
   void _loadParameters() {
     // Intentar obtener datos del extra
     final route = ModalRoute.of(context);
@@ -91,54 +99,74 @@ class _PaymentCardsPageWidgetState extends State<PaymentCardsPageWidget> {
     });
     
     try {
+      print('🔍 ========================================');
+      print('🔍 PAYMENT CARDS PAGE - LOADING SAVED CARDS');
+      print('🔍 ========================================');
+      
       // Obtener usuario actual
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) {
-        print('🔍 DEBUG: No user logged in');
+      final currentUser = SupaFlow.client.auth.currentUser;
+      if (currentUser == null) {
+        print('❌ No user logged in');
         setState(() {
           _isLoadingCards = false;
         });
         return;
       }
 
-      // Obtener tarjetas guardadas del usuario desde Supabase
-      final response = await Supabase.instance.client
-          .from('profiles')
-          .select('saved_cards')
-          .eq('id', user.id)
-          .single();
+      print('🔍 User ID: ${currentUser.id}');
+      print('🔍 User Email: ${currentUser.email}');
 
-      print('🔍 DEBUG: Saved cards response: ${response['saved_cards']}');
-      
-      final savedCardsData = response['saved_cards'] as List<dynamic>? ?? [];
+      // Obtener Stripe Customer ID del perfil
+      print('🔍 Fetching profile data from Supabase...');
+      final profileResponse = await SupaFlow.client
+          .from('profiles')
+          .select('stripe_customer_id, email, full_name')
+          .eq('id', currentUser.id)
+          .maybeSingle();
+
+      print('🔍 Profile Response: $profileResponse');
+
+      if (profileResponse == null) {
+        print('⚠️ No profile found');
+        setState(() {
+          _savedCards = [];
+          _isLoadingCards = false;
+        });
+        return;
+      }
+
+      final stripeCustomerId = profileResponse['stripe_customer_id'];
+      if (stripeCustomerId == null || stripeCustomerId.isEmpty) {
+        print('⚠️ No Stripe Customer ID found in profile');
+        setState(() {
+          _savedCards = [];
+          _isLoadingCards = false;
+        });
+        return;
+      }
+
+      print('✅ Stripe Customer ID: $stripeCustomerId');
+
+      // Obtener tarjetas desde Stripe (NO desde Supabase)
+      print('🔍 Fetching payment methods from Stripe...');
+      final paymentMethods = await StripeService.listPaymentMethods(
+        customerId: stripeCustomerId,
+      );
+
+      print('✅ Payment methods loaded: ${paymentMethods.length} cards');
+      print('🔍 Payment methods data: $paymentMethods');
       
       if (mounted) {
         setState(() {
-          // Convertir datos de Supabase a formato de tarjetas
-          _savedCards = savedCardsData.map((cardData) {
-            if (cardData is Map<String, dynamic>) {
-              return cardData;
-            } else if (cardData is String) {
-              // Si es string, parsear como JSON
-              try {
-                return Map<String, dynamic>.from(
-                  jsonDecode(cardData) as Map<String, dynamic>
-                );
-              } catch (e) {
-                print('🔍 DEBUG: Error parsing card data: $e');
-                return null;
-              }
-            }
-            return null;
-          }).where((card) => card != null).cast<Map<String, dynamic>>().toList();
-          
+          _savedCards = paymentMethods;
           _isLoadingCards = false;
         });
       }
-    } catch (e) {
-      print('🔍 DEBUG: Error loading saved cards: $e');
-      print('🔍 DEBUG: Error type: ${e.runtimeType}');
-      print('🔍 DEBUG: Error details: ${e.toString()}');
+
+      print('✅ ========================================');
+    } catch (e, stackTrace) {
+      print('❌ Error loading saved cards: $e');
+      print('❌ Stack trace: $stackTrace');
       
       if (mounted) {
         setState(() {
@@ -341,10 +369,12 @@ class _PaymentCardsPageWidgetState extends State<PaymentCardsPageWidget> {
   }
 
   Widget _buildCardItem(Map<String, dynamic> card) {
-    final brand = card['brand'] as String;
-    final last4 = card['last4'] as String;
-    final expMonth = card['exp_month'] as String;
-    final expYear = card['exp_year'] as String;
+    // Estructura de Stripe: card['card']['brand'], card['card']['last4'], etc.
+    final cardData = card['card'] as Map<String, dynamic>? ?? {};
+    final brand = (cardData['brand'] ?? 'card').toString().toUpperCase();
+    final last4 = (cardData['last4'] ?? '****').toString();
+    final expMonth = (cardData['exp_month']?.toString() ?? '00').padLeft(2, '0');
+    final expYear = (cardData['exp_year']?.toString().substring(2) ?? '00');
     final isSelected = _selectedCard?['id'] == card['id'];
     
     return Container(
