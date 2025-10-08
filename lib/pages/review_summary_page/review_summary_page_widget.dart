@@ -581,7 +581,7 @@ class _PaymentMethodSelectorContentState extends State<_PaymentMethodSelectorCon
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: MediaQuery.of(context).size.height * 0.5,
+      height: MediaQuery.of(context).size.height * 0.85,
       decoration: const BoxDecoration(
         color: Color(0xFF2C2C2C), // GRIS OSCURO LANDGO
         borderRadius: BorderRadius.only(
@@ -589,13 +589,12 @@ class _PaymentMethodSelectorContentState extends State<_PaymentMethodSelectorCon
           topRight: Radius.circular(20),
         ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Modal Header
-            Row(
+      child: Column(
+        children: [
+          // Modal Header (Fixed)
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
@@ -616,8 +615,15 @@ class _PaymentMethodSelectorContentState extends State<_PaymentMethodSelectorCon
                 ),
               ],
             ),
-            
-            const SizedBox(height: 20),
+          ),
+          
+          // Scrollable Content
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
             
             // Payment Methods - SELECCIONABLES
             // TARJETAS DE CRÉDITO/DÉBITO
@@ -765,8 +771,13 @@ class _PaymentMethodSelectorContentState extends State<_PaymentMethodSelectorCon
                 ),
               ),
             ),
-          ],
-        ),
+            
+            const SizedBox(height: 20), // Padding bottom
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
