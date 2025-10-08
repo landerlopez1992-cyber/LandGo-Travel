@@ -653,6 +653,7 @@ class _PaymentMethodsPageWidgetState extends State<PaymentMethodsPageWidget> {
                           ? _buildEmptyState()
                           : SingleChildScrollView(
                               child: Column(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   _buildCardsList(),
                                   _buildBillingAddressSection(),
@@ -971,16 +972,17 @@ class _PaymentMethodsPageWidgetState extends State<PaymentMethodsPageWidget> {
 
   Widget _buildCardsList() {
     return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            itemCount: _paymentMethods.length,
-            itemBuilder: (context, index) {
-              final card = _paymentMethods[index];
-              return _buildCardItem(card);
-            },
-          ),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          itemCount: _paymentMethods.length,
+          itemBuilder: (context, index) {
+            final card = _paymentMethods[index];
+            return _buildCardItem(card);
+          },
         ),
         // Botón Premium - Diseño V2
         Padding(
