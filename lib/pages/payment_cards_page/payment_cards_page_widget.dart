@@ -1490,6 +1490,43 @@ class _PaymentProcessingModalState extends State<_PaymentProcessingModal> {
       print('🔍 DEBUG: Amount: ${widget.amount}');
       print('🔍 DEBUG: Selected Card: ${widget.selectedCard}');
       
+      // 🔐 VALIDAR BILLING ADDRESS OBLIGATORIO ANTES DE PROCESAR PAGO
+      print('🔍 DEBUG: Validando billing address antes del pago...');
+      final validation = await StripeService.validateBillingAddress();
+      if (validation == null || !validation['valid']) {
+        final missingFields = validation?['missing_fields'] as List<dynamic>? ?? [];
+        final message = validation?['message'] as String? ?? 'Billing address incomplete';
+        
+        print('❌ Billing address validation failed: $message');
+        
+        // Mostrar error y navegar a Payment Methods para completar billing address
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Please complete your billing address before making payments',
+                style: GoogleFonts.outfit(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              backgroundColor: const Color(0xFFDC2626),
+              behavior: SnackBarBehavior.floating,
+              action: SnackBarAction(
+                label: 'Complete',
+                textColor: Colors.white,
+                onPressed: () {
+                  Navigator.pushNamed(context, '/PaymentMethodsPage');
+                },
+              ),
+            ),
+          );
+        }
+        return;
+      }
+      
+      print('✅ Billing address validation passed');
+      
       // Obtener el PaymentMethod ID de la tarjeta seleccionada (estructura de Stripe)
       final paymentMethodId = widget.selectedCard['id'] as String?;
       

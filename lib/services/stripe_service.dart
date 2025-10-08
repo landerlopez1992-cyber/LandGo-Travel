@@ -35,6 +35,67 @@ class StripeService {
     print('✅ Stripe inicializado correctamente');
   }
 
+  /// Validar que el usuario tenga billing address completo
+  static Future<Map<String, dynamic>?> validateBillingAddress() async {
+    try {
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      if (currentUser == null) {
+        throw Exception('User not logged in');
+      }
+
+      final profileResponse = await Supabase.instance.client
+          .from('profiles')
+          .select('email, full_name, phone, billing_address')
+          .eq('id', currentUser.id)
+          .maybeSingle();
+
+      final userEmail = profileResponse?['email'] ?? currentUser.email ?? '';
+      final userPhone = profileResponse?['phone'] ?? '';
+      final billingAddress = profileResponse?['billing_address'] as Map<String, dynamic>? ?? {};
+
+      print('🔍 DEBUG: Validando billing address...');
+      print('🔍 DEBUG: Email: $userEmail');
+      print('🔍 DEBUG: Phone: $userPhone');
+      print('🔍 DEBUG: Billing Address: $billingAddress');
+
+      // Validar campos requeridos
+      final requiredFields = ['line1', 'city', 'state', 'postal_code', 'country'];
+      final missingFields = <String>[];
+
+      for (final field in requiredFields) {
+        final value = billingAddress[field];
+        if (value == null || value.toString().trim().isEmpty) {
+          missingFields.add(field);
+        }
+      }
+
+      // Validar email y teléfono
+      if (userEmail.isEmpty) missingFields.add('email');
+      if (userPhone.isEmpty) missingFields.add('phone');
+
+      if (missingFields.isNotEmpty) {
+        return {
+          'valid': false,
+          'missing_fields': missingFields,
+          'message': 'Billing address incomplete. Missing: ${missingFields.join(', ')}'
+        };
+      }
+
+      return {
+        'valid': true,
+        'email': userEmail,
+        'phone': userPhone,
+        'billing_address': billingAddress,
+      };
+    } catch (e) {
+      print('❌ Error validating billing address: $e');
+      return {
+        'valid': false,
+        'message': 'Error validating billing address: $e'
+      };
+    }
+  }
+
   /// Crear PaymentMethod REAL usando el CardField del SDK (sin exponer PAN)
   static Future<Map<String, dynamic>> createPaymentMethodFromCardField({
     required String cardholderName,
@@ -42,26 +103,17 @@ class StripeService {
     try {
       print('🔍 DEBUG: Creando PaymentMethod desde CardField (SDK Stripe)...');
 
-      // Obtener datos del perfil del usuario para billing_details completos
-      final currentUser = Supabase.instance.client.auth.currentUser;
-      if (currentUser == null) {
-        throw Exception('User not logged in');
+      // 🔐 VALIDAR BILLING ADDRESS OBLIGATORIO
+      final validation = await validateBillingAddress();
+      if (validation == null || !validation['valid']) {
+        throw Exception(validation?['message'] ?? 'Billing address validation failed');
       }
 
-      print('🔍 DEBUG: Obteniendo perfil del usuario: ${currentUser.id}');
-      
-      final profileResponse = await Supabase.instance.client
-          .from('profiles')
-          .select('email, full_name, phone, billing_address')
-          .eq('id', currentUser.id)
-          .maybeSingle();
+      final userEmail = validation['email'] as String;
+      final userPhone = validation['phone'] as String;
+      final billingAddress = validation['billing_address'] as Map<String, dynamic>;
 
-      print('🔍 DEBUG: Perfil obtenido: $profileResponse');
-
-      final userEmail = profileResponse?['email'] ?? currentUser.email ?? '';
-      final userPhone = profileResponse?['phone'] ?? '';
-      final billingAddress = profileResponse?['billing_address'] as Map<String, dynamic>? ?? {};
-
+      print('🔍 DEBUG: ✅ Billing address validado correctamente');
       print('🔍 DEBUG: Email del usuario: $userEmail');
       print('🔍 DEBUG: Teléfono del usuario: $userPhone');
       print('🔍 DEBUG: Dirección de facturación: $billingAddress');
@@ -155,26 +207,17 @@ class StripeService {
     try {
       print('🔍 DEBUG: Creando PaymentMethod REAL con Stripe SDK...');
       
-      // Obtener datos del perfil del usuario para billing_details completos
-      final currentUser = Supabase.instance.client.auth.currentUser;
-      if (currentUser == null) {
-        throw Exception('User not logged in');
+      // 🔐 VALIDAR BILLING ADDRESS OBLIGATORIO
+      final validation = await validateBillingAddress();
+      if (validation == null || !validation['valid']) {
+        throw Exception(validation?['message'] ?? 'Billing address validation failed');
       }
 
-      print('🔍 DEBUG: Obteniendo perfil del usuario: ${currentUser.id}');
-      
-      final profileResponse = await Supabase.instance.client
-          .from('profiles')
-          .select('email, full_name, phone, billing_address')
-          .eq('id', currentUser.id)
-          .maybeSingle();
+      final userEmail = validation['email'] as String;
+      final userPhone = validation['phone'] as String;
+      final billingAddress = validation['billing_address'] as Map<String, dynamic>;
 
-      print('🔍 DEBUG: Perfil obtenido: $profileResponse');
-
-      final userEmail = profileResponse?['email'] ?? currentUser.email ?? '';
-      final userPhone = profileResponse?['phone'] ?? '';
-      final billingAddress = profileResponse?['billing_address'] as Map<String, dynamic>? ?? {};
-
+      print('🔍 DEBUG: ✅ Billing address validado correctamente');
       print('🔍 DEBUG: Email del usuario: $userEmail');
       print('🔍 DEBUG: Teléfono del usuario: $userPhone');
       print('🔍 DEBUG: Dirección de facturación: $billingAddress');
