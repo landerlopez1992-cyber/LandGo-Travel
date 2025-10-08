@@ -48,7 +48,13 @@ class _TermsConditionsPageWidgetState extends State<TermsConditionsPageWidget> {
               child: Row(
                 children: [
                   StandardBackButton(
-                    onPressed: () => context.pop(),
+                    onPressed: () {
+                      if (Navigator.of(context).canPop()) {
+                        context.pop();
+                      } else {
+                        context.goNamedAuth('MainPage', context.mounted);
+                      }
+                    },
                   ),
                   const Expanded(
                     child: Center(

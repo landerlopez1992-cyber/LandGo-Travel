@@ -163,6 +163,13 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => AllTransactionsPageWidget(),
         ),
         FFRoute(
+          name: TransactionDetailPageWidget.routeName,
+          path: TransactionDetailPageWidget.routePath,
+          builder: (context, params) => TransactionDetailPageWidget(
+            transaction: params.getParam('transaction', ParamType.JSON) ?? {},
+          ),
+        ),
+        FFRoute(
           name: TravelFeedPageWidget.routeName,
           path: TravelFeedPageWidget.routePath,
           builder: (context, params) => TravelFeedPageWidget(),

@@ -107,7 +107,13 @@ class _TransferMoneyPageWidgetState extends State<TransferMoneyPageWidget> {
                   Row(
                     children: [
                       StandardBackButton(
-                        onPressed: () => context.pop(),
+                        onPressed: () {
+                          if (Navigator.of(context).canPop()) {
+                            context.pop();
+                          } else {
+                            context.goNamedAuth('MainPage', context.mounted);
+                          }
+                        },
                       ),
                       const Spacer(),
                     ],

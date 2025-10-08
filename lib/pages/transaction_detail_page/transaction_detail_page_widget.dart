@@ -121,7 +121,13 @@ class _TransactionDetailPageWidgetState
                   Row(
                     children: [
                       StandardBackButton(
-                        onPressed: () => context.pop(),
+                        onPressed: () {
+                          if (Navigator.of(context).canPop()) {
+                            context.pop();
+                          } else {
+                            context.goNamed('AllTransactionsPage');
+                          }
+                        },
                       ),
                       const Spacer(),
                     ],

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'payment_success_pag_model.dart';
 export 'payment_success_pag_model.dart';
@@ -29,17 +30,25 @@ class _PaymentSuccessPagWidgetState extends State<PaymentSuccessPagWidget> {
   double _amount = 0.00;
   String _currency = 'USD';
 
+  // Evitar persistencias duplicadas si la vista se reconstruye
+  bool _persistenceCompleted = false;
+
   @override
   void initState() {
     super.initState();
+    print('🔍 DEBUG: PaymentSuccessPagWidget initState called');
     _model = createModel(context, () => PaymentSuccessPagModel());
-    WidgetsBinding.instance.addPostFrameCallback((_) => setState(() {}));
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      print('🔍 DEBUG: PostFrameCallback executed');
+      _loadPaymentDetails();
+      setState(() {});
+    });
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _loadPaymentDetails();
+    print('🔍 DEBUG: PaymentSuccessPagWidget didChangeDependencies called');
   }
 
   void _loadPaymentDetails() {
@@ -56,6 +65,94 @@ class _PaymentSuccessPagWidgetState extends State<PaymentSuccessPagWidget> {
         _currency = args['currency'] as String? ?? 'USD';
       });
       print('✅ Payment details loaded: amount=\$${_amount}, card=$_cardBrand **** $_cardLast4');
+
+      // Persistir en base de datos (payments + actualizar balance)
+      _persistWalletTopUpIfNeeded();
+    }
+  }
+
+  Future<void> _persistWalletTopUpIfNeeded() async {
+    print('🔍 DEBUG: _persistWalletTopUpIfNeeded called');
+    print('🔍 DEBUG: _persistenceCompleted = $_persistenceCompleted');
+    print('🔍 DEBUG: _amount = $_amount');
+    print('🔍 DEBUG: _paymentIntentId = $_paymentIntentId');
+    print('🔍 DEBUG: _chargeId = $_chargeId');
+    
+    if (_persistenceCompleted) {
+      print('ℹ️ Persistence already completed. Skipping.');
+      return;
+    }
+
+    final user = Supabase.instance.client.auth.currentUser;
+    if (user == null) {
+      print('⚠️ No authenticated user found. Cannot persist payment.');
+      return;
+    }
+    print('🔍 DEBUG: User ID: ${user.id}');
+
+    if (_amount <= 0) {
+      print('⚠️ Invalid amount $_amount. Skipping persistence.');
+      return;
+    }
+
+    try {
+      print('🔍 DEBUG: Starting transaction insertion...');
+      
+      // 1) Insertar transacción en payments (dinero agregado via tarjeta)
+      final transactionId = (_chargeId != 'N/A' && _chargeId.isNotEmpty)
+          ? _chargeId
+          : _paymentIntentId;
+
+      final insertData = {
+        'user_id': user.id,
+        'amount': _amount, // positivo: top-up
+        'currency': _currency,
+        'status': 'completed',
+        'payment_method': 'stripe_card',
+        'transaction_id': transactionId,
+        'description': 'Wallet top-up via ${_cardBrand.toUpperCase()} **** ${_cardLast4}',
+        'related_type': 'card_deposit',
+      };
+
+      print('🔍 DEBUG: Insert data: $insertData');
+
+      final insertRes = await Supabase.instance.client
+          .from('payments')
+          .insert(insertData)
+          .select()
+          .limit(1);
+
+      print('✅ Inserted card payment into payments: $insertRes');
+
+      // 2) Actualizar el balance del usuario en profiles.cashback_balance
+      print('🔍 DEBUG: Updating cashback_balance...');
+      
+      final profile = await Supabase.instance.client
+          .from('profiles')
+          .select('cashback_balance')
+          .eq('id', user.id)
+          .single();
+
+      final currentBalance = (profile['cashback_balance'] as num?)?.toDouble() ?? 0.0;
+      final newBalance = currentBalance + _amount;
+
+      print('🔍 DEBUG: Current balance: $currentBalance, New balance: $newBalance');
+
+      final updateRes = await Supabase.instance.client
+          .from('profiles')
+          .update({'cashback_balance': newBalance})
+          .eq('id', user.id)
+          .select('cashback_balance')
+          .single();
+
+      print('✅ Wallet balance updated from $currentBalance to ${updateRes['cashback_balance']}');
+
+      _persistenceCompleted = true;
+      print('✅ Persistence completed successfully');
+    } catch (e, st) {
+      print('❌ Error persisting card top-up: $e');
+      print('❌ Error type: ${e.runtimeType}');
+      print('❌ Stack trace: $st');
     }
   }
 

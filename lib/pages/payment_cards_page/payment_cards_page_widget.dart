@@ -1206,30 +1206,8 @@ class _PaymentCardsPageWidgetState extends State<PaymentCardsPageWidget> {
       final paymentMethodId = paymentMethodData['id'] as String;
       print('✅ PaymentMethod creado: $paymentMethodId');
       
-      // 1.5. ✅ VALIDAR TARJETA CON SETUPINTENT (SIN CARGO)
-      print('🔍 DEBUG: Validando tarjeta con SetupIntent...');
-      try {
-        await StripeService.validateCardWithSetupIntent(paymentMethodId);
-        print('✅ Tarjeta validada exitosamente');
-      } catch (e) {
-        print('❌ Tarjeta declinada: $e');
-        // 🧪 MODO DESARROLLO: Permitir guardar tarjetas de prueba para errores
-        if (paymentMethodId.contains('pm_') && e.toString().contains('card_declined')) {
-          print('🧪 MODO DESARROLLO: Guardando tarjeta de prueba para simular errores...');
-          // Continuar con el flujo normal para tarjetas de prueba
-        } else {
-          // Mostrar mensaje específico según el tipo de error
-          String errorMessage = 'Card validation failed. Please check your card information.';
-          if (e.toString().contains('card_declined')) {
-            errorMessage = 'Your card was declined. Please use a different card.';
-          } else if (e.toString().contains('insufficient_funds')) {
-            errorMessage = 'Insufficient funds. Please use a different card.';
-          } else if (e.toString().contains('expired_card')) {
-            errorMessage = 'Your card has expired. Please use a different card.';
-          }
-          throw Exception(errorMessage);
-        }
-      }
+      // ✅ LA TARJETA YA ESTÁ VALIDADA POR STRIPE AL CREAR EL PAYMENTMETHOD
+      print('✅ Tarjeta validada automáticamente por Stripe al crear PaymentMethod');
 
       // 2. Crear Customer en Stripe si no existe
       String? stripeCustomerId;

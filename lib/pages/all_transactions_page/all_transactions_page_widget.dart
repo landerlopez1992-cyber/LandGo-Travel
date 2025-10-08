@@ -1,7 +1,6 @@
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/components/back_button_widget.dart';
-import '/pages/transaction_detail_page/transaction_detail_page_widget.dart';
 import 'all_transactions_page_model.dart';
 export 'all_transactions_page_model.dart';
 import 'package:flutter/material.dart';
@@ -83,8 +82,8 @@ class _AllTransactionsPageWidgetState extends State<AllTransactionsPageWidget> {
         return dateB.compareTo(dateA);
       });
       
-      // Precargar nombres de usuarios para todas las transacciones
-      await _preloadUserNames(allTransactions);
+      // Precargar nombres de usuarios para todas las transacciones (SIMPLIFICADO)
+      // await _preloadUserNames(allTransactions);
       
       // DEBUG: Mostrar detalles de cada transacción
       print('🔍 DEBUG ALL TRANSACTIONS: ${allTransactions.length}');
@@ -111,56 +110,35 @@ class _AllTransactionsPageWidgetState extends State<AllTransactionsPageWidget> {
     }
   }
 
-  /// Obtener nombre de usuario por ID desde Supabase
+  /// Obtener nombre de usuario por ID desde Supabase (SIMPLIFICADO)
   Future<String?> _getUserName(String? userId) async {
-    if (userId == null) return null;
+    if (userId == null) return 'Usuario';
     
     // Cache simple para evitar consultas repetidas
     if (_userNameCache.containsKey(userId)) {
       return _userNameCache[userId];
     }
     
-    try {
-      // Consultar el nombre del usuario desde Supabase
-      final response = await Supabase.instance.client
-          .from('profiles')
-          .select('full_name, first_name, last_name')
-          .eq('id', userId)
-          .single();
-      
-      String? userName;
-      if (response['full_name'] != null && response['full_name'].toString().isNotEmpty) {
-        userName = response['full_name'].toString();
-      } else if (response['first_name'] != null && response['last_name'] != null) {
-        userName = '${response['first_name']} ${response['last_name']}';
-      } else {
-        userName = 'Usuario';
-      }
-      
-      // Guardar en cache
-      _userNameCache[userId] = userName;
-      return userName;
-    } catch (e) {
-      print('❌ Error obteniendo nombre de usuario $userId: $e');
-      return 'Usuario';
-    }
+    // Retornar nombre genérico para evitar consultas lentas
+    _userNameCache[userId] = 'Usuario';
+    return 'Usuario';
   }
   
   // Cache de nombres de usuarios
   final Map<String, String> _userNameCache = {};
   
-  /// Obtener nombre de usuario sincrónicamente desde cache
+  /// Obtener nombre de usuario sincrónicamente desde cache (SIMPLIFICADO)
   String _getUserNameSync(String? userId) {
-    if (userId == null) return 'Usuario desconocido';
+    if (userId == null) return 'Usuario';
     
     // Usar cache si está disponible
     if (_userNameCache.containsKey(userId)) {
       return _userNameCache[userId]!;
     }
     
-    // Si no está en cache, cargar de forma asíncrona
-    _loadUserNameAsync(userId);
-    return 'Cargando...';
+    // Retornar nombre genérico inmediatamente
+    _userNameCache[userId] = 'Usuario';
+    return 'Usuario';
   }
   
   /// Cargar nombre de usuario de forma asíncrona
@@ -221,7 +199,13 @@ class _AllTransactionsPageWidgetState extends State<AllTransactionsPageWidget> {
                 Row(
                   children: [
                     StandardBackButton(
-                      onPressed: () => context.pop(),
+                      onPressed: () {
+                        if (Navigator.of(context).canPop()) {
+                          context.pop();
+                        } else {
+                          context.goNamed('MyWalletPage');
+                        }
+                      },
                     ),
                     const Spacer(),
                   ],
@@ -338,13 +322,9 @@ class _AllTransactionsPageWidgetState extends State<AllTransactionsPageWidget> {
                                 return GestureDetector(
                                   onTap: () {
                                     // Navegar a detalles de transacción
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (context) => TransactionDetailPageWidget(
-                                          transaction: tx,
-                                        ),
-                                      ),
+                                    context.go(
+                                      '/transactionDetailPage',
+                                      extra: {'transaction': tx},
                                     );
                                   },
                                   child: _buildTransactionItem(tx),

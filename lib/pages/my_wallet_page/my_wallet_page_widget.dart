@@ -147,7 +147,7 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
       // DEBUG: Mostrar detalles de cada transacción
       print('🔍 DEBUG TRANSACTIONS:');
       for (var tx in recentTransactions) {
-        print('  - Amount: ${tx['amount']}, Type: ${tx['related_type']}, User: ${tx['user_id']}, Related: ${tx['related_id']}');
+        print('  - Amount: ${tx['amount']}, Type: ${tx['related_type']}, PaymentMethod: ${tx['payment_method']}, User: ${tx['user_id']}, Related: ${tx['related_id']}');
       }
       print('✅ Recent Transactions: ${recentTransactions.length}');
       
@@ -212,7 +212,13 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
                     Row(
                       children: [
                         StandardBackButton(
-                          onPressed: () => context.pop(),
+                          onPressed: () {
+                            if (Navigator.of(context).canPop()) {
+                              context.pop();
+                            } else {
+                              context.goNamedAuth('MainPage', context.mounted);
+                            }
+                          },
                         ),
                         const Spacer(),
                       ],
@@ -419,7 +425,7 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           _buildStatCard(
-            '\$${_totalEarned.toStringAsFixed(2)}',
+            '\$${_totalEarned.abs().toStringAsFixed(2)}',
             'Total Enviado',
             Icons.arrow_upward,
             const Color(0xFFDC2626), // ROJO para enviado

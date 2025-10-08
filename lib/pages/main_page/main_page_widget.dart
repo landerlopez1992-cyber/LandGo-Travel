@@ -750,7 +750,7 @@ class _MainPageWidgetState extends State<MainPageWidget> {
               _buildActionCard('Book Travel', Icons.flight_takeoff_rounded, const Color(0xFF4DD0E1), () {
                 context.pushNamed('BookingPage'); // CONECTAR A BOOKING PAGE
               }),
-              _buildActionCard('Travel Feed', Icons.travel_explore_rounded, const Color(0xFF4CAF50), () {
+              _buildActionCard('Travel Feed', Icons.travel_explore_rounded, const Color(0xFF4DD0E1), () {
                 context.pushNamed('TravelFeedPage'); // CONECTAR A TRAVEL FEED
               }),
               _buildActionCard('Wallet', Icons.account_balance_wallet_rounded, const Color(0xFF4DD0E1), () {
