@@ -341,7 +341,6 @@ class _PaymentCardsPageWidgetState extends State<PaymentCardsPageWidget> {
   }
 
   Widget _buildCardItem(Map<String, dynamic> card) {
-    final isDefault = card['isDefault'] as bool;
     final brand = card['brand'] as String;
     final last4 = card['last4'] as String;
     final expMonth = card['exp_month'] as String;
@@ -432,24 +431,6 @@ class _PaymentCardsPageWidgetState extends State<PaymentCardsPageWidget> {
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
-                            if (isDefault) ...[
-                              const SizedBox(width: 8),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF4DD0E1), // TURQUESA LANDGO
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  'DEFAULT',
-                                  style: GoogleFonts.outfit(
-                                    color: Colors.black,
-                                    fontSize: 8,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ),
-                            ],
                           ],
                         ),
                         const SizedBox(height: 4),
@@ -1268,7 +1249,6 @@ class _PaymentCardsPageWidgetState extends State<PaymentCardsPageWidget> {
         'exp_month': expMonth,
         'exp_year': expYear,
         'cardholder_name': cardholderName,
-        'isDefault': _savedCards.isEmpty, // Primera tarjeta es por defecto
         'created_at': DateTime.now().toIso8601String(),
       };
       
