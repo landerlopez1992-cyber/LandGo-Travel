@@ -1500,8 +1500,12 @@ class _PaymentProcessingModalState extends State<_PaymentProcessingModal> {
         
         print('❌ Billing address validation failed: $message');
         
-        // Navegar a pantalla de error profesional
+        // Cerrar modal de procesamiento y navegar a pantalla de error profesional
         if (mounted) {
+          // Cerrar el modal de procesamiento primero
+          Navigator.of(context, rootNavigator: true).pop();
+          
+          // Luego navegar a la pantalla de error
           Navigator.push(
             context,
             MaterialPageRoute(

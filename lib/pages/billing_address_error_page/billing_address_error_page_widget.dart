@@ -1,5 +1,6 @@
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
+import '/pages/payment_methods_page/payment_methods_page_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'billing_address_error_page_model.dart';
@@ -351,7 +352,12 @@ class _BillingAddressErrorPageWidgetState
           child: FFButtonWidget(
             onPressed: () {
               Navigator.of(context).pop(); // Cerrar esta pantalla
-              Navigator.pushNamed(context, '/PaymentMethodsPage');
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => PaymentMethodsPageWidget(),
+                ),
+              );
             },
             text: 'Complete Billing Address',
             icon: const Icon(
