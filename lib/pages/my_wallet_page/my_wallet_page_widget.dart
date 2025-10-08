@@ -562,7 +562,16 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
               ),
             )
           : Column(
-              children: _recentTransactions.map((tx) => _buildTransactionItem(tx)).toList(),
+              children: _recentTransactions.map((tx) => GestureDetector(
+                onTap: () {
+                  // Navegar a detalles de transacción
+                  context.go(
+                    '/transactionDetailPage',
+                    extra: {'transaction': tx},
+                  );
+                },
+                child: _buildTransactionItem(tx),
+              )).toList(),
             ),
       ],
     );

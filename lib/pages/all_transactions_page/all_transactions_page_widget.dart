@@ -463,11 +463,15 @@ class _AllTransactionsPageWidgetState extends State<AllTransactionsPageWidget> {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Text(
-                      _formatTransactionDate(createdAt),
-                      style: GoogleFonts.outfit(
-                        color: Colors.white70,
-                        fontSize: 12,
+                    Expanded(
+                      child: Text(
+                        _formatTransactionDate(createdAt),
+                        style: GoogleFonts.outfit(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -477,12 +481,16 @@ class _AllTransactionsPageWidgetState extends State<AllTransactionsPageWidget> {
                       size: 16,
                     ),
                     const SizedBox(width: 4),
-                    Text(
-                      status.toUpperCase(),
-                      style: GoogleFonts.outfit(
-                        color: statusColor,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w500,
+                    Flexible(
+                      child: Text(
+                        status.toUpperCase(),
+                        style: GoogleFonts.outfit(
+                          color: statusColor,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
