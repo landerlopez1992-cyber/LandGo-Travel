@@ -1500,10 +1500,8 @@ class _PaymentProcessingModalState extends State<_PaymentProcessingModal> {
           }
         });
         
-        // ✅ ACTUALIZAR SALDO EN SUPABASE SI EL PAGO FUE EXITOSO
-        if (success) {
-          await _updateWalletBalance(double.parse(widget.amount));
-        }
+        // ❌ NO actualizar el saldo aquí - PaymentSuccessPage ya lo hace
+        // Evitar duplicación de balance
       }
     } catch (e) {
       if (mounted) {
@@ -1692,47 +1690,5 @@ class _PaymentProcessingModalState extends State<_PaymentProcessingModal> {
         ),
       ),
     );
-  }
-  
-  /// ✅ ACTUALIZAR SALDO DE WALLET EN SUPABASE (profiles.cashback_balance)
-  Future<void> _updateWalletBalance(double amount) async {
-    try {
-      print('🔍 DEBUG: Actualizando cashback_balance en profiles...');
-      print('🔍 DEBUG: Amount a agregar: \$${amount.toStringAsFixed(2)}');
-      
-      final user = Supabase.instance.client.auth.currentUser;
-      if (user == null) {
-        throw Exception('No user logged in');
-      }
-      
-      print('🔍 DEBUG: User ID: ${user.id}');
-      
-      // Obtener saldo actual de profiles.cashback_balance
-      final response = await Supabase.instance.client
-          .from('profiles')
-          .select('cashback_balance')
-          .eq('id', user.id)
-          .single();
-      
-      final currentBalance = (response['cashback_balance'] as num?)?.toDouble() ?? 0.0;
-      final newBalance = currentBalance + amount;
-      
-      print('🔍 DEBUG: Saldo actual: \$${currentBalance.toStringAsFixed(2)}');
-      print('🔍 DEBUG: Nuevo saldo: \$${newBalance.toStringAsFixed(2)}');
-      
-      // Actualizar saldo en profiles
-      await Supabase.instance.client
-          .from('profiles')
-          .update({'cashback_balance': newBalance})
-          .eq('id', user.id);
-      
-      print('✅ Cashback balance actualizado exitosamente: \$${newBalance.toStringAsFixed(2)}');
-      
-    } catch (e) {
-      print('❌ Error actualizando cashback_balance: $e');
-      print('❌ Error type: ${e.runtimeType}');
-      print('❌ Error details: ${e.toString()}');
-      // No mostrar error al usuario, solo log
-    }
   }
 }
