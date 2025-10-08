@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:typed_data';
+import 'package:share_plus/share_plus.dart';
 
 class TravelFeedPageWidget extends StatefulWidget {
   const TravelFeedPageWidget({super.key});
@@ -45,6 +46,9 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
   List<Map<String, dynamic>> _tagSearchResults = [];
   List<Map<String, dynamic>> _selectedTags = [];
   bool _isSearchingTags = false;
+  
+  // Cache para evitar múltiples llamadas a la base de datos
+  final Map<String, Future<List<Map<String, dynamic>>>> _commentsCache = {};
 
   @override
   void initState() {
@@ -651,33 +655,65 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
 
   /// ✏️ EDITAR POST
   Future<void> _editPost(Map<String, dynamic> post) async {
-    // Configurar el modal con los datos del post existente
-    _postController.text = post['content'] ?? '';
-    
-    // Cargar etiquetas existentes
-    _selectedTags.clear();
-    if (post['tagged_users'] != null && (post['tagged_users'] as List).isNotEmpty) {
-      _selectedTags.addAll(post['tagged_users']);
+    try {
+      // Mostrar indicador de carga antes de procesar datos
+      setState(() {
+        _isLoading = true;
+      });
+      
+      // Configurar el modal con los datos del post existente
+      _postController.text = post['content'] ?? '';
+      
+      // Cargar etiquetas existentes
+      _selectedTags.clear();
+      if (post['tagged_users'] != null && (post['tagged_users'] as List).isNotEmpty) {
+        _selectedTags.addAll(post['tagged_users']);
+      }
+      
+      // TODO: Cargar imagen existente si tiene
+      _selectedImage = null;
+      _selectedImageBytes = null;
+      
+      // Pequeña pausa para asegurar que los datos se cargaron correctamente
+      await Future.delayed(const Duration(milliseconds: 300));
+      
+      // Ocultar indicador de carga
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+      
+      // Mostrar modal de edición
+      _showEditPostModal(post['id']);
+    } catch (e) {
+      // Manejo de errores
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cargar el post: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
-    
-    // TODO: Cargar imagen existente si tiene
-    _selectedImage = null;
-    _selectedImageBytes = null;
-    
-    // Mostrar modal de edición
-    _showEditPostModal(post['id']);
   }
 
   /// ✏️ MODAL DE EDICIÓN DE POST
   void _showEditPostModal(String postId) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => StatefulBuilder(
-        builder: (BuildContext context, StateSetter setModalState) {
-          return Container(
-            height: MediaQuery.of(context).size.height * 0.85,
+    try {
+      showModalBottomSheet(
+        context: context,
+        backgroundColor: Colors.transparent,
+        isScrollControlled: true,
+        builder: (context) => StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.85,
             decoration: const BoxDecoration(
               color: Color(0xFF1A1A1A),
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -727,7 +763,8 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                       child: Column(
                       children: [
                         // Text input
-                        Expanded(
+                        Container(
+                          height: 120, // Altura fija en lugar de Expanded
                           child: TextField(
                             controller: _postController,
                             maxLines: null,
@@ -857,9 +894,7 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                               if (_tagSearchResults.isNotEmpty) ...[
                                 const SizedBox(height: 8),
                                 Container(
-                                  constraints: BoxConstraints(
-                                    maxHeight: (MediaQuery.of(context).size.height - MediaQuery.of(context).viewInsets.bottom) * 0.3,
-                                  ),
+                                  constraints: const BoxConstraints(maxHeight: 150),
                                   child: ListView.builder(
                                     shrinkWrap: true,
                                     itemCount: _tagSearchResults.length,
@@ -1105,6 +1140,15 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
         },
       ),
     );
+    } catch (e) {
+      print('Error al mostrar modal de edición: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al abrir el editor: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   /// 💾 ACTUALIZAR POST EXISTENTE
@@ -1602,14 +1646,22 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
           Future<void> refreshComments() async {
             setModalState(() {});
           }
-          return Container(
-            height: MediaQuery.of(context).size.height * 0.9,
-            decoration: const BoxDecoration(
-              color: Color(0xFF1A1A1A),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            child: Column(
-              children: [
+          return DraggableScrollableSheet(
+            initialChildSize: 0.9,
+            minChildSize: 0.5,
+            maxChildSize: 0.95,
+            builder: (_, scrollController) {
+              return Padding(
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewInsets.bottom,
+                ),
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF1A1A1A),
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                  ),
+                  child: Column(
+                    children: [
                 // Handle bar
                 Container(
                   width: 40,
@@ -1647,9 +1699,9 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                 
                 // Lista de comentarios - SCROLLABLE
                 Expanded(
-                  child: SingleChildScrollView(
-                    child: FutureBuilder<List<Map<String, dynamic>>>(
-                    future: _loadComments(postId),
+                  child: FutureBuilder<List<Map<String, dynamic>>>(
+                    // Usar cacheado para evitar múltiples llamadas
+                    future: _commentsCache[postId] ?? (_commentsCache[postId] = _loadComments(postId)),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(
@@ -1704,6 +1756,7 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                       }
                       
                       return ListView.builder(
+                        shrinkWrap: true,
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                         itemCount: comments.length,
                         itemBuilder: (context, index) {
@@ -1712,118 +1765,127 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                         },
                       );
                     },
-                    ),
                   ),
                 ),
                 
                 const Divider(color: Colors.white24),
                 
-                // Input para escribir comentario
-                Padding(
-                  padding: EdgeInsets.only(
-                    left: 20,
-                    right: 20,
-                    top: 20,
-                    bottom: MediaQuery.of(context).viewInsets.bottom + 20,
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(16),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2C2C2C),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: const Color(0xFF4DD0E1).withValues(alpha: 0.3),
-                            width: 1,
+                // Input para escribir comentario - SIEMPRE VISIBLE
+                SafeArea(
+                  child: Container(
+                    color: const Color(0xFF1A1A1A),
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2C2C2C),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: const Color(0xFF4DD0E1).withValues(alpha: 0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: TextField(
+                            maxLines: 2,
+                            maxLength: 500,
+                            textAlignVertical: TextAlignVertical.top,
+                            style: GoogleFonts.outfit(
+                              color: Colors.white,
+                              fontSize: 15,
+                            ),
+                            decoration: InputDecoration(
+                              hintText: 'Escribe tu comentario...',
+                              hintStyle: GoogleFonts.outfit(
+                                color: Colors.white54,
+                                fontSize: 15,
+                              ),
+                              border: InputBorder.none,
+                              counterStyle: GoogleFonts.outfit(
+                                color: Colors.white54,
+                                fontSize: 11,
+                              ),
+                              isDense: true,
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                            controller: _commentController,
+                            onChanged: (_) => setModalState(() {}),
                           ),
                         ),
-                        child: TextField(
-                          maxLines: 3,
-                          maxLength: 500,
-                          textAlignVertical: TextAlignVertical.top,
-                          style: GoogleFonts.outfit(
-                            color: Colors.white,
-                            fontSize: 16,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'Escribe tu comentario...',
-                            hintStyle: GoogleFonts.outfit(
-                              color: Colors.white54,
-                              fontSize: 16,
+                        
+                        const SizedBox(height: 12),
+                        
+                        // Botones
+                        Row(
+                          children: [
+                            Expanded(
+                              child: FFButtonWidget(
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                  _commentController.clear();
+                                },
+                                text: 'Cancelar',
+                                options: FFButtonOptions(
+                                  height: 44,
+                                  color: const Color(0xFF37474F),
+                                  textStyle: GoogleFonts.outfit(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
                             ),
-                            border: InputBorder.none,
-                            counterStyle: GoogleFonts.outfit(
-                              color: Colors.white54,
-                              fontSize: 12,
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: FFButtonWidget(
+                                onPressed: _commentController.text.trim().isEmpty 
+                                    ? null 
+                                    : () => _postComment(postId, post['profiles']['full_name'] ?? 'Usuario'),
+                                text: 'Comentar',
+                                options: FFButtonOptions(
+                                  height: 44,
+                                  color: _commentController.text.trim().isEmpty
+                                      ? const Color(0xFF4DD0E1).withValues(alpha: 0.7)
+                                      : const Color(0xFF4DD0E1),
+                                  textStyle: GoogleFonts.outfit(
+                                    color: Colors.white,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
                             ),
-                          ),
-                          controller: _commentController,
-                          onChanged: (_) => setModalState(() {}),
+                          ],
                         ),
-                      ),
-                      
-                      const SizedBox(height: 16),
-                      
-                      // Botones
-                      Row(
-                        children: [
-                          Expanded(
-                            child: FFButtonWidget(
-                              onPressed: () {
-                                Navigator.of(context).pop();
-                                _commentController.clear();
-                              },
-                              text: 'Cancelar',
-                              options: FFButtonOptions(
-                                height: 48,
-                                color: const Color(0xFF37474F),
-                                textStyle: GoogleFonts.outfit(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: FFButtonWidget(
-                              onPressed: _commentController.text.trim().isEmpty 
-                                  ? null 
-                                  : () => _postComment(postId, post['profiles']['full_name'] ?? 'Usuario'),
-                              text: 'Comentar',
-                              options: FFButtonOptions(
-                                height: 48,
-                                color: _commentController.text.trim().isEmpty
-                                    ? const Color(0xFF4DD0E1).withValues(alpha: 0.7)
-                                    : const Color(0xFF4DD0E1),
-                                textStyle: GoogleFonts.outfit(
-                                  color: Colors.white,
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
-              ],
-            ),
+                ],
+                  ),
+                ),
+              );
+            },
           );
         },
       ),
-    );
+    ).then((_) {
+      // Limpiar el caché de comentarios cuando se cierra el modal
+      _commentsCache.remove(postId);
+    });
   }
 
   /// 📝 CARGAR COMENTARIOS DE UN POST
   Future<List<Map<String, dynamic>>> _loadComments(String postId) async {
     try {
+      // Agregamos un pequeño retraso para evitar congelamientos
+      await Future.delayed(const Duration(milliseconds: 200));
+      
       final currentUser = Supabase.instance.client.auth.currentUser;
       
       final response = await Supabase.instance.client
@@ -2049,9 +2111,9 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                   ),
                   onSelected: (value) {
                     if (value == 'edit') {
-                      _editComment(comment, refreshCallback);
+                      _editComment(comment, postId, refreshCallback);
                     } else if (value == 'delete') {
-                      _deleteComment(commentId, refreshCallback);
+                      _deleteComment(commentId, postId, refreshCallback);
                     }
                   },
                   itemBuilder: (context) => [
@@ -2119,7 +2181,7 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
             children: [
               // Botón de Me Gusta
               GestureDetector(
-                onTap: () => _toggleCommentLike(commentId, userLiked, refreshCallback),
+                onTap: () => _toggleCommentLike(commentId, userLiked, postId, refreshCallback),
                 child: Row(
                   children: [
                     Icon(
@@ -2296,7 +2358,7 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
   }
 
   /// ❤️ TOGGLE LIKE DE COMENTARIO
-  Future<void> _toggleCommentLike(String commentId, bool currentLiked, [VoidCallback? refreshCallback]) async {
+  Future<void> _toggleCommentLike(String commentId, bool currentLiked, String postId, [VoidCallback? refreshCallback]) async {
     try {
       print('🔄 Toggle comment like - CommentId: $commentId, CurrentLiked: $currentLiked');
       
@@ -2304,6 +2366,29 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
       if (user == null) {
         print('❌ Usuario no autenticado');
         return;
+      }
+
+      // 🎯 ACTUALIZACIÓN OPTIMISTA - Actualizar caché primero
+      if (_commentsCache.containsKey(postId)) {
+        final cachedFuture = _commentsCache[postId];
+        if (cachedFuture != null) {
+          final comments = await cachedFuture;
+          final commentIndex = comments.indexWhere((c) => c['id'] == commentId);
+          if (commentIndex != -1) {
+            comments[commentIndex]['user_liked'] = !currentLiked;
+            comments[commentIndex]['likes_count'] = (currentLiked) 
+              ? (comments[commentIndex]['likes_count'] ?? 1) - 1 
+              : (comments[commentIndex]['likes_count'] ?? 0) + 1;
+            
+            // Actualizar el caché con los nuevos datos
+            _commentsCache[postId] = Future.value(comments);
+            
+            // Refrescar UI inmediatamente
+            if (refreshCallback != null) {
+              refreshCallback();
+            }
+          }
+        }
       }
 
       if (currentLiked) {
@@ -2325,13 +2410,32 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
         print('❤️ Like agregado al comentario $commentId');
       }
       
-      // Refrescar modal de comentarios si está abierto
-      if (refreshCallback != null) {
-        refreshCallback();
-      }
+      print('✅ Like de comentario actualizado exitosamente');
       
     } catch (e) {
       print('❌ Error toggling comment like: $e');
+      
+      // 🔄 REVERTIR cambios en caso de error
+      if (_commentsCache.containsKey(postId)) {
+        final cachedFuture = _commentsCache[postId];
+        if (cachedFuture != null) {
+          final comments = await cachedFuture;
+          final commentIndex = comments.indexWhere((c) => c['id'] == commentId);
+          if (commentIndex != -1) {
+            comments[commentIndex]['user_liked'] = currentLiked;
+            comments[commentIndex]['likes_count'] = (currentLiked) 
+              ? (comments[commentIndex]['likes_count'] ?? 0) + 1 
+              : (comments[commentIndex]['likes_count'] ?? 1) - 1;
+            
+            _commentsCache[postId] = Future.value(comments);
+            
+            if (refreshCallback != null) {
+              refreshCallback();
+            }
+          }
+        }
+      }
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -2345,7 +2449,7 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
   }
 
   /// ✏️ EDITAR COMENTARIO
-  void _editComment(Map<String, dynamic> comment, [VoidCallback? refreshCallback]) {
+  void _editComment(Map<String, dynamic> comment, String postId, [VoidCallback? refreshCallback]) {
     final commentId = comment['id']?.toString();
     final currentContent = comment['content'] ?? '';
     
@@ -2471,7 +2575,7 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                         child: FFButtonWidget(
                           onPressed: editController.text.trim().isEmpty 
                               ? null 
-                              : () => _updateComment(commentId, editController.text.trim(), refreshCallback),
+                              : () => _updateComment(commentId, editController.text.trim(), postId, refreshCallback),
                           text: 'Guardar',
                           options: FFButtonOptions(
                             height: 48,
@@ -2499,7 +2603,7 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
   }
 
   /// 🗑️ ELIMINAR COMENTARIO
-  void _deleteComment(String commentId, [VoidCallback? refreshCallback]) {
+  void _deleteComment(String commentId, String postId, [VoidCallback? refreshCallback]) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -2547,7 +2651,7 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
           ElevatedButton(
             onPressed: () async {
               Navigator.of(context).pop();
-              await _confirmDeleteComment(commentId, refreshCallback);
+              await _confirmDeleteComment(commentId, postId, refreshCallback);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF4DD0E1),
@@ -2570,7 +2674,7 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
   }
 
   /// ✅ CONFIRMAR ELIMINACIÓN DE COMENTARIO
-  Future<void> _confirmDeleteComment(String commentId, [VoidCallback? refreshCallback]) async {
+  Future<void> _confirmDeleteComment(String commentId, String postId, [VoidCallback? refreshCallback]) async {
     try {
       // Mostrar modal de carga
       showDialog(
@@ -2683,8 +2787,16 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
       // Cerrar modal de carga
       if (mounted) Navigator.of(context).pop();
 
-      // Recargar posts para actualizar contadores
-      await _loadPosts();
+      // Limpiar caché para forzar recarga de comentarios
+      _commentsCache.remove(postId);
+      
+      // Actualizar contador de comentarios en el post
+      final postIndex = _posts.indexWhere((p) => p['id'] == postId);
+      if (postIndex != -1) {
+        final currentCount = _posts[postIndex]['comments_count'] ?? 0;
+        _posts[postIndex]['comments_count'] = currentCount > 0 ? currentCount - 1 : 0;
+        setState(() {});
+      }
       
       // Refrescar modal de comentarios si está abierto
       if (refreshCallback != null) {
@@ -2720,7 +2832,7 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
   }
 
   /// 💾 ACTUALIZAR COMENTARIO
-  Future<void> _updateComment(String commentId, String newContent, [VoidCallback? refreshCallback]) async {
+  Future<void> _updateComment(String commentId, String newContent, String postId, [VoidCallback? refreshCallback]) async {
     try {
       // Mostrar modal de carga
       showDialog(
@@ -2836,8 +2948,8 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
         Navigator.of(context).pop(); // Cerrar modal de edición
       }
 
-      // Recargar posts para actualizar
-      await _loadPosts();
+      // Limpiar caché para forzar recarga de comentarios
+      _commentsCache.remove(postId);
       
       // Refrescar modal de comentarios si está abierto
       if (refreshCallback != null) {
@@ -3451,6 +3563,17 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
 
       print('✅ Usuario autenticado: ${user.id}');
 
+      // 🎯 ACTUALIZACIÓN OPTIMISTA - Actualizar UI primero
+      setState(() {
+        final postIndex = _posts.indexWhere((p) => p['id'] == postId);
+        if (postIndex != -1) {
+          _posts[postIndex]['user_liked'] = !currentLiked;
+          _posts[postIndex]['likes_count'] = (currentLiked) 
+            ? (_posts[postIndex]['likes_count'] ?? 1) - 1 
+            : (_posts[postIndex]['likes_count'] ?? 0) + 1;
+        }
+      });
+
       if (currentLiked) {
         // Quitar like
         print('🗑️ Removiendo like...');
@@ -3472,14 +3595,23 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
         print('❤️ Like agregado al post $postId');
       }
 
-      // Recargar posts para actualizar contadores
-      print('🔄 Recargando posts...');
-      await _loadPosts();
-      print('✅ Posts recargados exitosamente');
+      print('✅ Like actualizado exitosamente sin recargar posts');
       
     } catch (e) {
       print('❌ Error toggling like: $e');
       print('❌ Stack trace: ${StackTrace.current}');
+      
+      // 🔄 REVERTIR cambios en caso de error
+      setState(() {
+        final postIndex = _posts.indexWhere((p) => p['id'] == postId);
+        if (postIndex != -1) {
+          _posts[postIndex]['user_liked'] = currentLiked;
+          _posts[postIndex]['likes_count'] = (currentLiked) 
+            ? (_posts[postIndex]['likes_count'] ?? 0) + 1 
+            : (_posts[postIndex]['likes_count'] ?? 1) - 1;
+        }
+      });
+      
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -4010,9 +4142,7 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                           if (_tagSearchResults.isNotEmpty) ...[
                             const SizedBox(height: 8),
                             Container(
-                              constraints: BoxConstraints(
-                                maxHeight: (MediaQuery.of(context).size.height - MediaQuery.of(context).viewInsets.bottom) * 0.3,
-                              ),
+                              constraints: const BoxConstraints(maxHeight: 150),
                               child: ListView.builder(
                                 shrinkWrap: true,
                                 itemCount: _tagSearchResults.length,
@@ -4126,7 +4256,7 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                     if (_isLoadingImage) ...[
                       const SizedBox(height: 8),
                       Container(
-                        height: 200,
+                        height: 180,
                         width: double.infinity,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(12),
@@ -4141,43 +4271,43 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                           children: [
                             // Indicador de carga circular con animación
                             const SizedBox(
-                              width: 80,
-                              height: 80,
+                              width: 60,
+                              height: 60,
                               child: CircularProgressIndicator(
-                                strokeWidth: 6,
+                                strokeWidth: 5,
                                 color: Color(0xFF4DD0E1),
                                 backgroundColor: Colors.white24,
                               ),
                             ),
-                            const SizedBox(height: 24),
+                            const SizedBox(height: 16),
                             
                             // Texto de carga principal
                             Text(
                               '🔄 Loading Image...',
                               style: GoogleFonts.outfit(
                                 color: Colors.white,
-                                fontSize: 18,
+                                fontSize: 16,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
-                            const SizedBox(height: 12),
+                            const SizedBox(height: 8),
                             
                             // Texto de carga secundario
                             Text(
                               'Processing your photo\nPlease wait...',
                               style: GoogleFonts.outfit(
                                 color: Colors.white70,
-                                fontSize: 14,
-                                height: 1.4,
+                                fontSize: 13,
+                                height: 1.3,
                               ),
                               textAlign: TextAlign.center,
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 12),
                             
                             // Barra de progreso animada
                             Container(
-                              width: 200,
-                              height: 4,
+                              width: 180,
+                              height: 3,
                               decoration: BoxDecoration(
                                 color: Colors.white24,
                                 borderRadius: BorderRadius.circular(2),
@@ -4307,14 +4437,18 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                               right: 8,
                               child: GestureDetector(
                                 onTap: () {
+                                  setModalState(() {
+                                    _selectedImage = null;
+                                    _selectedImageBytes = null;
+                                  });
                                   setState(() {
                                     _selectedImage = null;
-                                      _selectedImageBytes = null;
+                                    _selectedImageBytes = null;
                                   });
-                                    print('🗑️ DEBUG: Imagen eliminada del preview');
+                                  print('🗑️ DEBUG: Imagen eliminada del preview');
                                 },
                                 child: Container(
-                                    padding: const EdgeInsets.all(6),
+                                  padding: const EdgeInsets.all(6),
                                   decoration: const BoxDecoration(
                                     color: Colors.black54,
                                     shape: BoxShape.circle,
@@ -4322,7 +4456,7 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                                   child: const Icon(
                                     Icons.close,
                                     color: Colors.white,
-                                      size: 18,
+                                    size: 18,
                                   ),
                                 ),
                               ),
@@ -4454,6 +4588,81 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
         },
       ),
     );
+  }
+
+  /// 📤 COMPARTIR POST
+  Future<void> _sharePost(Map<String, dynamic> post) async {
+    try {
+      final userName = post['profiles']?['full_name'] ?? 'Un viajero';
+      final postContent = post['content'] ?? '';
+      final taggedUsers = post['tagged_users'] as List<dynamic>? ?? [];
+      
+      // Construir texto de etiquetas si existen
+      String tagsText = '';
+      if (taggedUsers.isNotEmpty) {
+        final validTags = taggedUsers.where((user) => 
+          user != null && 
+          user is Map && 
+          user['full_name'] != null && 
+          user['full_name'].toString().isNotEmpty
+        ).toList();
+        
+        if (validTags.isNotEmpty) {
+          if (validTags.length == 1) {
+            tagsText = '\n📍 Con: ${validTags[0]['full_name']}';
+          } else if (validTags.length == 2) {
+            tagsText = '\n📍 Con: ${validTags[0]['full_name']} y ${validTags[1]['full_name']}';
+          } else {
+            tagsText = '\n📍 Con: ${validTags[0]['full_name']}, ${validTags[1]['full_name']} y ${validTags.length - 2} personas más';
+          }
+        }
+      }
+      
+      // Texto promocional atractivo en inglés
+      final shareText = '''
+✈️ Discover this amazing travel experience shared by $userName!
+
+$postContent$tagsText
+
+━━━━━━━━━━━━━━━━━━━━━━
+🌍 Ready for your next adventure?
+
+With LandGo Travel, your travel dreams come true:
+✅ Flights to the best destinations
+✅ Luxury hotels at incredible prices
+✅ Unique and unforgettable experiences
+✅ Points and rewards system
+🔥 UP TO 70% OFF on flights, hotels & more!
+
+💎 Join our community of travelers and start exploring the world with us.
+
+📱 Download the app or visit:
+👉 www.landgotravel.com
+
+🎁 Exclusive member benefits & discounts await you!
+
+#LandGoTravel #TravelWithUs #UniqueExperiences #YourNextAdventure #TravelDeals #70PercentOff
+''';
+
+      await Share.share(
+        shareText,
+        subject: '✈️ Amazing Travel Experience - LandGo Travel',
+      );
+      
+      print('✅ Post compartido exitosamente');
+      
+    } catch (e) {
+      print('❌ Error compartiendo post: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al compartir: $e'),
+            backgroundColor: const Color(0xFFDC2626),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
   }
 
   /// ✅ CONSTRUIR TARJETA DE POST
@@ -4723,7 +4932,7 @@ class _TravelFeedPageWidgetState extends State<TravelFeedPageWidget> {
                   color: Colors.white70,
                   size: 20,
                 ),
-                onPressed: () {},
+                onPressed: () => _sharePost(post),
               ),
               const Spacer(),
               IconButton(

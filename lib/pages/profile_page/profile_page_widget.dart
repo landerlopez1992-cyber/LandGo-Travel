@@ -487,7 +487,7 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
             } else if (title == 'My Referrals') {
               // TODO: Navigate to My Referrals
             } else if (title == 'Support Chat') {
-              // TODO: Navigate to Support Chat
+              context.pushNamed('SupportChatPage');
             }
           },
           child: Container(
