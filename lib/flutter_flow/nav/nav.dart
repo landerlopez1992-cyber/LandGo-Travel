@@ -180,6 +180,16 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => MyProfilePageWidget(),
         ),
         FFRoute(
+          name: PaymentMethodsPageWidget.routeName,
+          path: PaymentMethodsPageWidget.routePath,
+          builder: (context, params) => PaymentMethodsPageWidget(),
+        ),
+        FFRoute(
+          name: AddCardPageWidget.routeName,
+          path: AddCardPageWidget.routePath,
+          builder: (context, params) => AddCardPageWidget(),
+        ),
+        FFRoute(
           name: ProfilePageWidget.routeName,
           path: ProfilePageWidget.routePath,
           builder: (context, params) => ProfilePageWidget(),

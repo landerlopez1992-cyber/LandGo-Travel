@@ -17,6 +17,8 @@ export '/pages/transaction_detail_page/transaction_detail_page_widget.dart' show
 export '/pages/travel_feed_page/travel_feed_page_widget.dart' show TravelFeedPageWidget;
 // NOTA: WalletPageWidget eliminado - solo usamos MyWalletPageWidget
 export '/pages/my_profile_page/my_profile_page_widget.dart' show MyProfilePageWidget;
+export '/pages/payment_methods_page/payment_methods_page_widget.dart' show PaymentMethodsPageWidget;
+export '/pages/add_card_page/add_card_page_widget.dart' show AddCardPageWidget;
 export '/pages/profile_page/profile_page_widget.dart' show ProfilePageWidget;
 export '/user/my_favorites_page/my_favorites_page_widget.dart' show MyFavoritesPageWidget;
 export '/user/my_trip_page/my_trip_page_widget.dart' show MyTripPageWidget;

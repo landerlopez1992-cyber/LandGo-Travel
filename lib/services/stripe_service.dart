@@ -334,4 +334,94 @@ class StripeService {
       };
     }
   }
+
+  /// ✅ LISTAR PAYMENT METHODS DE UN CUSTOMER
+  static Future<List<Map<String, dynamic>>> listPaymentMethods({
+    required String customerId,
+  }) async {
+    try {
+      print('🔍 DEBUG: Listando Payment Methods via Edge Function...');
+      print('🔍 DEBUG: Customer ID: $customerId');
+      
+      // Obtener token de Supabase
+      final session = Supabase.instance.client.auth.currentSession;
+      final accessToken = session?.accessToken ?? '';
+      
+      final response = await http.post(
+        Uri.parse(_edgeFunctionUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        },
+        body: jsonEncode({
+          'action': 'list_payment_methods',
+          'customerId': customerId,
+        }),
+      );
+
+      print('🔍 DEBUG: Response status: ${response.statusCode}');
+      print('🔍 DEBUG: Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          final paymentMethods = List<Map<String, dynamic>>.from(
+            data['paymentMethods'] ?? [],
+          );
+          print('✅ Payment Methods listados: ${paymentMethods.length} tarjetas');
+          return paymentMethods;
+        } else {
+          throw Exception('Error: ${data['error']}');
+        }
+      } else {
+        throw Exception('HTTP error: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      print('❌ Error listando Payment Methods: $e');
+      throw Exception('Failed to list payment methods: $e');
+    }
+  }
+
+  /// ✅ ELIMINAR (DETACH) PAYMENT METHOD
+  static Future<void> detachPaymentMethod({
+    required String paymentMethodId,
+  }) async {
+    try {
+      print('🔍 DEBUG: Eliminando Payment Method via Edge Function...');
+      print('🔍 DEBUG: Payment Method ID: $paymentMethodId');
+      
+      // Obtener token de Supabase
+      final session = Supabase.instance.client.auth.currentSession;
+      final accessToken = session?.accessToken ?? '';
+      
+      final response = await http.post(
+        Uri.parse(_edgeFunctionUrl),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $accessToken',
+        },
+        body: jsonEncode({
+          'action': 'detach_payment_method',
+          'paymentMethodId': paymentMethodId,
+        }),
+      );
+
+      print('🔍 DEBUG: Response status: ${response.statusCode}');
+      print('🔍 DEBUG: Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+          print('✅ Payment Method eliminado exitosamente');
+        } else {
+          throw Exception('Error: ${data['error']}');
+        }
+      } else {
+        throw Exception('HTTP error: ${response.statusCode} - ${response.body}');
+      }
+    } catch (e) {
+      print('❌ Error eliminando Payment Method: $e');
+      throw Exception('Failed to detach payment method: $e');
+    }
+  }
 }

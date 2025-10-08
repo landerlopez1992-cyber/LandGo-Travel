@@ -498,16 +498,24 @@ class _AllTransactionsPageWidgetState extends State<AllTransactionsPageWidget> {
               Text(
                 '${isSent ? '-' : '+'}\$${amount.abs().toStringAsFixed(2)}',
                 style: GoogleFonts.outfit(
-                  color: isSent ? const Color(0xFFDC2626) : const Color(0xFF4CAF50),
+                  color: isSent 
+                    ? const Color(0xFFDC2626) // Rojo para enviado
+                    : isStripePayment 
+                      ? const Color(0xFF4DD0E1) // Turquesa para tarjeta
+                      : const Color(0xFF4CAF50), // Verde para recibido
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
-                isSent ? 'Enviado' : 'Recibido',
+                isSent ? 'Enviado' : isStripePayment ? 'Tarjeta' : 'Recibido',
                 style: GoogleFonts.outfit(
-                  color: isSent ? const Color(0xFFDC2626) : const Color(0xFF4CAF50),
+                  color: isSent 
+                    ? const Color(0xFFDC2626) // Rojo para enviado
+                    : isStripePayment 
+                      ? const Color(0xFF4DD0E1) // Turquesa para tarjeta
+                      : const Color(0xFF4CAF50), // Verde para recibido
                   fontSize: 10,
                   fontWeight: FontWeight.w500,
                 ),

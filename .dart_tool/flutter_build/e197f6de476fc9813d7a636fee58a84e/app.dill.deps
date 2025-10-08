@@ -886,6 +886,12 @@ file:///Users/cubcolexpress/.pub-cache/hosted/pub.dev/rxdart-0.27.7/lib/streams.
 file:///Users/cubcolexpress/.pub-cache/hosted/pub.dev/rxdart-0.27.7/lib/subjects.dart
 file:///Users/cubcolexpress/.pub-cache/hosted/pub.dev/rxdart-0.27.7/lib/transformers.dart
 file:///Users/cubcolexpress/.pub-cache/hosted/pub.dev/rxdart-0.27.7/lib/utils.dart
+file:///Users/cubcolexpress/.pub-cache/hosted/pub.dev/share_plus-10.1.3/lib/share_plus.dart
+file:///Users/cubcolexpress/.pub-cache/hosted/pub.dev/share_plus-10.1.3/lib/src/share_plus_linux.dart
+file:///Users/cubcolexpress/.pub-cache/hosted/pub.dev/share_plus-10.1.3/lib/src/share_plus_web.dart
+file:///Users/cubcolexpress/.pub-cache/hosted/pub.dev/share_plus_platform_interface-5.0.2/lib/method_channel/method_channel_share.dart
+file:///Users/cubcolexpress/.pub-cache/hosted/pub.dev/share_plus_platform_interface-5.0.2/lib/platform_interface/share_plus_platform.dart
+file:///Users/cubcolexpress/.pub-cache/hosted/pub.dev/share_plus_platform_interface-5.0.2/lib/share_plus_platform_interface.dart
 file:///Users/cubcolexpress/.pub-cache/hosted/pub.dev/shared_preferences-2.5.3/lib/shared_preferences.dart
 file:///Users/cubcolexpress/.pub-cache/hosted/pub.dev/shared_preferences-2.5.3/lib/src/shared_preferences_async.dart
 file:///Users/cubcolexpress/.pub-cache/hosted/pub.dev/shared_preferences-2.5.3/lib/src/shared_preferences_devtools_extension_data.dart
@@ -1181,6 +1187,8 @@ file:///Users/cubcolexpress/.pub-cache/hosted/pub.dev/url_launcher-6.3.1/lib/src
 file:///Users/cubcolexpress/.pub-cache/hosted/pub.dev/url_launcher-6.3.1/lib/src/url_launcher_uri.dart
 file:///Users/cubcolexpress/.pub-cache/hosted/pub.dev/url_launcher-6.3.1/lib/url_launcher.dart
 file:///Users/cubcolexpress/.pub-cache/hosted/pub.dev/url_launcher-6.3.1/lib/url_launcher_string.dart
+file:///Users/cubcolexpress/.pub-cache/hosted/pub.dev/url_launcher_linux-3.2.1/lib/src/messages.g.dart
+file:///Users/cubcolexpress/.pub-cache/hosted/pub.dev/url_launcher_linux-3.2.1/lib/url_launcher_linux.dart
 file:///Users/cubcolexpress/.pub-cache/hosted/pub.dev/url_launcher_platform_interface-2.3.2/lib/link.dart
 file:///Users/cubcolexpress/.pub-cache/hosted/pub.dev/url_launcher_platform_interface-2.3.2/lib/method_channel_url_launcher.dart
 file:///Users/cubcolexpress/.pub-cache/hosted/pub.dev/url_launcher_platform_interface-2.3.2/lib/src/types.dart
@@ -1549,6 +1557,8 @@ file:///Users/cubcolexpress/Desktop/land_go_travel/lib/membership_page/membershi
 file:///Users/cubcolexpress/Desktop/land_go_travel/lib/membership_page/membership_page/membership_page_widget.dart
 file:///Users/cubcolexpress/Desktop/land_go_travel/lib/membership_page/membership_selection_page/membership_selection_page_model.dart
 file:///Users/cubcolexpress/Desktop/land_go_travel/lib/membership_page/membership_selection_page/membership_selection_page_widget.dart
+file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/add_card_page/add_card_page_model.dart
+file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/add_card_page/add_card_page_widget.dart
 file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/all_transactions_page/all_transactions_page_model.dart
 file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/all_transactions_page/all_transactions_page_widget.dart
 file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/booking_page/booking_page_model.dart
@@ -1573,6 +1583,8 @@ file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/payment_cards_page/
 file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/payment_cards_page/payment_cards_page_widget.dart
 file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/payment_failed_pag/payment_failed_pag_model.dart
 file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/payment_failed_pag/payment_failed_pag_widget.dart
+file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/payment_methods_page/payment_methods_page_model.dart
+file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/payment_methods_page/payment_methods_page_widget.dart
 file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/privacy_policy_page/privacy_policy_page_model.dart
 file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/privacy_policy_page/privacy_policy_page_widget.dart
 file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/product_detail_page/product_detail_page_model.dart
@@ -1589,6 +1601,8 @@ file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/sign_up_page/sign_u
 file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/sign_up_page/sign_up_page_widget.dart
 file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/terms_conditions_page/terms_conditions_page_model.dart
 file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/terms_conditions_page/terms_conditions_page_widget.dart
+file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/transaction_detail_page/transaction_detail_page_model.dart
+file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/transaction_detail_page/transaction_detail_page_widget.dart
 file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/transfer_money_page/transfer_money_page_model.dart
 file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/transfer_money_page/transfer_money_page_widget.dart
 file:///Users/cubcolexpress/Desktop/land_go_travel/lib/pages/transfer_success_page/transfer_success_page_model.dart

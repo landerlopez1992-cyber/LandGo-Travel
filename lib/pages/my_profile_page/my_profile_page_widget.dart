@@ -72,6 +72,13 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
     WidgetsBinding.instance.addPostFrameCallback((_) => setState(() {}));
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Recargar datos financieros cuando el usuario regrese a la pantalla
+    _loadFinancialData();
+  }
+
 
   @override
   void dispose() {
@@ -217,7 +224,7 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
     }
   }
 
-  // Método para cargar datos financieros del usuario
+  // Método para cargar datos financieros del usuario - BALANCE Y CASHBACK SEPARADOS
   Future<void> _loadFinancialData() async {
     try {
       setState(() {
@@ -230,47 +237,66 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
         return;
       }
 
-      print('Loading financial data for user: ${currentUser.id}');
+      print('🔍 Loading financial data for user: ${currentUser.id}');
 
-      // Cargar datos de la tabla user_wallets
-      final walletResponse = await SupaFlow.client
-          .from('user_wallets')
-          .select('balance, points, cashback')
-          .eq('user_id', currentUser.id)
+      // 1. CARGAR BALANCE DE WALLET (profiles.cashback_balance)
+      final profileResponse = await SupaFlow.client
+          .from('profiles')
+          .select('cashback_balance')
+          .eq('id', currentUser.id)
           .maybeSingle();
 
-      print('Wallet data: $walletResponse');
+      print('📊 Profile data: $profileResponse');
 
-      if (walletResponse != null) {
-        setState(() {
-          _accountBalance = (walletResponse['balance'] ?? 0.0).toDouble();
-          _points = walletResponse['points'] ?? 0;
-          _cashback = (walletResponse['cashback'] ?? 0.0).toDouble();
-        });
-        print('Financial data loaded: Balance=$_accountBalance, Points=$_points, Cashback=$_cashback');
-      } else {
-        // Si no existe wallet, crear uno por defecto
-        print('Creating default wallet for user');
-        await SupaFlow.client
-            .from('user_wallets')
-            .insert({
-              'user_id': currentUser.id,
-              'balance': 0.0,
-              'points': 0,
-              'cashback': 0.0,
-              'created_at': DateTime.now().toIso8601String(),
-              'updated_at': DateTime.now().toIso8601String(),
-            });
+      final walletBalance = (profileResponse?['cashback_balance'] ?? 0.0).toDouble();
 
-        setState(() {
-          _accountBalance = 0.0;
-          _points = 0;
-          _cashback = 0.0;
-        });
-        print('Default wallet created with zero values');
+      // 2. CALCULAR CASHBACK TOTAL (sumando cashback_transactions)
+      final cashbackResponse = await SupaFlow.client
+          .from('cashback_transactions')
+          .select('amount')
+          .eq('user_id', currentUser.id)
+          .eq('status', 'completed');
+
+      print('💰 Cashback transactions: $cashbackResponse');
+
+      double totalCashback = 0.0;
+      if (cashbackResponse.isNotEmpty) {
+        for (var transaction in cashbackResponse) {
+          final amount = (transaction['amount'] ?? 0.0);
+          totalCashback += amount is int ? amount.toDouble() : amount.toDouble();
+        }
       }
+
+      print('💵 Total cashback earned: \$${totalCashback.toStringAsFixed(2)}');
+
+      // 3. CALCULAR PUNTOS (sumando points_earned de payments)
+      final pointsResponse = await SupaFlow.client
+          .from('payments')
+          .select('points_earned')
+          .eq('user_id', currentUser.id)
+          .eq('status', 'completed');
+
+      print('⭐ Points transactions: $pointsResponse');
+
+      int totalPoints = 0;
+      if (pointsResponse.isNotEmpty) {
+        for (var transaction in pointsResponse) {
+          final points = transaction['points_earned'] ?? 0;
+          totalPoints += points is int ? points : (points as num).toInt();
+        }
+      }
+
+      print('⭐ Total points earned: $totalPoints');
+
+      setState(() {
+        _accountBalance = walletBalance; // Balance de wallet
+        _points = totalPoints; // Puntos ganados
+        _cashback = totalCashback; // Cashback ganado (DIFERENTE del balance)
+      });
+
+      print('✅ Financial data loaded: Balance=\$${_accountBalance.toStringAsFixed(2)}, Points=$_points, Cashback=\$${_cashback.toStringAsFixed(2)}');
     } catch (e) {
-      print('Error loading financial data: $e');
+      print('❌ Error loading financial data: $e');
       // En caso de error, mantener valores por defecto
       setState(() {
         _accountBalance = 0.0;
@@ -1837,19 +1863,19 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
                       'Balance',
                       '\$${_accountBalance.toStringAsFixed(2)}',
                       Icons.account_balance_wallet,
-                      const Color(0xFF4DD0E1), // TURQUESA COMO EN CAPTURA
+                      const Color(0xFF4DD0E1), // TURQUESA LANDGO TRAVEL
                     ),
                     _buildBalanceCard(
                       'Points',
                       _points.toString(),
                       Icons.star,
-                      const Color(0xFFFF9800), // NARANJA COMO EN CAPTURA
+                      const Color(0xFF4DD0E1), // TURQUESA LANDGO TRAVEL
                     ),
                     _buildBalanceCard(
                       'Cashback',
                       '\$${_cashback.toStringAsFixed(2)}',
                       Icons.attach_money,
-                      const Color(0xFF4CAF50), // VERDE COMO EN CAPTURA
+                      const Color(0xFF4DD0E1), // TURQUESA LANDGO TRAVEL
                     ),
                   ],
                 ),

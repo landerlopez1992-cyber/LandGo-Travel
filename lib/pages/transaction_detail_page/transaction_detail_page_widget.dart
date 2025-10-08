@@ -221,8 +221,10 @@ class _TransactionDetailPageWidgetState
                       '${isSent ? '-' : '+'}\$${amount.abs().toStringAsFixed(2)}',
                       style: GoogleFonts.outfit(
                         color: isSent
-                            ? const Color(0xFFDC2626)
-                            : const Color(0xFF4CAF50),
+                            ? const Color(0xFFDC2626) // Rojo para enviado
+                            : isStripePayment 
+                              ? const Color(0xFF4DD0E1) // Turquesa para tarjeta
+                              : const Color(0xFF4CAF50), // Verde para recibido
                         fontSize: 48,
                         fontWeight: FontWeight.bold,
                       ),

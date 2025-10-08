@@ -483,7 +483,11 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                 context.pushNamed('MyFavoritesPage');
               }
             } else if (title == 'Payment Methods') {
-              // TODO: Navigate to Payment Methods
+              print('Payment Methods menu item tapped');
+              await Future.delayed(Duration(milliseconds: 100));
+              if (mounted) {
+                context.pushNamed('PaymentMethodsPage'); // CONECTAR A PAYMENT METHODS
+              }
             } else if (title == 'My Referrals') {
               // TODO: Navigate to My Referrals
             } else if (title == 'Support Chat') {
