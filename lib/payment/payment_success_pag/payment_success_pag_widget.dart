@@ -98,19 +98,29 @@ class _PaymentSuccessPagWidgetState extends State<PaymentSuccessPagWidget> {
     try {
       print('🔍 DEBUG: Starting transaction insertion...');
       
-      // 1) Insertar transacción en payments (dinero agregado via tarjeta)
+      // 1) Calcular el monto sin fee de procesamiento
+      // _amount incluye el 3% de fee, necesitamos el monto original
+      // Si total = original * 1.03, entonces original = total / 1.03
+      final amountWithoutFee = _amount / 1.03;
+      final processingFee = _amount - amountWithoutFee;
+      
+      print('🔍 DEBUG: Total paid: \$$_amount');
+      print('🔍 DEBUG: Amount without fee: \$${amountWithoutFee.toStringAsFixed(2)}');
+      print('🔍 DEBUG: Processing fee (3%): \$${processingFee.toStringAsFixed(2)}');
+      
+      // 2) Insertar transacción en payments (dinero agregado via tarjeta)
       final transactionId = (_chargeId != 'N/A' && _chargeId.isNotEmpty)
           ? _chargeId
           : _paymentIntentId;
 
       final insertData = {
         'user_id': user.id,
-        'amount': _amount, // positivo: top-up
+        'amount': amountWithoutFee, // Solo el monto sin fee va a la wallet
         'currency': _currency,
         'status': 'completed',
         'payment_method': 'stripe_card',
         'transaction_id': transactionId,
-        'description': 'Wallet top-up via ${_cardBrand.toUpperCase()} **** ${_cardLast4}',
+        'description': 'Wallet top-up via ${_cardBrand.toUpperCase()} **** ${_cardLast4} (Fee: \$${processingFee.toStringAsFixed(2)})',
         'related_type': 'card_deposit',
       };
 
@@ -124,8 +134,8 @@ class _PaymentSuccessPagWidgetState extends State<PaymentSuccessPagWidget> {
 
       print('✅ Inserted card payment into payments: $insertRes');
 
-      // 2) Actualizar el balance del usuario en profiles.cashback_balance
-      print('🔍 DEBUG: Updating cashback_balance...');
+      // 3) Actualizar el balance del usuario en profiles.cashback_balance
+      print('🔍 DEBUG: Updating cashback_balance with amount: \$${amountWithoutFee.toStringAsFixed(2)}');
       
       final profile = await Supabase.instance.client
           .from('profiles')
@@ -134,9 +144,9 @@ class _PaymentSuccessPagWidgetState extends State<PaymentSuccessPagWidget> {
           .single();
 
       final currentBalance = (profile['cashback_balance'] as num?)?.toDouble() ?? 0.0;
-      final newBalance = currentBalance + _amount;
+      final newBalance = currentBalance + amountWithoutFee;
 
-      print('🔍 DEBUG: Current balance: $currentBalance, New balance: $newBalance');
+      print('🔍 DEBUG: Current balance: $currentBalance, New balance: ${newBalance.toStringAsFixed(2)}');
 
       final updateRes = await Supabase.instance.client
           .from('profiles')
