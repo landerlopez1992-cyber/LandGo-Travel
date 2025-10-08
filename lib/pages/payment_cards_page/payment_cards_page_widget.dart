@@ -1490,19 +1490,33 @@ class _PaymentProcessingModalState extends State<_PaymentProcessingModal> {
       print('🔍 DEBUG: Amount: ${widget.amount}');
       print('🔍 DEBUG: Selected Card: ${widget.selectedCard}');
       
-      // Obtener el Customer ID y PaymentMethod ID de la tarjeta seleccionada
-      final stripeCustomerId = widget.selectedCard['stripe_customer_id'] as String?;
-      final paymentMethodId = widget.selectedCard['stripe_payment_method_id'] as String?;
+      // Obtener el PaymentMethod ID de la tarjeta seleccionada (estructura de Stripe)
+      final paymentMethodId = widget.selectedCard['id'] as String?;
       
-      print('🔍 DEBUG: Stripe Customer ID: $stripeCustomerId');
       print('🔍 DEBUG: Payment Method ID: $paymentMethodId');
-      
-      if (stripeCustomerId == null || stripeCustomerId.isEmpty) {
-        throw Exception('No Stripe Customer ID found. Please add your card again.');
-      }
       
       if (paymentMethodId == null || paymentMethodId.isEmpty) {
         throw Exception('No Payment Method ID found. Please add your card again.');
+      }
+      
+      // Obtener el Customer ID del perfil del usuario
+      final currentUser = SupaFlow.client.auth.currentUser;
+      if (currentUser == null) {
+        throw Exception('User not logged in');
+      }
+      
+      final profileResponse = await SupaFlow.client
+          .from('profiles')
+          .select('stripe_customer_id')
+          .eq('id', currentUser.id)
+          .maybeSingle();
+      
+      final stripeCustomerId = profileResponse?['stripe_customer_id'];
+      
+      print('🔍 DEBUG: Stripe Customer ID: $stripeCustomerId');
+      
+      if (stripeCustomerId == null || stripeCustomerId.isEmpty) {
+        throw Exception('No Stripe Customer ID found. Please add your card again.');
       }
       
       // Procesar el pago con datos reales
