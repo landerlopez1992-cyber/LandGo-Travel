@@ -34,7 +34,7 @@ class _AddCardPageWidgetState extends State<AddCardPageWidget> {
   late AddCardPageModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
-  final GlobalKey<CardFieldState> _cardFieldKey = GlobalKey<CardFieldState>();
+  final GlobalKey _cardFieldKey = GlobalKey();
   bool _isLoading = false;
   bool _cardComplete = false;
   String? _cardholderNameError;
