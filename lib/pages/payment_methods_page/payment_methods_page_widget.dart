@@ -911,52 +911,52 @@ class _PaymentMethodsPageWidgetState extends State<PaymentMethodsPageWidget> {
             // Botón Premium - Diseño V2
             Container(
               width: double.infinity,
-              height: 68,
+              height: 56,
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
                   colors: [Color(0xFF4DD0E1), Color(0xFF26C6DA)],
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                 ),
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF4DD0E1).withOpacity(0.5),
-                    blurRadius: 25,
-                    offset: const Offset(0, 12),
-                    spreadRadius: -3,
+                    color: const Color(0xFF4DD0E1).withOpacity(0.4),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                    spreadRadius: -2,
                   ),
                 ],
               ),
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  borderRadius: BorderRadius.circular(22),
+                  borderRadius: BorderRadius.circular(20),
                   onTap: _addNewCard,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Container(
-                        width: 44,
-                        height: 44,
+                        width: 38,
+                        height: 38,
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.25),
-                          borderRadius: BorderRadius.circular(14),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                         child: const Icon(
                           Icons.add_card_rounded,
                           color: Colors.white,
-                          size: 26,
+                          size: 22,
                         ),
                       ),
-                      const SizedBox(width: 14),
+                      const SizedBox(width: 12),
                       Text(
                         'Add Your First Card',
                         style: GoogleFonts.outfit(
                           color: Colors.white,
-                          fontSize: 19,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: 0.3,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.2,
                         ),
                       ),
                     ],
@@ -989,52 +989,52 @@ class _PaymentMethodsPageWidgetState extends State<PaymentMethodsPageWidget> {
           padding: const EdgeInsets.all(20.0),
           child: Container(
             width: double.infinity,
-            height: 68,
+            height: 56,
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 colors: [Color(0xFF4DD0E1), Color(0xFF26C6DA)],
                 begin: Alignment.centerLeft,
                 end: Alignment.centerRight,
               ),
-              borderRadius: BorderRadius.circular(22),
+              borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF4DD0E1).withOpacity(0.5),
-                  blurRadius: 25,
-                  offset: const Offset(0, 12),
-                  spreadRadius: -3,
+                  color: const Color(0xFF4DD0E1).withOpacity(0.4),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                  spreadRadius: -2,
                 ),
               ],
             ),
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                borderRadius: BorderRadius.circular(22),
+                borderRadius: BorderRadius.circular(20),
                 onTap: _addNewCard,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Container(
-                      width: 44,
-                      height: 44,
+                      width: 38,
+                      height: 38,
                       decoration: BoxDecoration(
                         color: Colors.white.withOpacity(0.25),
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
                         Icons.add_card_rounded,
                         color: Colors.white,
-                        size: 26,
+                        size: 22,
                       ),
                     ),
-                    const SizedBox(width: 14),
+                    const SizedBox(width: 12),
                     Text(
                       'Add New Card',
                       style: GoogleFonts.outfit(
                         color: Colors.white,
-                        fontSize: 19,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.3,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.2,
                       ),
                     ),
                   ],
