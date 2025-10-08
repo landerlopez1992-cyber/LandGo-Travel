@@ -42,12 +42,51 @@ class StripeService {
     try {
       print('🔍 DEBUG: Creando PaymentMethod desde CardField (SDK Stripe)...');
 
+      // Obtener datos del perfil del usuario para billing_details completos
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      if (currentUser == null) {
+        throw Exception('User not logged in');
+      }
+
+      print('🔍 DEBUG: Obteniendo perfil del usuario: ${currentUser.id}');
+      
+      final profileResponse = await Supabase.instance.client
+          .from('profiles')
+          .select('email, full_name, phone, billing_address')
+          .eq('id', currentUser.id)
+          .maybeSingle();
+
+      print('🔍 DEBUG: Perfil obtenido: $profileResponse');
+
+      final userEmail = profileResponse?['email'] ?? currentUser.email ?? '';
+      final userPhone = profileResponse?['phone'] ?? '';
+      final billingAddress = profileResponse?['billing_address'] as Map<String, dynamic>? ?? {};
+
+      print('🔍 DEBUG: Email del usuario: $userEmail');
+      print('🔍 DEBUG: Teléfono del usuario: $userPhone');
+      print('🔍 DEBUG: Dirección de facturación: $billingAddress');
+
+      // Crear BillingDetails con información completa
+      final billingDetails = BillingDetails(
+        name: cardholderName,
+        email: userEmail.isNotEmpty ? userEmail : null,
+        phone: userPhone.isNotEmpty ? userPhone : null,
+        address: billingAddress.isNotEmpty ? Address(
+          line1: billingAddress['line1'],
+          line2: billingAddress['line2'],
+          city: billingAddress['city'],
+          state: billingAddress['state'],
+          postalCode: billingAddress['postal_code'],
+          country: billingAddress['country'],
+        ) : null,
+      );
+
+      print('🔍 DEBUG: BillingDetails creado: $billingDetails');
+
       final paymentMethod = await Stripe.instance.createPaymentMethod(
         params: PaymentMethodParams.card(
           paymentMethodData: PaymentMethodData(
-            billingDetails: BillingDetails(
-              name: cardholderName,
-            ),
+            billingDetails: billingDetails,
           ),
         ),
       );
@@ -65,6 +104,16 @@ class StripeService {
         },
         'billing_details': {
           'name': paymentMethod.billingDetails?.name,
+          'email': paymentMethod.billingDetails?.email,
+          'phone': paymentMethod.billingDetails?.phone,
+          'address': paymentMethod.billingDetails?.address != null ? {
+            'line1': paymentMethod.billingDetails!.address!.line1,
+            'line2': paymentMethod.billingDetails!.address!.line2,
+            'city': paymentMethod.billingDetails!.address!.city,
+            'state': paymentMethod.billingDetails!.address!.state,
+            'postal_code': paymentMethod.billingDetails!.address!.postalCode,
+            'country': paymentMethod.billingDetails!.address!.country,
+          } : null,
         },
       };
     } catch (e) {
@@ -85,13 +134,52 @@ class StripeService {
     try {
       print('🔍 DEBUG: Creando PaymentMethod REAL con Stripe SDK...');
       
+      // Obtener datos del perfil del usuario para billing_details completos
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      if (currentUser == null) {
+        throw Exception('User not logged in');
+      }
+
+      print('🔍 DEBUG: Obteniendo perfil del usuario: ${currentUser.id}');
+      
+      final profileResponse = await Supabase.instance.client
+          .from('profiles')
+          .select('email, full_name, phone, billing_address')
+          .eq('id', currentUser.id)
+          .maybeSingle();
+
+      print('🔍 DEBUG: Perfil obtenido: $profileResponse');
+
+      final userEmail = profileResponse?['email'] ?? currentUser.email ?? '';
+      final userPhone = profileResponse?['phone'] ?? '';
+      final billingAddress = profileResponse?['billing_address'] as Map<String, dynamic>? ?? {};
+
+      print('🔍 DEBUG: Email del usuario: $userEmail');
+      print('🔍 DEBUG: Teléfono del usuario: $userPhone');
+      print('🔍 DEBUG: Dirección de facturación: $billingAddress');
+
+      // Crear BillingDetails con información completa
+      final billingDetails = BillingDetails(
+        name: cardholderName,
+        email: userEmail.isNotEmpty ? userEmail : null,
+        phone: userPhone.isNotEmpty ? userPhone : null,
+        address: billingAddress.isNotEmpty ? Address(
+          line1: billingAddress['line1'],
+          line2: billingAddress['line2'],
+          city: billingAddress['city'],
+          state: billingAddress['state'],
+          postalCode: billingAddress['postal_code'],
+          country: billingAddress['country'],
+        ) : null,
+      );
+
+      print('🔍 DEBUG: BillingDetails creado: $billingDetails');
+      
       // Crear PaymentMethod usando Stripe SDK (REAL)
       final paymentMethod = await Stripe.instance.createPaymentMethod(
         params: PaymentMethodParams.card(
           paymentMethodData: PaymentMethodData(
-            billingDetails: BillingDetails(
-              name: cardholderName,
-            ),
+            billingDetails: billingDetails,
           ),
         ),
       );
@@ -110,6 +198,16 @@ class StripeService {
         },
         'billing_details': {
           'name': paymentMethod.billingDetails?.name,
+          'email': paymentMethod.billingDetails?.email,
+          'phone': paymentMethod.billingDetails?.phone,
+          'address': paymentMethod.billingDetails?.address != null ? {
+            'line1': paymentMethod.billingDetails!.address!.line1,
+            'line2': paymentMethod.billingDetails!.address!.line2,
+            'city': paymentMethod.billingDetails!.address!.city,
+            'state': paymentMethod.billingDetails!.address!.state,
+            'postal_code': paymentMethod.billingDetails!.address!.postalCode,
+            'country': paymentMethod.billingDetails!.address!.country,
+          } : null,
         },
       };
     } catch (e) {
