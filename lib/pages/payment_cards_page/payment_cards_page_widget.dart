@@ -1507,8 +1507,8 @@ class _PaymentProcessingModalState extends State<_PaymentProcessingModal> {
             MaterialPageRoute(
               builder: (context) => BillingAddressErrorPageWidget(
                 missingFields: missingFields.cast<String>(),
-                amount: _amount,
-                paymentMethod: _selectedPaymentMethod,
+                amount: widget.amount,
+                paymentMethod: widget.paymentMethod,
               ),
             ),
           );
