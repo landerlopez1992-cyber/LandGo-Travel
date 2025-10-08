@@ -266,6 +266,7 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
     final paymentSubtitle = paymentDetails['subtitle'] as String;
     final paymentIcon = paymentDetails['icon'] as IconData;
     final paymentColor = paymentDetails['color'] as Color;
+    final logoPath = paymentDetails['logoPath'] as String?;
     
     return Container(
       width: double.infinity,
@@ -284,16 +285,32 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: paymentColor.withOpacity(0.2),
+                  color: logoPath != null ? Colors.white : paymentColor.withOpacity(0.2),
                   shape: BoxShape.circle,
                 ),
-                child: Center(
-                  child: Icon(
-                    paymentIcon,
-                    color: paymentColor,
-                    size: 22,
-                  ),
-                ),
+                child: logoPath != null
+                    ? Padding(
+                        padding: const EdgeInsets.all(8),
+                        child: Image.asset(
+                          logoPath,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            // Fallback to icon if logo fails to load
+                            return Icon(
+                              paymentIcon,
+                              color: paymentColor,
+                              size: 22,
+                            );
+                          },
+                        ),
+                      )
+                    : Center(
+                        child: Icon(
+                          paymentIcon,
+                          color: paymentColor,
+                          size: 22,
+                        ),
+                      ),
               ),
               const SizedBox(width: 12),
               Column(
@@ -473,60 +490,70 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
         'name': 'Credit/Debit Card',
         'subtitle': 'Visa, Mastercard, Amex',
         'icon': Icons.credit_card,
+        'logoPath': null, // Use generic icon for cards
         'color': const Color(0xFF635BFF),
       },
       'apple_pay': {
         'name': 'Apple Pay',
         'subtitle': 'Quick and secure',
         'icon': Icons.apple,
+        'logoPath': 'assets/images/payment_logos/apple_pay_logo.png',
         'color': const Color(0xFF000000),
       },
       'google_pay': {
         'name': 'Google Pay',
         'subtitle': 'Fast checkout',
         'icon': Icons.account_balance_wallet,
+        'logoPath': 'assets/images/payment_logos/google_pay_logo.png',
         'color': const Color(0xFF4285F4),
       },
       'cashapp': {
         'name': 'Cash App Pay',
         'subtitle': 'Pay with Cash App',
         'icon': Icons.attach_money,
+        'logoPath': 'assets/images/payment_logos/cashapp_logo.png',
         'color': const Color(0xFF00D54B),
       },
       'klarna': {
         'name': 'Klarna',
         'subtitle': 'Pay in 4 payments',
         'icon': Icons.schedule,
+        'logoPath': 'assets/images/payment_logos/klarna_logo.png',
         'color': const Color(0xFFFFB3C7),
       },
       'afterpay_clearpay': {
         'name': 'Afterpay/Clearpay',
         'subtitle': '4 interest-free payments',
         'icon': Icons.payment,
+        'logoPath': 'assets/images/payment_logos/afterpay_logo.png',
         'color': const Color(0xFFB2FCE4),
       },
       'affirm': {
         'name': 'Affirm',
         'subtitle': 'Monthly payments',
         'icon': Icons.calendar_month,
+        'logoPath': 'assets/images/payment_logos/affirm_logo.png',
         'color': const Color(0xFF00AAC4),
       },
       'us_bank_account': {
         'name': 'ACH Direct Debit',
         'subtitle': 'Bank transfer',
         'icon': Icons.account_balance,
+        'logoPath': null, // Use generic icon for bank
         'color': const Color(0xFF4DD0E1),
       },
       'alipay': {
         'name': 'Alipay',
         'subtitle': 'Popular in Asia',
         'icon': Icons.payment,
+        'logoPath': 'assets/images/payment_logos/alipay_logo.png',
         'color': const Color(0xFF00A0E9),
       },
       'wechat_pay': {
         'name': 'WeChat Pay',
         'subtitle': 'China payment',
         'icon': Icons.chat,
+        'logoPath': 'assets/images/payment_logos/wechat_pay_logo.png',
         'color': const Color(0xFF09BB07),
       },
     };
@@ -783,6 +810,9 @@ class _PaymentMethodSelectorContentState extends State<_PaymentMethodSelectorCon
   }
 
   Widget _buildPaymentMethod(String title, String subtitle, IconData icon, bool isSelected, String methodId, Color brandColor) {
+    final paymentDetails = _getPaymentMethodDetails(methodId);
+    final logoPath = paymentDetails['logoPath'] as String?;
+    
     return GestureDetector(
       onTap: () {
         print('🔍 DEBUG: Tapped payment method: $methodId');
@@ -811,14 +841,30 @@ class _PaymentMethodSelectorContentState extends State<_PaymentMethodSelectorCon
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: brandColor.withOpacity(0.2),
+                color: logoPath != null ? Colors.white : brandColor.withOpacity(0.2),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                icon,
-                color: brandColor,
-                size: 22,
-              ),
+              child: logoPath != null
+                  ? Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Image.asset(
+                        logoPath,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          // Fallback to icon if logo fails to load
+                          return Icon(
+                            icon,
+                            color: brandColor,
+                            size: 22,
+                          );
+                        },
+                      ),
+                    )
+                  : Icon(
+                      icon,
+                      color: brandColor,
+                      size: 22,
+                    ),
             ),
             const SizedBox(width: 16),
             Expanded(
