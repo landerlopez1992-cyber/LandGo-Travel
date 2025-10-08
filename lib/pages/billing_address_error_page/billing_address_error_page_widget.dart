@@ -1,4 +1,3 @@
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import 'package:flutter/material.dart';
@@ -63,37 +62,39 @@ class _BillingAddressErrorPageWidgetState
             ),
             child: Column(
               children: [
-                // Header con botón de regreso
+                // Header sin botón de regreso
                 _buildHeader(),
                 
                 // Contenido principal
                 Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24.0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // Icono de error
-                        _buildErrorIcon(),
-                        const SizedBox(height: 32),
-                        
-                        // Título
-                        _buildTitle(),
-                        const SizedBox(height: 16),
-                        
-                        // Descripción
-                        _buildDescription(),
-                        const SizedBox(height: 24),
-                        
-                        // Campos faltantes
-                        if (widget.missingFields != null && widget.missingFields!.isNotEmpty)
-                          _buildMissingFields(),
-                        
-                        const SizedBox(height: 48),
-                        
-                        // Botones de acción
-                        _buildActionButtons(),
-                      ],
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Icono de error
+                          _buildErrorIcon(),
+                          const SizedBox(height: 24),
+                          
+                          // Título
+                          _buildTitle(),
+                          const SizedBox(height: 12),
+                          
+                          // Descripción
+                          _buildDescription(),
+                          const SizedBox(height: 20),
+                          
+                          // Campos faltantes
+                          if (widget.missingFields != null && widget.missingFields!.isNotEmpty)
+                            _buildMissingFields(),
+                          
+                          const SizedBox(height: 32),
+                          
+                          // Botones de acción
+                          _buildActionButtons(),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -108,51 +109,23 @@ class _BillingAddressErrorPageWidgetState
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Row(
-        children: [
-          // Botón de regreso
-          GestureDetector(
-            onTap: () {
-              Navigator.of(context).pop();
-            },
-            child: Container(
-              width: 44,
-              height: 44,
-              decoration: BoxDecoration(
-                color: const Color(0xFF2C2C2C),
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.1),
-                  width: 1,
-                ),
-              ),
-              child: const Icon(
-                Icons.arrow_back_ios_new_rounded,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
+      child: Center(
+        child: Text(
+          'Billing Address Required',
+          style: GoogleFonts.outfit(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
           ),
-          const SizedBox(width: 16),
-          
-          // Título del header
-          Text(
-            'Billing Address Required',
-            style: GoogleFonts.outfit(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildErrorIcon() {
     return Container(
-      width: 120,
-      height: 120,
+      width: 100,
+      height: 100,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -162,7 +135,7 @@ class _BillingAddressErrorPageWidgetState
             const Color(0xFF4DD0E1).withOpacity(0.05),
           ],
         ),
-        borderRadius: BorderRadius.circular(60),
+        borderRadius: BorderRadius.circular(50),
         border: Border.all(
           color: const Color(0xFF4DD0E1).withOpacity(0.3),
           width: 2,
@@ -170,16 +143,16 @@ class _BillingAddressErrorPageWidgetState
         boxShadow: [
           BoxShadow(
             color: const Color(0xFF4DD0E1).withOpacity(0.2),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-            spreadRadius: -5,
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+            spreadRadius: -3,
           ),
         ],
       ),
       child: const Icon(
         Icons.location_off_rounded,
         color: Color(0xFF4DD0E1),
-        size: 60,
+        size: 50,
       ),
     );
   }
