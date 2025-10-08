@@ -31,6 +31,7 @@ class _PaymentMethodsPageWidgetState extends State<PaymentMethodsPageWidget> {
   bool _isLoadingBillingAddress = false;
   Map<String, dynamic>? _billingAddress;
   bool _isEditingBillingAddress = false;
+  bool _hasBillingAddressChanges = false;
   
   // Controllers para el formulario de billing address
   final TextEditingController _nameController = TextEditingController();
@@ -47,7 +48,18 @@ class _PaymentMethodsPageWidgetState extends State<PaymentMethodsPageWidget> {
     _model = createModel(context, () => PaymentMethodsPageModel());
     _loadPaymentMethods();
     _loadBillingAddress();
+    _setupBillingAddressListeners();
     WidgetsBinding.instance.addPostFrameCallback((_) => setState(() {}));
+  }
+
+  void _setupBillingAddressListeners() {
+    _nameController.addListener(_checkForBillingAddressChanges);
+    _line1Controller.addListener(_checkForBillingAddressChanges);
+    _line2Controller.addListener(_checkForBillingAddressChanges);
+    _cityController.addListener(_checkForBillingAddressChanges);
+    _stateController.addListener(_checkForBillingAddressChanges);
+    _postalCodeController.addListener(_checkForBillingAddressChanges);
+    _countryController.addListener(_checkForBillingAddressChanges);
   }
 
   @override
@@ -396,6 +408,30 @@ class _PaymentMethodsPageWidgetState extends State<PaymentMethodsPageWidget> {
     _stateController.clear();
     _postalCodeController.clear();
     _countryController.clear();
+    _hasBillingAddressChanges = false;
+  }
+
+  void _checkForBillingAddressChanges() {
+    if (_billingAddress == null) {
+      _hasBillingAddressChanges = _nameController.text.isNotEmpty ||
+          _line1Controller.text.isNotEmpty ||
+          _line2Controller.text.isNotEmpty ||
+          _cityController.text.isNotEmpty ||
+          _stateController.text.isNotEmpty ||
+          _postalCodeController.text.isNotEmpty ||
+          _countryController.text.isNotEmpty;
+    } else {
+      _hasBillingAddressChanges = 
+          _nameController.text != (_billingAddress!['name'] ?? '') ||
+          _line1Controller.text != (_billingAddress!['line1'] ?? '') ||
+          _line2Controller.text != (_billingAddress!['line2'] ?? '') ||
+          _cityController.text != (_billingAddress!['city'] ?? '') ||
+          _stateController.text != (_billingAddress!['state'] ?? '') ||
+          _postalCodeController.text != (_billingAddress!['postal_code'] ?? '') ||
+          _countryController.text != (_billingAddress!['country'] ?? '');
+    }
+    
+    setState(() {});
   }
 
   // Modal de loading
@@ -1490,6 +1526,7 @@ class _PaymentMethodsPageWidgetState extends State<PaymentMethodsPageWidget> {
                     
                     setState(() {
                       _isEditingBillingAddress = true;
+                      _hasBillingAddressChanges = false; // Inicialmente no hay cambios
                     });
                   },
                   style: OutlinedButton.styleFrom(
@@ -1512,31 +1549,33 @@ class _PaymentMethodsPageWidgetState extends State<PaymentMethodsPageWidget> {
                 ),
               ),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: SizedBox(
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _saveBillingAddress,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4DD0E1),
-                    foregroundColor: Colors.black,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
+            if (_hasBillingAddressChanges) ...[
+              const SizedBox(width: 12),
+              Expanded(
+                child: SizedBox(
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: _saveBillingAddress,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF4DD0E1),
+                      foregroundColor: Colors.black,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      elevation: 0,
                     ),
-                    elevation: 0,
-                  ),
-                  child: Text(
-                    'Save',
-                    style: GoogleFonts.outfit(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
+                    child: Text(
+                      'Save',
+                      style: GoogleFonts.outfit(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
+            ],
           ],
         ),
       ],
