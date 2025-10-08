@@ -1499,27 +1499,16 @@ class _PaymentProcessingModalState extends State<_PaymentProcessingModal> {
         
         print('❌ Billing address validation failed: $message');
         
-        // Mostrar error y navegar a Payment Methods para completar billing address
+        // Navegar a pantalla de error profesional
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Please complete your billing address before making payments',
-                style: GoogleFonts.outfit(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              backgroundColor: const Color(0xFFDC2626),
-              behavior: SnackBarBehavior.floating,
-              action: SnackBarAction(
-                label: 'Complete',
-                textColor: Colors.white,
-                onPressed: () {
-                  Navigator.pushNamed(context, '/PaymentMethodsPage');
-                },
-              ),
-            ),
+          Navigator.pushNamed(
+            context, 
+            '/billingAddressErrorPage',
+            arguments: {
+              'missingFields': missingFields.join(','),
+              'amount': _amount,
+              'paymentMethod': _selectedPaymentMethod,
+            },
           );
         }
         return;

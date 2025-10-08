@@ -185,6 +185,20 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => PaymentMethodsPageWidget(),
         ),
         FFRoute(
+          name: 'BillingAddressErrorPage',
+          path: '/billingAddressErrorPage',
+          builder: (context, params) {
+            final missingFields = params.queryParams['missingFields']?.split(',') ?? [];
+            final amount = params.queryParams['amount'];
+            final paymentMethod = params.queryParams['paymentMethod'];
+            return BillingAddressErrorPageWidget(
+              missingFields: missingFields,
+              amount: amount,
+              paymentMethod: paymentMethod,
+            );
+          },
+        ),
+        FFRoute(
           name: AddCardPageWidget.routeName,
           path: AddCardPageWidget.routePath,
           builder: (context, params) => AddCardPageWidget(),
