@@ -83,6 +83,10 @@ class StripeService {
 
       print('🔍 DEBUG: BillingDetails creado: $billingDetails');
 
+      // Pequeño delay para asegurar que CardField esté listo
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      print('🔍 DEBUG: Creando PaymentMethod con Stripe SDK...');
       final paymentMethod = await Stripe.instance.createPaymentMethod(
         params: PaymentMethodParams.card(
           paymentMethodData: PaymentMethodData(

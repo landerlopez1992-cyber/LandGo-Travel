@@ -34,6 +34,7 @@ class _AddCardPageWidgetState extends State<AddCardPageWidget> {
   late AddCardPageModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
+  final GlobalKey<CardFieldState> _cardFieldKey = GlobalKey<CardFieldState>();
   bool _isLoading = false;
   bool _cardComplete = false;
   String? _cardholderNameError;
@@ -114,6 +115,18 @@ class _AddCardPageWidgetState extends State<AddCardPageWidget> {
 
       print('🔍 User ID: ${currentUser.id}');
       print('🔍 Cardholder Name: $cardholderName');
+
+      // VALIDAR QUE CARDFIELD ESTÉ COMPLETO
+      if (!_cardComplete) {
+        throw Exception('Please complete all card details before saving.');
+      }
+      
+      if (_cardFieldKey.currentState == null) {
+        throw Exception('Card field not ready. Please try again.');
+      }
+      
+      print('🔍 CardField state: ${_cardFieldKey.currentState}');
+      print('🔍 Card complete: $_cardComplete');
 
       // 1. CREAR PAYMENTMETHOD USANDO CARDFIELD (SDK STRIPE)
       print('🔍 Creating PaymentMethod with CardField...');
@@ -630,6 +643,7 @@ class _AddCardPageWidgetState extends State<AddCardPageWidget> {
             ] : [],
           ),
           child: CardField(
+            key: _cardFieldKey,
             onCardChanged: (card) {
               setState(() {
                 _cardComplete = card?.complete ?? false;
