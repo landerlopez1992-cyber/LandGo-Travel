@@ -9,6 +9,7 @@ import '/payment/payment_success_pag/payment_success_pag_widget.dart';
 import '/pages/payment_failed_pag/payment_failed_pag_widget.dart';
 import '/backend/supabase/supabase.dart';
 import '/services/stripe_service.dart';
+import '/pages/billing_address_error_page/billing_address_error_page_widget.dart';
 import 'payment_cards_page_model.dart';
 export 'payment_cards_page_model.dart';
 
@@ -1501,14 +1502,15 @@ class _PaymentProcessingModalState extends State<_PaymentProcessingModal> {
         
         // Navegar a pantalla de error profesional
         if (mounted) {
-          Navigator.pushNamed(
-            context, 
-            '/billingAddressErrorPage',
-            arguments: {
-              'missingFields': missingFields.join(','),
-              'amount': _amount,
-              'paymentMethod': _selectedPaymentMethod,
-            },
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => BillingAddressErrorPageWidget(
+                missingFields: missingFields.cast<String>(),
+                amount: _amount,
+                paymentMethod: _selectedPaymentMethod,
+              ),
+            ),
           );
         }
         return;
