@@ -433,8 +433,12 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
+            // Calcular el total con fees incluidos
+            final totalAmount = _calculateSubTotal();
+            
             print('🔍 DEBUG: Processing payment with method: $_selectedPaymentMethod');
-            print('🔍 DEBUG: Amount: $_amount');
+            print('🔍 DEBUG: Original Amount: $_amount');
+            print('🔍 DEBUG: Total Amount (with fees): $totalAmount');
             
             // Navegar a pantalla de tarjetas de pago
             Navigator.push(
@@ -443,7 +447,7 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
                 builder: (context) => PaymentCardsPageWidget(),
                 settings: RouteSettings(
                   arguments: {
-                    'amount': _amount,
+                    'amount': totalAmount, // Pasar el total con fees incluidos
                     'paymentMethod': _selectedPaymentMethod,
                   },
                 ),
