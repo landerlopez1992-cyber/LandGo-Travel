@@ -1,5 +1,7 @@
 import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
+import '/components/back_button_widget.dart';
+import '/pages/transaction_detail_page/transaction_detail_page_widget.dart';
 import 'all_transactions_page_model.dart';
 export 'all_transactions_page_model.dart';
 import 'package:flutter/material.dart';
@@ -164,7 +166,7 @@ class _AllTransactionsPageWidgetState extends State<AllTransactionsPageWidget> {
   /// Cargar nombre de usuario de forma asíncrona
   Future<void> _loadUserNameAsync(String userId) async {
     try {
-      final userName = await _getUserName(userId);
+      await _getUserName(userId);
       if (mounted) {
         setState(() {
           // El setState actualizará la UI cuando se obtenga el nombre
@@ -206,58 +208,40 @@ class _AllTransactionsPageWidgetState extends State<AllTransactionsPageWidget> {
       child: Scaffold(
         key: scaffoldKey,
         backgroundColor: const Color(0xFF000000), // FONDO NEGRO LANDGO
-        appBar: AppBar(
-          backgroundColor: const Color(0xFF000000), // FONDO NEGRO LANDGO
-          automaticallyImplyLeading: false,
-          leading: null,
-          title: null,
-          elevation: 0,
-          toolbarHeight: 0, // Sin AppBar, usaremos un header personalizado
-        ),
+        extendBodyBehindAppBar: false,
+        extendBody: false,
         body: SafeArea(
           top: true,
-          child: Container(
-            width: double.infinity,
-            height: double.infinity,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFF000000), // NEGRO LANDGO
-                  Color(0xFF1A1A1A), // NEGRO SUAVE
-                ],
-              ),
-            ),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Header personalizado con botón atrás
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(8, 16, 16, 16),
-                  child: Row(
-                    children: [
-                      IconButton(
-                        icon: const Icon(
-                          Icons.arrow_back_ios,
-                          color: Colors.white,
-                          size: 24,
-                        ),
-                        onPressed: () {
-                          context.pop();
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'All Transactions',
-                        style: GoogleFonts.outfit(
-                          color: Colors.white,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                // ✅ HEADER CON BOTÓN DE REGRESO (IGUAL QUE SETTINGS Y SUPPORT CHAT)
+                Row(
+                  children: [
+                    StandardBackButton(
+                      onPressed: () => context.pop(),
+                    ),
+                    const Spacer(),
+                  ],
+                ),
+                
+                const SizedBox(height: 20),
+                
+                // ✅ TÍTULO CENTRADO (IGUAL QUE SETTINGS Y SUPPORT CHAT)
+                Center(
+                  child: Text(
+                    'All Transactions',
+                    style: GoogleFonts.outfit(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
+                
+                const SizedBox(height: 30),
                 
                 // Contenido principal
                 Expanded(
@@ -351,7 +335,20 @@ class _AllTransactionsPageWidgetState extends State<AllTransactionsPageWidget> {
                               separatorBuilder: (context, index) => const SizedBox(height: 12),
                               itemBuilder: (context, index) {
                                 final tx = _allTransactions[index];
-                                return _buildTransactionItem(tx);
+                                return GestureDetector(
+                                  onTap: () {
+                                    // Navegar a detalles de transacción
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => TransactionDetailPageWidget(
+                                          transaction: tx,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: _buildTransactionItem(tx),
+                                );
                               },
                             ),
                           ),
@@ -365,11 +362,6 @@ class _AllTransactionsPageWidgetState extends State<AllTransactionsPageWidget> {
   }
   
   Widget _buildTransactionItem(Map<String, dynamic> tx) {
-    final user = Supabase.instance.client.auth.currentUser;
-    final currentUserId = user?.id;
-    
-    final description = (tx['description'] ?? '').toString();
-    final relatedType = (tx['related_type'] ?? '').toString().toLowerCase();
     final amount = (tx['amount'] as num?)?.toDouble() ?? 0.0;
     final userId = tx['user_id']?.toString();
     final relatedId = tx['related_id']?.toString();

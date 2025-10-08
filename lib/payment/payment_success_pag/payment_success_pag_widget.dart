@@ -3,7 +3,6 @@ import 'package:google_fonts/google_fonts.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import 'payment_success_pag_model.dart';
 export 'payment_success_pag_model.dart';
-import '/pages/my_wallet_page/my_wallet_page_widget.dart';
 
 class PaymentSuccessPagWidget extends StatefulWidget {
   const PaymentSuccessPagWidget({super.key});
@@ -181,8 +180,15 @@ class _PaymentSuccessPagWidgetState extends State<PaymentSuccessPagWidget> {
                       child: InkWell(
                         borderRadius: BorderRadius.circular(16),
                         onTap: () {
-                          // Navegar a My Wallet usando GoRouter
-                          context.go('/myWalletPage');
+                          // Navegar a My Wallet haciendo 3 pops
+                          // Pop 1: PaymentSuccessPag
+                          // Pop 2: PaymentCardsPage
+                          // Pop 3: ReviewSummaryPage
+                          // Resultado: Vuelves a MyWalletPage
+                          int count = 0;
+                          Navigator.of(context).popUntil((route) {
+                            return count++ >= 3 || route.isFirst;
+                          });
                         },
                         child: Center(
                           child: Text(

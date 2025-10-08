@@ -196,8 +196,12 @@ class _TransferSuccessPageWidgetState extends State<TransferSuccessPageWidget> {
                       child: InkWell(
                         borderRadius: BorderRadius.circular(16),
                         onTap: () {
-                          // Navegar de regreso a My Wallet usando GoRouter
-                          context.go('/myWalletPage');
+                          // Navegar a My Wallet de forma simple
+                          // Pop hasta llegar a My Wallet o Main
+                          int count = 0;
+                          Navigator.of(context).popUntil((route) {
+                            return count++ >= 2 || route.isFirst;
+                          });
                         },
                         child: Center(
                           child: Text(

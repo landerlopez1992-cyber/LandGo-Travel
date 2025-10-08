@@ -1,5 +1,6 @@
 import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/components/back_button_widget.dart';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -455,6 +456,141 @@ class _SupportChatPageWidgetState extends State<SupportChatPageWidget> {
     });
   }
 
+  /// 🚪 CONFIRMAR SALIDA DEL CHAT
+  Future<void> _confirmExitChat() async {
+    final shouldExit = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(24.0),
+            decoration: BoxDecoration(
+              color: Color(0xFF1A1A1A), // ✅ NEGRO LANDGO
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: Color(0xFF4DD0E1), // ✅ BORDE TURQUESA
+                width: 2,
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icono
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: Color(0xFF2C2C2C),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.exit_to_app_rounded,
+                    color: Color(0xFF4DD0E1),
+                    size: 30,
+                  ),
+                ),
+                SizedBox(height: 16),
+                // Título
+                Text(
+                  '¿Deseas abandonar este chat?',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                SizedBox(height: 8),
+                // Descripción
+                Text(
+                  'Si sales, la conversación se reiniciará y volverás al menú principal.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.inter(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+                SizedBox(height: 24),
+                // Botones
+                Row(
+                  children: [
+                    // Botón NO
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFF2C2C2C),
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(color: Color(0xFF4DD0E1)),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          'No',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 12),
+                    // Botón SÍ
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () => Navigator.of(context).pop(true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFF4DD0E1),
+                          foregroundColor: Colors.black,
+                          padding: EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          'Sí, salir',
+                          style: GoogleFonts.inter(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+
+    if (shouldExit == true) {
+      // Cerrar conversación actual
+      if (_conversationId != null) {
+        try {
+          await Supabase.instance.client
+              .from('support_conversations')
+              .update({'status': 'closed'})
+              .eq('id', _conversationId!);
+        } catch (e) {
+          print('❌ Error cerrando conversación: $e');
+        }
+      }
+      
+      // Salir
+      if (mounted) {
+        context.pop();
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -465,44 +601,40 @@ class _SupportChatPageWidgetState extends State<SupportChatPageWidget> {
       child: Scaffold(
         key: scaffoldKey,
         backgroundColor: Color(0xFF1A1A1A), // ✅ FONDO NEGRO LANDGO
-        appBar: AppBar(
-          backgroundColor: Color(0xFF1A1A1A), // ✅ NEGRO
-          automaticallyImplyLeading: false,
-          leading: Padding(
-            padding: EdgeInsets.only(left: 8.0), // ✅ POSICIÓN ESTÁNDAR
-            child: FlutterFlowIconButton(
-              borderColor: Colors.transparent,
-              borderRadius: 12.0,
-              borderWidth: 0,
-              buttonSize: 40.0,
-              fillColor: Color(0xFF2C2C2C), // ✅ GRIS OSCURO
-              icon: Icon(
-                Icons.arrow_back_rounded,
-                color: Color(0xFF4DD0E1), // ✅ TURQUESA
-                size: 24.0,
-              ),
-              onPressed: () {
-                context.pop();
-              },
-            ),
-          ),
-          title: Text(
-            'Customer Support',
-            style: GoogleFonts.interTight(
-              color: Colors.white, // ✅ BLANCO
-              fontSize: 22,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          actions: [],
-          centerTitle: false,
-          elevation: 0.0,
-        ),
+        extendBodyBehindAppBar: false,
+        extendBody: false,
         body: SafeArea(
           top: true,
           child: Column(
             mainAxisSize: MainAxisSize.max,
             children: [
+              // ✅ HEADER CON BOTÓN DE REGRESO (IGUAL QUE SETTINGS)
+              Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Row(
+                  children: [
+                    StandardBackButton(
+                      onPressed: _confirmExitChat,
+                    ),
+                    const Spacer(),
+                  ],
+                ),
+              ),
+              
+              // ✅ TÍTULO CENTRADO (IGUAL QUE SETTINGS)
+              Center(
+                child: Text(
+                  'Customer Support',
+                  style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              
+              const SizedBox(height: 30),
+              
               // MENSAJES
               Expanded(
                 child: _isLoading
@@ -511,11 +643,21 @@ class _SupportChatPageWidgetState extends State<SupportChatPageWidget> {
                           color: Color(0xFF4DD0E1), // ✅ TURQUESA
                         ),
                       )
-                    : ListView.builder(
-                        controller: _scrollController,
-                        padding: EdgeInsets.all(16),
-                        itemCount: _messages.length,
-                        itemBuilder: (context, index) {
+                    : _messages.isEmpty
+                        ? Center(
+                            child: Text(
+                              'No messages yet',
+                              style: GoogleFonts.inter(
+                                color: Colors.white54,
+                                fontSize: 16,
+                              ),
+                            ),
+                          )
+                        : ListView.builder(
+                            controller: _scrollController,
+                            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            itemCount: _messages.length,
+                            itemBuilder: (context, index) {
                           final message = _messages[index];
                           final isBot = message['sender_type'] == 'bot';
                           final text = message['message_text'] ?? '';
@@ -580,14 +722,15 @@ class _SupportChatPageWidgetState extends State<SupportChatPageWidget> {
               // OPCIONES (BOTONES)
               if (_currentOptions.isNotEmpty)
                 Container(
-                  padding: EdgeInsets.all(16),
+                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
                     color: Color(0xFF2C2C2C), // ✅ GRIS OSCURO
                     border: Border(
-                      top: BorderSide(color: Color(0xFF4DD0E1)), // ✅ BORDE TURQUESA
+                      top: BorderSide(color: Color(0xFF4DD0E1), width: 1), // ✅ BORDE TURQUESA
                     ),
                   ),
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: _currentOptions.map((option) {
                       return Padding(
@@ -597,7 +740,7 @@ class _SupportChatPageWidgetState extends State<SupportChatPageWidget> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Color(0xFF4DD0E1), // ✅ TURQUESA
                             foregroundColor: Colors.black, // ✅ NEGRO
-                            padding: EdgeInsets.symmetric(vertical: 14),
+                            padding: EdgeInsets.symmetric(vertical: 12), // ✅ REDUCIDO A 12
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -606,9 +749,12 @@ class _SupportChatPageWidgetState extends State<SupportChatPageWidget> {
                           child: Text(
                             option['option_text'] ?? '',
                             style: GoogleFonts.inter(
-                              fontSize: 14,
+                              fontSize: 13, // ✅ REDUCIDO A 13
                               fontWeight: FontWeight.w600,
                             ),
+                            textAlign: TextAlign.center,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                       );
@@ -617,52 +763,62 @@ class _SupportChatPageWidgetState extends State<SupportChatPageWidget> {
                 ),
 
               // INPUT DE MENSAJE
-              Padding(
+              Container(
                 padding: EdgeInsets.all(16.0),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: Color(0xFF2C2C2C), // ✅ GRIS OSCURO
-                    border: Border.all(color: Color(0xFF4DD0E1)), // ✅ BORDE TURQUESA
-                    borderRadius: BorderRadius.circular(24),
+                decoration: BoxDecoration(
+                  color: Color(0xFF1A1A1A), // ✅ NEGRO
+                  border: Border(
+                    top: BorderSide(color: Color(0xFF4DD0E1), width: 1), // ✅ BORDE TURQUESA
                   ),
-                  child: Padding(
-                    padding: EdgeInsets.all(12.0),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: _model.textController,
-                            focusNode: _model.textFieldFocusNode,
-                            autofocus: false,
-                            textInputAction: TextInputAction.send,
-                            onFieldSubmitted: (_) => _sendMessage(),
-                            decoration: InputDecoration(
-                              hintText: 'Type your message...',
-                              hintStyle: GoogleFonts.inter(
-                                color: Colors.white54, // ✅ BLANCO 54%
+                ),
+                child: SafeArea(
+                  top: false,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Color(0xFF2C2C2C), // ✅ GRIS OSCURO
+                      border: Border.all(color: Color(0xFF4DD0E1)), // ✅ BORDE TURQUESA
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _model.textController,
+                              focusNode: _model.textFieldFocusNode,
+                              autofocus: false,
+                              textInputAction: TextInputAction.send,
+                              onFieldSubmitted: (_) => _sendMessage(),
+                              decoration: InputDecoration(
+                                hintText: 'Type your message...',
+                                hintStyle: GoogleFonts.inter(
+                                  color: Colors.white54, // ✅ BLANCO 54%
+                                ),
+                                border: InputBorder.none,
+                                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                               ),
-                              border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(horizontal: 16),
+                              style: GoogleFonts.inter(
+                                color: Colors.white, // ✅ BLANCO
+                              ),
+                              maxLines: 3,
+                              minLines: 1,
                             ),
-                            style: GoogleFonts.inter(
-                              color: Colors.white, // ✅ BLANCO
+                          ),
+                          SizedBox(width: 8),
+                          FlutterFlowIconButton(
+                            borderRadius: 24.0,
+                            buttonSize: 48.0,
+                            fillColor: Color(0xFF4DD0E1), // ✅ TURQUESA
+                            icon: Icon(
+                              Icons.send_rounded,
+                              color: Colors.black, // ✅ NEGRO
+                              size: 20.0,
                             ),
-                            maxLines: 3,
-                            minLines: 1,
+                            onPressed: _sendMessage,
                           ),
-                        ),
-                        FlutterFlowIconButton(
-                          borderRadius: 24.0,
-                          buttonSize: 48.0,
-                          fillColor: Color(0xFF4DD0E1), // ✅ TURQUESA
-                          icon: Icon(
-                            Icons.send_rounded,
-                            color: Colors.black, // ✅ NEGRO
-                            size: 20.0,
-                          ),
-                          onPressed: _sendMessage,
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),

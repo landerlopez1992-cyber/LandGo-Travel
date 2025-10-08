@@ -41,18 +41,6 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
     WidgetsBinding.instance.addPostFrameCallback((_) => setState(() {}));
   }
   
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Recargar balance cuando se regrese de una transferencia
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Solo recargar si no estamos en el estado inicial de carga
-      if (!_isLoadingBalance) {
-        _loadWalletBalance();
-      }
-    });
-  }
-  
   /// Método público para refrescar el balance cuando sea necesario
   Future<void> refreshBalance() async {
     if (mounted) {
@@ -97,34 +85,43 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
       final balance = (profileResponse['cashback_balance'] as num?)?.toDouble() ?? 0.0;
       print('✅ Balance loaded: \$${balance.toStringAsFixed(2)}');
       
-      // 2. Calcular Total Enviado (últimos 30 días)
+      // 2. Calcular Total Enviado y Recibido (últimos 30 días)
       final thirtyDaysAgo = DateTime.now().subtract(const Duration(days: 30));
-      final sentResponse = await Supabase.instance.client
+      
+      // Total Enviado: Buscar donde user_id = current_user, amount < 0, transfer_out
+      final sentTransactions = await Supabase.instance.client
           .from('payments')
           .select('amount')
           .eq('user_id', user.id)
           .eq('payment_method', 'wallet')
+          .eq('related_type', 'transfer_out')
+          .lt('amount', 0)
           .gte('created_at', thirtyDaysAgo.toIso8601String());
       
       double totalSent = 0.0;
-      for (var tx in sentResponse) {
-        totalSent += (tx['amount'] as num?)?.toDouble() ?? 0.0;
+      for (var tx in sentTransactions) {
+        final amount = (tx['amount'] as num?)?.toDouble() ?? 0.0;
+        totalSent += amount.abs();
       }
-      print('✅ Total Enviado (30 días): \$${totalSent.toStringAsFixed(2)}');
       
-      // 3. Calcular Total Recibido (últimos 30 días)
-      // Buscar transacciones donde el usuario es el receptor
-      final receivedResponse = await Supabase.instance.client
+      // Total Recibido: Buscar donde related_id = current_user (soy el receptor)
+      // Estas transacciones tienen user_id = emisor, pero related_id = yo
+      final receivedTransactions = await Supabase.instance.client
           .from('payments')
           .select('amount')
           .eq('related_id', user.id)
           .eq('payment_method', 'wallet')
+          .eq('related_type', 'transfer_out') // La transacción es transfer_out del emisor
+          .lt('amount', 0) // El monto es negativo para el emisor
           .gte('created_at', thirtyDaysAgo.toIso8601String());
       
       double totalReceived = 0.0;
-      for (var tx in receivedResponse) {
-        totalReceived += (tx['amount'] as num?)?.toDouble() ?? 0.0;
+      for (var tx in receivedTransactions) {
+        final amount = (tx['amount'] as num?)?.toDouble() ?? 0.0;
+        totalReceived += amount.abs(); // Convertir a positivo
       }
+      
+      print('✅ Total Enviado (30 días): \$${totalSent.toStringAsFixed(2)}');
       print('✅ Total Recibido (30 días): \$${totalReceived.toStringAsFixed(2)}');
       
       // 4. Obtener conteo de transacciones (solo del usuario actual)
@@ -188,32 +185,38 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => _model.unfocusNode.canRequestFocus
-          ? FocusScope.of(context).requestFocus(_model.unfocusNode)
-          : FocusScope.of(context).unfocus(),
-      child: Scaffold(
-        key: scaffoldKey,
-        backgroundColor: const Color(0xFF000000), // FONDO NEGRO LANDGO
-        extendBodyBehindAppBar: false,
-        extendBody: false,
-        body: SafeArea(
-          top: true,
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header con botón de regreso - ESTANDARIZADO
-                  Row(
-                    children: [
-                      StandardBackButton(
-                        onPressed: () => Navigator.of(context).pop(),
-                      ),
-                      const Spacer(),
-                    ],
-                  ),
+    return PopScope(
+      canPop: true,
+      onPopInvoked: (didPop) async {
+        // Cuando se hace pop (regreso), no hacer nada especial
+        // Solo dejar que la navegación funcione normalmente
+      },
+      child: GestureDetector(
+        onTap: () => _model.unfocusNode.canRequestFocus
+            ? FocusScope.of(context).requestFocus(_model.unfocusNode)
+            : FocusScope.of(context).unfocus(),
+        child: Scaffold(
+          key: scaffoldKey,
+          backgroundColor: const Color(0xFF000000), // FONDO NEGRO LANDGO
+          extendBodyBehindAppBar: false,
+          extendBody: false,
+          body: SafeArea(
+            top: true,
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header con botón de regreso - ESTANDARIZADO
+                    Row(
+                      children: [
+                        StandardBackButton(
+                          onPressed: () => context.pop(),
+                        ),
+                        const Spacer(),
+                      ],
+                    ),
                   
                   const SizedBox(height: 10),
                   
@@ -255,6 +258,7 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
             ),
           ),
         ),
+      ),
       ),
     );
   }
@@ -559,14 +563,7 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
   }
   
   Widget _buildTransactionItem(Map<String, dynamic> tx) {
-    final user = Supabase.instance.client.auth.currentUser;
-    final currentUserId = user?.id;
-    
-    final description = (tx['description'] ?? '').toString().toLowerCase();
-    final relatedType = (tx['related_type'] ?? '').toString().toLowerCase();
     final amount = (tx['amount'] as num?)?.toDouble() ?? 0.0;
-    final userId = tx['user_id']?.toString();
-    final relatedId = tx['related_id']?.toString();
     final paymentMethod = (tx['payment_method'] ?? '').toString().toLowerCase();
     
     // Determinar si es envío, recepción o pago con Stripe
@@ -600,7 +597,6 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
     // Obtener datos de la transacción
     final status = (tx['status'] ?? 'completed').toString().toLowerCase();
     final createdAt = tx['created_at']?.toString() ?? '';
-    final recipient = (tx['recipient'] ?? tx['description'] ?? 'Unknown').toString();
     
     // Determinar icono y color según estado
     IconData statusIcon;
