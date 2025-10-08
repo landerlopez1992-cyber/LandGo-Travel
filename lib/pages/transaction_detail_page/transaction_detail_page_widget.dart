@@ -10,9 +10,11 @@ class TransactionDetailPageWidget extends StatefulWidget {
   const TransactionDetailPageWidget({
     super.key,
     required this.transaction,
+    this.fromPage,
   });
 
   final Map<String, dynamic> transaction;
+  final String? fromPage; // Pantalla de origen
 
   static String routeName = 'TransactionDetailPage';
   static String routePath = '/transactionDetailPage';
@@ -125,7 +127,13 @@ class _TransactionDetailPageWidgetState
                           if (Navigator.of(context).canPop()) {
                             context.pop();
                           } else {
-                            context.goNamed('AllTransactionsPage');
+                            // Regresar a la pantalla de origen
+                            final fromPage = widget.fromPage;
+                            if (fromPage == 'MyWalletPage') {
+                              context.goNamed('MyWalletPage');
+                            } else {
+                              context.goNamed('AllTransactionsPage'); // Default
+                            }
                           }
                         },
                       ),

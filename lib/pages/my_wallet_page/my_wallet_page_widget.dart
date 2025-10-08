@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/components/back_button_widget.dart';
 import '/pages/review_summary_page/review_summary_page_widget.dart';
+import '/pages/transaction_detail_page/transaction_detail_page_widget.dart';
 import 'my_wallet_page_model.dart';
 export 'my_wallet_page_model.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -564,10 +565,15 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
           : Column(
               children: _recentTransactions.map((tx) => GestureDetector(
                 onTap: () {
-                  // Navegar a detalles de transacción
-                  context.go(
-                    '/transactionDetailPage',
-                    extra: {'transaction': tx},
+                  // Navegar a detalles de transacción desde My Wallet usando Navigator.push
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => TransactionDetailPageWidget(
+                        transaction: tx,
+                        fromPage: 'MyWalletPage', // Indicar que viene de My Wallet
+                      ),
+                    ),
                   );
                 },
                 child: _buildTransactionItem(tx),
