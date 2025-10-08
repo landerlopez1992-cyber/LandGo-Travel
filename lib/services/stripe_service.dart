@@ -66,6 +66,23 @@ class StripeService {
       print('🔍 DEBUG: Teléfono del usuario: $userPhone');
       print('🔍 DEBUG: Dirección de facturación: $billingAddress');
 
+      // Convertir código de país a formato ISO 3166-1 alpha-2 (2 caracteres)
+      String? countryCode = billingAddress['country'];
+      if (countryCode != null) {
+        if (countryCode.toUpperCase() == 'USA') {
+          countryCode = 'US';
+        } else if (countryCode.toUpperCase() == 'UNITED STATES') {
+          countryCode = 'US';
+        } else if (countryCode.toUpperCase() == 'CANADA') {
+          countryCode = 'CA';
+        } else if (countryCode.toUpperCase() == 'MEXICO') {
+          countryCode = 'MX';
+        } else if (countryCode.toUpperCase() == 'UNITED KINGDOM') {
+          countryCode = 'GB';
+        }
+        print('🔍 DEBUG: Country code converted: ${billingAddress['country']} → $countryCode');
+      }
+
       // Crear BillingDetails con información completa
       final billingDetails = BillingDetails(
         name: cardholderName,
@@ -77,7 +94,7 @@ class StripeService {
           city: billingAddress['city'],
           state: billingAddress['state'],
           postalCode: billingAddress['postal_code'],
-          country: billingAddress['country'],
+          country: countryCode, // Usar el código convertido
         ) : null,
       );
 
@@ -162,6 +179,23 @@ class StripeService {
       print('🔍 DEBUG: Teléfono del usuario: $userPhone');
       print('🔍 DEBUG: Dirección de facturación: $billingAddress');
 
+      // Convertir código de país a formato ISO 3166-1 alpha-2 (2 caracteres)
+      String? countryCode = billingAddress['country'];
+      if (countryCode != null) {
+        if (countryCode.toUpperCase() == 'USA') {
+          countryCode = 'US';
+        } else if (countryCode.toUpperCase() == 'UNITED STATES') {
+          countryCode = 'US';
+        } else if (countryCode.toUpperCase() == 'CANADA') {
+          countryCode = 'CA';
+        } else if (countryCode.toUpperCase() == 'MEXICO') {
+          countryCode = 'MX';
+        } else if (countryCode.toUpperCase() == 'UNITED KINGDOM') {
+          countryCode = 'GB';
+        }
+        print('🔍 DEBUG: Country code converted: ${billingAddress['country']} → $countryCode');
+      }
+
       // Crear BillingDetails con información completa
       final billingDetails = BillingDetails(
         name: cardholderName,
@@ -173,7 +207,7 @@ class StripeService {
           city: billingAddress['city'],
           state: billingAddress['state'],
           postalCode: billingAddress['postal_code'],
-          country: billingAddress['country'],
+          country: countryCode, // Usar el código convertido
         ) : null,
       );
 
