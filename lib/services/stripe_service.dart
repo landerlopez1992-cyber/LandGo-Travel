@@ -443,6 +443,37 @@ class StripeService {
       print('🔍 DEBUG: Amount: $amount, Currency: $currency');
       print('🔍 DEBUG: Customer: $customerId, PaymentMethod: $paymentMethodId');
       
+      // 🔐 VALIDAR Y OBTENER BILLING ADDRESS
+      final validation = await validateBillingAddress();
+      if (validation == null || !validation['valid']) {
+        throw Exception(validation?['message'] ?? 'Billing address validation failed');
+      }
+      
+      final userEmail = validation['email'] as String;
+      final userPhone = validation['phone'] as String;
+      final billingAddress = validation['billing_address'] as Map<String, dynamic>;
+      
+      print('✅ Billing address validated for payment');
+      print('🔍 Email: $userEmail');
+      print('🔍 Phone: $userPhone');
+      print('🔍 Address: $billingAddress');
+      
+      // Convertir código de país a formato ISO 3166-1 alpha-2
+      String? countryCode = billingAddress['country'];
+      if (countryCode != null) {
+        if (countryCode.toUpperCase() == 'USA') {
+          countryCode = 'US';
+        } else if (countryCode.toUpperCase() == 'UNITED STATES') {
+          countryCode = 'US';
+        } else if (countryCode.toUpperCase() == 'CANADA') {
+          countryCode = 'CA';
+        } else if (countryCode.toUpperCase() == 'MEXICO') {
+          countryCode = 'MX';
+        } else if (countryCode.toUpperCase() == 'UNITED KINGDOM') {
+          countryCode = 'GB';
+        }
+      }
+      
       // Obtener token de Supabase
       final session = Supabase.instance.client.auth.currentSession;
       final accessToken = session?.accessToken ?? '';
@@ -459,6 +490,18 @@ class StripeService {
           'currency': currency,
           'customerId': customerId,
           'paymentMethodId': paymentMethodId,
+          'billingDetails': {
+            'email': userEmail,
+            'phone': userPhone,
+            'address': {
+              'line1': billingAddress['line1'],
+              'line2': billingAddress['line2'],
+              'city': billingAddress['city'],
+              'state': billingAddress['state'],
+              'postal_code': billingAddress['postal_code'],
+              'country': countryCode,
+            },
+          },
         }),
       );
 
