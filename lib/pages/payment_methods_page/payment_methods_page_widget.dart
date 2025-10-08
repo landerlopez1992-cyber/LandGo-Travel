@@ -26,18 +26,40 @@ class _PaymentMethodsPageWidgetState extends State<PaymentMethodsPageWidget> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _paymentMethods = [];
   String? _stripeCustomerId;
+  
+  // Variables para billing address
+  bool _isLoadingBillingAddress = false;
+  Map<String, dynamic>? _billingAddress;
+  bool _isEditingBillingAddress = false;
+  
+  // Controllers para el formulario de billing address
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _line1Controller = TextEditingController();
+  final TextEditingController _line2Controller = TextEditingController();
+  final TextEditingController _cityController = TextEditingController();
+  final TextEditingController _stateController = TextEditingController();
+  final TextEditingController _postalCodeController = TextEditingController();
+  final TextEditingController _countryController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _model = createModel(context, () => PaymentMethodsPageModel());
     _loadPaymentMethods();
+    _loadBillingAddress();
     WidgetsBinding.instance.addPostFrameCallback((_) => setState(() {}));
   }
 
   @override
   void dispose() {
     _model.dispose();
+    _nameController.dispose();
+    _line1Controller.dispose();
+    _line2Controller.dispose();
+    _cityController.dispose();
+    _stateController.dispose();
+    _postalCodeController.dispose();
+    _countryController.dispose();
     super.dispose();
   }
 
@@ -137,6 +159,53 @@ class _PaymentMethodsPageWidgetState extends State<PaymentMethodsPageWidget> {
     }
   }
 
+  // Cargar billing address del usuario
+  Future<void> _loadBillingAddress() async {
+    try {
+      setState(() {
+        _isLoadingBillingAddress = true;
+      });
+
+      final currentUser = SupaFlow.client.auth.currentUser;
+      if (currentUser == null) {
+        print('❌ No user logged in');
+        setState(() {
+          _isLoadingBillingAddress = false;
+        });
+        return;
+      }
+
+      print('🔍 Loading billing address for user: ${currentUser.id}');
+
+      final response = await SupaFlow.client
+          .from('profiles')
+          .select('billing_address')
+          .eq('id', currentUser.id)
+          .maybeSingle();
+
+      print('🔍 Billing address response: $response');
+
+      final billingAddressData = response?['billing_address'] as Map<String, dynamic>?;
+      
+      if (mounted) {
+        setState(() {
+          _billingAddress = billingAddressData;
+          _isLoadingBillingAddress = false;
+        });
+      }
+
+      print('✅ Billing address loaded: $_billingAddress');
+    } catch (e) {
+      print('❌ Error loading billing address: $e');
+      if (mounted) {
+        setState(() {
+          _billingAddress = null;
+          _isLoadingBillingAddress = false;
+        });
+      }
+    }
+  }
+
   // Navegar a agregar nueva tarjeta
   Future<void> _addNewCard() async {
     print('🔍 Add New Card button tapped');
@@ -230,6 +299,103 @@ class _PaymentMethodsPageWidgetState extends State<PaymentMethodsPageWidget> {
         _showErrorModal('Error deleting card: ${e.toString()}');
       }
     }
+  }
+
+  // ============================================================================
+  // MÉTODOS PARA BILLING ADDRESS
+  // ============================================================================
+
+  // Guardar billing address
+  Future<void> _saveBillingAddress() async {
+    try {
+      // Validar campos requeridos
+      if (_nameController.text.trim().isEmpty) {
+        _showErrorModal('Name is required');
+        return;
+      }
+      if (_line1Controller.text.trim().isEmpty) {
+        _showErrorModal('Address line 1 is required');
+        return;
+      }
+      if (_cityController.text.trim().isEmpty) {
+        _showErrorModal('City is required');
+        return;
+      }
+      if (_stateController.text.trim().isEmpty) {
+        _showErrorModal('State is required');
+        return;
+      }
+      if (_postalCodeController.text.trim().isEmpty) {
+        _showErrorModal('Postal code is required');
+        return;
+      }
+      if (_countryController.text.trim().isEmpty) {
+        _showErrorModal('Country is required');
+        return;
+      }
+
+      // Mostrar loading
+      _showLoadingModal('Saving billing address...');
+
+      final currentUser = SupaFlow.client.auth.currentUser;
+      if (currentUser == null) {
+        throw Exception('User not logged in');
+      }
+
+      // Crear objeto de billing address
+      final billingAddressData = {
+        'name': _nameController.text.trim(),
+        'line1': _line1Controller.text.trim(),
+        'line2': _line2Controller.text.trim(),
+        'city': _cityController.text.trim(),
+        'state': _stateController.text.trim(),
+        'postal_code': _postalCodeController.text.trim(),
+        'country': _countryController.text.trim(),
+      };
+
+      print('🔍 Saving billing address: $billingAddressData');
+
+      // Guardar en Supabase
+      await SupaFlow.client
+          .from('profiles')
+          .update({'billing_address': billingAddressData})
+          .eq('id', currentUser.id);
+
+      // Cerrar loading
+      if (mounted) Navigator.of(context).pop();
+
+      // Actualizar estado
+      setState(() {
+        _billingAddress = billingAddressData;
+        _isEditingBillingAddress = false;
+      });
+
+      // Limpiar formulario
+      _clearFormFields();
+
+      // Mostrar éxito
+      _showSuccessModal('Billing address saved successfully!');
+
+      print('✅ Billing address saved successfully');
+    } catch (e) {
+      // Cerrar loading
+      if (mounted) Navigator.of(context).pop();
+
+      // Mostrar error
+      _showErrorModal('Error saving billing address: ${e.toString()}');
+      print('❌ Error saving billing address: $e');
+    }
+  }
+
+  // Limpiar campos del formulario
+  void _clearFormFields() {
+    _nameController.clear();
+    _line1Controller.clear();
+    _line2Controller.clear();
+    _cityController.clear();
+    _stateController.clear();
+    _postalCodeController.clear();
+    _countryController.clear();
   }
 
   // Modal de loading
@@ -485,7 +651,14 @@ class _PaymentMethodsPageWidgetState extends State<PaymentMethodsPageWidget> {
                         )
                       : _paymentMethods.isEmpty
                           ? _buildEmptyState()
-                          : _buildCardsList(),
+                          : SingleChildScrollView(
+                              child: Column(
+                                children: [
+                                  _buildCardsList(),
+                                  _buildBillingAddressSection(),
+                                ],
+                              ),
+                            ),
                 ),
               ],
             ),
@@ -1082,6 +1255,529 @@ class _PaymentMethodsPageWidgetState extends State<PaymentMethodsPageWidget> {
           ],
         ),
       ),
+    );
+  }
+
+  // ============================================================================
+  // WIDGETS PARA BILLING ADDRESS
+  // ============================================================================
+
+  Widget _buildBillingAddressSection() {
+    return Container(
+      margin: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFF2C2C2C),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: const Color(0xFF37474F).withValues(alpha: 0.5),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4DD0E1).withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.location_on,
+                  color: Color(0xFF4DD0E1),
+                  size: 22,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Billing Address',
+                      style: GoogleFonts.outfit(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Address used for all payment methods',
+                      style: GoogleFonts.outfit(
+                        color: Colors.white70,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          
+          // Contenido según el estado
+          if (_isEditingBillingAddress)
+            _buildBillingAddressForm()
+          else if (_billingAddress == null || _billingAddress!.isEmpty)
+            _buildEmptyBillingAddress()
+          else
+            _buildBillingAddressDisplay(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyBillingAddress() {
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: const Color(0xFF37474F).withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: const Color(0xFF37474F).withValues(alpha: 0.5),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            children: [
+              const Icon(
+                Icons.location_off,
+                color: Colors.white54,
+                size: 32,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'No billing address saved',
+                style: GoogleFonts.outfit(
+                  color: Colors.white70,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Add your billing address to use with payment methods',
+                style: GoogleFonts.outfit(
+                  color: Colors.white54,
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          height: 56,
+          child: ElevatedButton(
+            onPressed: () {
+              setState(() {
+                _isEditingBillingAddress = true;
+              });
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4DD0E1),
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              elevation: 0,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.add_location,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Add Billing Address',
+                  style: GoogleFonts.outfit(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBillingAddressDisplay() {
+    return Column(
+      children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: const Color(0xFF37474F).withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: const Color(0xFF4DD0E1).withValues(alpha: 0.3),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildAddressLine('Name', _billingAddress!['name'] ?? ''),
+              const SizedBox(height: 12),
+              _buildAddressLine('Address', _billingAddress!['line1'] ?? ''),
+              if (_billingAddress!['line2'] != null && _billingAddress!['line2'].toString().isNotEmpty) ...[
+                const SizedBox(height: 8),
+                _buildAddressLine('', _billingAddress!['line2']),
+              ],
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildAddressLine('City', _billingAddress!['city'] ?? ''),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildAddressLine('State', _billingAddress!['state'] ?? ''),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildAddressLine('Postal Code', _billingAddress!['postal_code'] ?? ''),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: _buildAddressLine('Country', _billingAddress!['country'] ?? ''),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: 56,
+                child: OutlinedButton(
+                  onPressed: () {
+                    // Pre-llenar formulario con datos existentes
+                    _nameController.text = _billingAddress!['name'] ?? '';
+                    _line1Controller.text = _billingAddress!['line1'] ?? '';
+                    _line2Controller.text = _billingAddress!['line2'] ?? '';
+                    _cityController.text = _billingAddress!['city'] ?? '';
+                    _stateController.text = _billingAddress!['state'] ?? '';
+                    _postalCodeController.text = _billingAddress!['postal_code'] ?? '';
+                    _countryController.text = _billingAddress!['country'] ?? '';
+                    
+                    setState(() {
+                      _isEditingBillingAddress = true;
+                    });
+                  },
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(
+                      color: const Color(0xFF4DD0E1).withValues(alpha: 0.5),
+                      width: 1,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: Text(
+                    'Edit',
+                    style: GoogleFonts.outfit(
+                      color: const Color(0xFF4DD0E1),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: SizedBox(
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: _saveBillingAddress,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4DD0E1),
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    'Save',
+                    style: GoogleFonts.outfit(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAddressLine(String label, String value) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (label.isNotEmpty) ...[
+          Text(
+            label,
+            style: GoogleFonts.outfit(
+              color: Colors.white70,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 4),
+        ],
+        Text(
+          value,
+          style: GoogleFonts.outfit(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBillingAddressForm() {
+    return Column(
+      children: [
+        _buildFormField(
+          controller: _nameController,
+          label: 'Full Name',
+          icon: Icons.person,
+          isRequired: true,
+        ),
+        const SizedBox(height: 16),
+        _buildFormField(
+          controller: _line1Controller,
+          label: 'Address Line 1',
+          icon: Icons.home,
+          isRequired: true,
+        ),
+        const SizedBox(height: 16),
+        _buildFormField(
+          controller: _line2Controller,
+          label: 'Address Line 2 (Optional)',
+          icon: Icons.home_work,
+          isRequired: false,
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _buildFormField(
+                controller: _cityController,
+                label: 'City',
+                icon: Icons.location_city,
+                isRequired: true,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildFormField(
+                controller: _stateController,
+                label: 'State',
+                icon: Icons.map,
+                isRequired: true,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _buildFormField(
+                controller: _postalCodeController,
+                label: 'Postal Code',
+                icon: Icons.local_post_office,
+                isRequired: true,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildFormField(
+                controller: _countryController,
+                label: 'Country',
+                icon: Icons.public,
+                isRequired: true,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 24),
+        Row(
+          children: [
+            Expanded(
+              child: SizedBox(
+                height: 56,
+                child: OutlinedButton(
+                  onPressed: () {
+                    setState(() {
+                      _isEditingBillingAddress = false;
+                    });
+                    _clearFormFields();
+                  },
+                  style: OutlinedButton.styleFrom(
+                    side: BorderSide(
+                      color: Colors.white.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: Text(
+                    'Cancel',
+                    style: GoogleFonts.outfit(
+                      color: Colors.white70,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: SizedBox(
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: _saveBillingAddress,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF4DD0E1),
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    'Save Address',
+                    style: GoogleFonts.outfit(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFormField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    required bool isRequired,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              icon,
+              color: const Color(0xFF4DD0E1),
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: GoogleFonts.outfit(
+                color: Colors.white70,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+              ),
+            ),
+            if (isRequired) ...[
+              const SizedBox(width: 4),
+              Text(
+                '*',
+                style: GoogleFonts.outfit(
+                  color: const Color(0xFFDC2626),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          style: GoogleFonts.outfit(
+            color: Colors.white,
+            fontSize: 16,
+            fontWeight: FontWeight.w500,
+          ),
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: const Color(0xFF37474F).withValues(alpha: 0.3),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: const Color(0xFF37474F).withValues(alpha: 0.5),
+                width: 1,
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: const Color(0xFF37474F).withValues(alpha: 0.5),
+                width: 1,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(
+                color: Color(0xFF4DD0E1),
+                width: 2,
+              ),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
