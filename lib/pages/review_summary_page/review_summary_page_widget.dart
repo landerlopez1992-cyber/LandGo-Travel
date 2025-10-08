@@ -23,7 +23,7 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
   
   // Variables para recibir parámetros del modal
   String _amount = '0.00';
-  String _selectedPaymentMethod = 'stripe'; // 'stripe', 'apple'
+  String _selectedPaymentMethod = 'card'; // Default: Credit/Debit Card
 
   @override
   void initState() {
@@ -136,7 +136,7 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Payment: ${_selectedPaymentMethod == 'stripe' ? 'Stripe' : 'Apple Pay'}',
+                          'Payment: ${_getPaymentMethodDetails(_selectedPaymentMethod)['name']}',
                           style: GoogleFonts.outfit(
                             color: Colors.white70,
                             fontSize: 14,
@@ -261,6 +261,12 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
   }
 
   Widget _buildPaymentMethodCard() {
+    final paymentDetails = _getPaymentMethodDetails(_selectedPaymentMethod);
+    final paymentName = paymentDetails['name'] as String;
+    final paymentSubtitle = paymentDetails['subtitle'] as String;
+    final paymentIcon = paymentDetails['icon'] as IconData;
+    final paymentColor = paymentDetails['color'] as Color;
+    
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -275,26 +281,18 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
           Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 44,
+                height: 44,
                 decoration: BoxDecoration(
-                  color: _selectedPaymentMethod == 'stripe' 
-                    ? const Color(0xFF635BFF) // PURPLE STRIPE
-                    : const Color(0xFF4DD0E1), // TURQUESA APPLE
+                  color: paymentColor.withOpacity(0.2),
                   shape: BoxShape.circle,
                 ),
                 child: Center(
-                  child: _selectedPaymentMethod == 'stripe' 
-                    ? const Icon(
-                        Icons.credit_card,
-                        color: Colors.white,
-                        size: 20,
-                      )
-                    : const Icon(
-                        Icons.apple,
-                        color: Colors.white,
-                        size: 20,
-                      ),
+                  child: Icon(
+                    paymentIcon,
+                    color: paymentColor,
+                    size: 22,
+                  ),
                 ),
               ),
               const SizedBox(width: 12),
@@ -302,7 +300,7 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    _selectedPaymentMethod == 'stripe' ? 'Stripe' : 'Apple Pay',
+                    paymentName,
                     style: GoogleFonts.outfit(
                       color: Colors.white,
                       fontSize: 16,
@@ -310,7 +308,7 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
                     ),
                   ),
                   Text(
-                    _selectedPaymentMethod == 'stripe' ? 'Credit/Debit Card' : 'Quick and secure payment',
+                    paymentSubtitle,
                     style: GoogleFonts.outfit(
                       color: Colors.white70,
                       fontSize: 12,
@@ -469,6 +467,73 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
     );
   }
 
+  Map<String, dynamic> _getPaymentMethodDetails(String methodId) {
+    final methods = {
+      'card': {
+        'name': 'Credit/Debit Card',
+        'subtitle': 'Visa, Mastercard, Amex',
+        'icon': Icons.credit_card,
+        'color': const Color(0xFF635BFF),
+      },
+      'apple_pay': {
+        'name': 'Apple Pay',
+        'subtitle': 'Quick and secure',
+        'icon': Icons.apple,
+        'color': const Color(0xFF000000),
+      },
+      'google_pay': {
+        'name': 'Google Pay',
+        'subtitle': 'Fast checkout',
+        'icon': Icons.account_balance_wallet,
+        'color': const Color(0xFF4285F4),
+      },
+      'cashapp': {
+        'name': 'Cash App Pay',
+        'subtitle': 'Pay with Cash App',
+        'icon': Icons.attach_money,
+        'color': const Color(0xFF00D54B),
+      },
+      'klarna': {
+        'name': 'Klarna',
+        'subtitle': 'Pay in 4 payments',
+        'icon': Icons.schedule,
+        'color': const Color(0xFFFFB3C7),
+      },
+      'afterpay_clearpay': {
+        'name': 'Afterpay/Clearpay',
+        'subtitle': '4 interest-free payments',
+        'icon': Icons.payment,
+        'color': const Color(0xFFB2FCE4),
+      },
+      'affirm': {
+        'name': 'Affirm',
+        'subtitle': 'Monthly payments',
+        'icon': Icons.calendar_month,
+        'color': const Color(0xFF00AAC4),
+      },
+      'us_bank_account': {
+        'name': 'ACH Direct Debit',
+        'subtitle': 'Bank transfer',
+        'icon': Icons.account_balance,
+        'color': const Color(0xFF4DD0E1),
+      },
+      'alipay': {
+        'name': 'Alipay',
+        'subtitle': 'Popular in Asia',
+        'icon': Icons.payment,
+        'color': const Color(0xFF00A0E9),
+      },
+      'wechat_pay': {
+        'name': 'WeChat Pay',
+        'subtitle': 'China payment',
+        'icon': Icons.chat,
+        'color': const Color(0xFF09BB07),
+      },
+    };
+    
+    return methods[methodId] ?? methods['card']!;
+  }
+
   void _showPaymentMethodSelector() {
     print('🔍 DEBUG: Opening payment method selector');
     print('🔍 DEBUG: Current selected method: $_selectedPaymentMethod');
@@ -555,22 +620,117 @@ class _PaymentMethodSelectorContentState extends State<_PaymentMethodSelectorCon
             const SizedBox(height: 20),
             
             // Payment Methods - SELECCIONABLES
+            // TARJETAS DE CRÉDITO/DÉBITO
             _buildPaymentMethod(
-              'Stripe',
               'Credit/Debit Card',
+              'Visa, Mastercard, Amex, Discover',
               Icons.credit_card,
-              _selectedPaymentMethod == 'stripe',
-              'stripe',
+              _selectedPaymentMethod == 'card',
+              'card',
+              const Color(0xFF635BFF), // Stripe Purple
             ),
             
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             
+            // BILLETERAS DIGITALES
             _buildPaymentMethod(
               'Apple Pay',
               'Quick and secure payment',
               Icons.apple,
-              _selectedPaymentMethod == 'apple',
-              'apple',
+              _selectedPaymentMethod == 'apple_pay',
+              'apple_pay',
+              const Color(0xFF000000), // Apple Black
+            ),
+            
+            const SizedBox(height: 12),
+            
+            _buildPaymentMethod(
+              'Google Pay',
+              'Fast checkout with Google',
+              Icons.account_balance_wallet,
+              _selectedPaymentMethod == 'google_pay',
+              'google_pay',
+              const Color(0xFF4285F4), // Google Blue
+            ),
+            
+            const SizedBox(height: 12),
+            
+            _buildPaymentMethod(
+              'Cash App Pay',
+              'Pay with Cash App',
+              Icons.attach_money,
+              _selectedPaymentMethod == 'cashapp',
+              'cashapp',
+              const Color(0xFF00D54B), // Cash App Green
+            ),
+            
+            const SizedBox(height: 12),
+            
+            // COMPRA AHORA, PAGA DESPUÉS (BNPL)
+            _buildPaymentMethod(
+              'Klarna',
+              'Buy now, pay later in 4 payments',
+              Icons.schedule,
+              _selectedPaymentMethod == 'klarna',
+              'klarna',
+              const Color(0xFFFFB3C7), // Klarna Pink
+            ),
+            
+            const SizedBox(height: 12),
+            
+            _buildPaymentMethod(
+              'Afterpay/Clearpay',
+              'Split in 4 interest-free payments',
+              Icons.payment,
+              _selectedPaymentMethod == 'afterpay_clearpay',
+              'afterpay_clearpay',
+              const Color(0xFFB2FCE4), // Afterpay Mint
+            ),
+            
+            const SizedBox(height: 12),
+            
+            _buildPaymentMethod(
+              'Affirm',
+              'Monthly payment plans available',
+              Icons.calendar_month,
+              _selectedPaymentMethod == 'affirm',
+              'affirm',
+              const Color(0xFF00AAC4), // Affirm Teal
+            ),
+            
+            const SizedBox(height: 12),
+            
+            // DÉBITOS BANCARIOS
+            _buildPaymentMethod(
+              'ACH Direct Debit',
+              'Bank account transfer (US only)',
+              Icons.account_balance,
+              _selectedPaymentMethod == 'us_bank_account',
+              'us_bank_account',
+              const Color(0xFF4DD0E1), // Turquesa LandGo
+            ),
+            
+            const SizedBox(height: 12),
+            
+            // PAGOS INTERNACIONALES
+            _buildPaymentMethod(
+              'Alipay',
+              'Popular in China and Asia',
+              Icons.payment,
+              _selectedPaymentMethod == 'alipay',
+              'alipay',
+              const Color(0xFF00A0E9), // Alipay Blue
+            ),
+            
+            const SizedBox(height: 12),
+            
+            _buildPaymentMethod(
+              'WeChat Pay',
+              'Leading payment method in China',
+              Icons.chat,
+              _selectedPaymentMethod == 'wechat_pay',
+              'wechat_pay',
+              const Color(0xFF09BB07), // WeChat Green
             ),
             
             const SizedBox(height: 40),
@@ -611,7 +771,7 @@ class _PaymentMethodSelectorContentState extends State<_PaymentMethodSelectorCon
     );
   }
 
-  Widget _buildPaymentMethod(String title, String subtitle, IconData icon, bool isSelected, String methodId) {
+  Widget _buildPaymentMethod(String title, String subtitle, IconData icon, bool isSelected, String methodId, Color brandColor) {
     return GestureDetector(
       onTap: () {
         print('🔍 DEBUG: Tapped payment method: $methodId');
@@ -627,19 +787,27 @@ class _PaymentMethodSelectorContentState extends State<_PaymentMethodSelectorCon
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF4DD0E1).withOpacity(0.1) : Colors.transparent,
+          color: isSelected ? brandColor.withOpacity(0.15) : const Color(0xFF2C2C2C),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? const Color(0xFF4DD0E1) : Colors.white,
-            width: 2,
+            color: isSelected ? brandColor : Colors.white.withOpacity(0.2),
+            width: isSelected ? 2 : 1,
           ),
         ),
         child: Row(
           children: [
-            Icon(
-              icon,
-              color: isSelected ? const Color(0xFF4DD0E1) : Colors.white,
-              size: 24,
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: brandColor.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                icon,
+                color: brandColor,
+                size: 22,
+              ),
             ),
             const SizedBox(width: 16),
             Expanded(
