@@ -104,7 +104,6 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.0
   flutter_stripe: ^12.0.2
-  pay: ^2.0.0  # Google Pay & Apple Pay official package
 
 dependency_overrides:
   http: 1.4.0
@@ -151,7 +150,6 @@ flutter:
     - assets/rive_animations/
     - assets/pdfs/
     - assets/jsons/
-    - assets/google_pay_config.json
 
 
 

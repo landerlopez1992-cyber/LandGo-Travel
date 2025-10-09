@@ -49,7 +49,6 @@
         "path_provider_linux",
         "path_provider_platform_interface",
         "path_provider_windows",
-        "pay",
         "plugin_platform_interface",
         "postgrest",
         "provider",
@@ -169,18 +168,6 @@
         "json_annotation",
         "path",
         "yaml"
-      ]
-    },
-    {
-      "name": "pay",
-      "version": "2.0.0",
-      "dependencies": [
-        "flutter",
-        "flutter_localizations",
-        "meta",
-        "pay_android",
-        "pay_ios",
-        "pay_platform_interface"
       ]
     },
     {
@@ -1107,31 +1094,6 @@
       "name": "args",
       "version": "2.7.0",
       "dependencies": []
-    },
-    {
-      "name": "pay_platform_interface",
-      "version": "1.0.4",
-      "dependencies": [
-        "flutter",
-        "yaml"
-      ]
-    },
-    {
-      "name": "pay_ios",
-      "version": "1.0.11",
-      "dependencies": [
-        "flutter",
-        "pay_platform_interface"
-      ]
-    },
-    {
-      "name": "pay_android",
-      "version": "2.0.0",
-      "dependencies": [
-        "flutter",
-        "flutter_localizations",
-        "pay_platform_interface"
-      ]
     },
     {
       "name": "stripe_platform_interface",

@@ -5,7 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/components/back_button_widget.dart';
 import '/pages/payment_cards_page/payment_cards_page_widget.dart';
-import '/payment/payment_success_pag/payment_success_pag_widget.dart';
+import '/pages/payment_success_pag/payment_success_pag_widget.dart';
 import '/services/google_pay_service.dart';
 import '/services/stripe_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -680,13 +680,9 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
   }
 
   /// Procesar pago con Google Pay
-  Future<void> _processGooglePayPayment(String totalAmountStr) async {
+  Future<void> _processGooglePayPayment(double totalAmount) async {
     try {
       print('🔍 DEBUG: Iniciando flujo de Google Pay');
-      
-      // Convertir String a double
-      final totalAmount = double.parse(totalAmountStr);
-      final amountWithoutFee = double.parse(_amount);
       
       // 1. Mostrar loading
       showDialog(
@@ -770,51 +766,10 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
         ),
       );
       
-      // 4. Obtener/Crear Stripe Customer ID
-      final currentUser = Supabase.instance.client.auth.currentUser;
-      if (currentUser == null) {
-        if (mounted) Navigator.of(context).pop();
-        _showErrorDialog('User not logged in');
-        return;
-      }
-      
-      // Obtener stripe_customer_id del perfil
-      final profileResponse = await Supabase.instance.client
-          .from('profiles')
-          .select('stripe_customer_id')
-          .eq('id', currentUser.id)
-          .maybeSingle();
-      
-      String? stripeCustomerId = profileResponse?['stripe_customer_id'];
-      
-      // Si no existe, crear uno
-      if (stripeCustomerId == null || stripeCustomerId.isEmpty) {
-        print('🔍 DEBUG: Creando nuevo Stripe Customer...');
-        stripeCustomerId = await StripeService.createCustomer(
-          email: currentUser.email!,
-          name: currentUser.userMetadata?['full_name'] ?? 'User',
-        );
-        
-        if (stripeCustomerId == null) {
-          if (mounted) Navigator.of(context).pop();
-          _showErrorDialog('Failed to create Stripe customer');
-          return;
-        }
-        
-        // Guardar en perfil
-        await Supabase.instance.client
-            .from('profiles')
-            .update({'stripe_customer_id': stripeCustomerId})
-            .eq('id', currentUser.id);
-      }
-      
-      print('✅ Stripe Customer ID: $stripeCustomerId');
-      
-      // 5. Procesar pago con Stripe usando el PaymentMethod de Google Pay
+      // 4. Procesar pago con Stripe usando el PaymentMethod de Google Pay
       final paymentResult = await StripeService.processPayment(
         amount: totalAmount,
         currency: 'usd',
-        customerId: stripeCustomerId,
         paymentMethodId: paymentMethodId,
       );
       
@@ -824,19 +779,15 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
       if (paymentResult['success'] == true) {
         print('✅ Pago procesado exitosamente con Google Pay');
         
-        // 6. Navegar a Payment Success
+        // 5. Navegar a Payment Success
         if (mounted) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => const PaymentSuccessPagWidget(),
-              settings: RouteSettings(
-                arguments: {
-                  'amount': amountWithoutFee, // Monto sin fees (double)
-                  'totalPaid': totalAmount, // Total pagado con fees (double)
-                  'paymentMethod': 'google_pay',
-                  'paymentIntentId': paymentResult['paymentIntentId'] ?? 'N/A',
-                },
+              builder: (context) => PaymentSuccessPagWidget(
+                amount: _amount, // Monto sin fees
+                totalPaid: totalAmount, // Total pagado con fees
+                paymentMethod: 'google_pay',
               ),
             ),
           );
