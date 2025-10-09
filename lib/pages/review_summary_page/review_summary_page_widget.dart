@@ -675,6 +675,216 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
       }
     });
   }
+
+  /// 🆕 PROCESAR PAGO CON KLARNA
+  Future<void> _processKlarnaPayment(String totalAmountStr) async {
+    try {
+      print('🔍 DEBUG: Iniciando flujo de Klarna');
+      
+      // Convertir String a double
+      final totalAmount = double.parse(totalAmountStr);
+      final amountWithoutFee = double.parse(_amount);
+      
+      // 1. Mostrar loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Center(
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2C2C2C),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4DD0E1)),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Creating Klarna session...',
+                  style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      // 2. Obtener usuario actual
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      if (currentUser == null) {
+        if (mounted) Navigator.of(context).pop();
+        _showErrorDialog('User not logged in');
+        return;
+      }
+
+      // 3. Obtener/Crear Stripe Customer ID
+      final profileResponse = await Supabase.instance.client
+          .from('profiles')
+          .select('stripe_customer_id')
+          .eq('id', currentUser.id)
+          .maybeSingle();
+      
+      String? stripeCustomerId = profileResponse?['stripe_customer_id'];
+
+      // 4. Crear sesión de Klarna
+      final session = await KlarnaService.createKlarnaSession(
+        amount: totalAmount,
+        userId: currentUser.id,
+        customerId: stripeCustomerId,
+      );
+
+      print('✅ Klarna session created');
+      print('✅ Payment Intent ID: ${session['paymentIntentId']}');
+
+      // Cerrar loading
+      if (mounted) Navigator.of(context).pop();
+
+      // 5. Abrir Webview con Klarna
+      final checkoutUrl = KlarnaService.getKlarnaCheckoutUrl(session['clientSecret']);
+      
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => KlarnaWebviewPageWidget(
+            checkoutUrl: checkoutUrl,
+            returnUrl: 'landgotravel://payment-return',
+            paymentIntentId: session['paymentIntentId'],
+          ),
+        ),
+      );
+
+      // 6. Manejar resultado
+      if (result == null) {
+        print('🔄 User closed Webview without completing');
+        return;
+      }
+
+      final status = result['status'];
+      final paymentIntentId = result['paymentIntentId'];
+
+      print('🔍 DEBUG: Klarna result status: $status');
+
+      if (status == 'success') {
+        // Pago exitoso
+        print('✅ Klarna payment successful');
+        
+        // Confirmar el estado del pago
+        final confirmation = await KlarnaService.confirmKlarnaPayment(
+          paymentIntentId: paymentIntentId,
+        );
+
+        if (confirmation['status'] == 'succeeded') {
+          // Actualizar wallet
+          await _updateWalletBalance(amountWithoutFee, paymentIntentId);
+          
+          // Navegar a PaymentSuccess
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const PaymentSuccessPagWidget(),
+              ),
+            );
+          }
+        } else {
+          _showErrorDialog('Payment is ${confirmation['status']}. We\'ll notify you when it\'s complete.');
+        }
+      } else if (status == 'failed') {
+        _showErrorDialog('Klarna payment failed. Please try another payment method.');
+      } else if (status == 'cancelled') {
+        print('🔄 User cancelled Klarna payment');
+        // Usuario canceló, no hacer nada
+      } else {
+        _showErrorDialog('Payment status: $status');
+      }
+    } catch (e) {
+      print('❌ ERROR in Klarna payment: $e');
+      if (mounted) Navigator.of(context).pop();
+      _showErrorDialog('Error processing Klarna payment: $e');
+    }
+  }
+
+  /// Actualizar balance del wallet
+  Future<void> _updateWalletBalance(double amount, String paymentIntentId) async {
+    try {
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      if (currentUser == null) return;
+
+      // Obtener balance actual
+      final profileResponse = await Supabase.instance.client
+          .from('profiles')
+          .select('cashback_balance')
+          .eq('id', currentUser.id)
+          .single();
+
+      final currentBalance = (profileResponse['cashback_balance'] ?? 0.0) as num;
+      final newBalance = currentBalance.toDouble() + amount;
+
+      // Actualizar balance
+      await Supabase.instance.client
+          .from('profiles')
+          .update({'cashback_balance': newBalance})
+          .eq('id', currentUser.id);
+
+      // Registrar transacción
+      await Supabase.instance.client.from('payments').insert({
+        'user_id': currentUser.id,
+        'amount': amount,
+        'payment_method': 'klarna',
+        'status': 'completed',
+        'related_type': 'wallet_topup',
+        'description': 'Wallet top-up via Klarna (PaymentIntent: $paymentIntentId)',
+        'created_at': DateTime.now().toIso8601String(),
+      });
+
+      print('✅ Wallet balance updated: \$${currentBalance.toStringAsFixed(2)} → \$${newBalance.toStringAsFixed(2)}');
+    } catch (e) {
+      print('❌ ERROR updating wallet balance: $e');
+      rethrow;
+    }
+  }
+
+  /// Mostrar diálogo de error
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF2C2C2C),
+        title: Text(
+          'Payment Error',
+          style: GoogleFonts.outfit(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          message,
+          style: GoogleFonts.outfit(
+            color: Colors.white70,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text(
+              'OK',
+              style: GoogleFonts.outfit(
+                color: const Color(0xFF4DD0E1),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // WIDGET SEPARADO PARA EL SELECTOR DE MÉTODOS DE PAGO
@@ -1089,216 +1299,6 @@ class _PaymentMethodSelectorContentState extends State<_PaymentMethodSelectorCon
               ),
           ],
         ),
-      ),
-    );
-  }
-
-  /// 🆕 PROCESAR PAGO CON KLARNA
-  Future<void> _processKlarnaPayment(String totalAmountStr) async {
-    try {
-      print('🔍 DEBUG: Iniciando flujo de Klarna');
-      
-      // Convertir String a double
-      final totalAmount = double.parse(totalAmountStr);
-      final amountWithoutFee = double.parse(_amount);
-      
-      // 1. Mostrar loading
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => Center(
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: const Color(0xFF2C2C2C),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4DD0E1)),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Creating Klarna session...',
-                  style: GoogleFonts.outfit(
-                    color: Colors.white,
-                    fontSize: 16,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-
-      // 2. Obtener usuario actual
-      final currentUser = Supabase.instance.client.auth.currentUser;
-      if (currentUser == null) {
-        if (mounted) Navigator.of(context).pop();
-        _showErrorDialog('User not logged in');
-        return;
-      }
-
-      // 3. Obtener/Crear Stripe Customer ID
-      final profileResponse = await Supabase.instance.client
-          .from('profiles')
-          .select('stripe_customer_id')
-          .eq('id', currentUser.id)
-          .maybeSingle();
-      
-      String? stripeCustomerId = profileResponse?['stripe_customer_id'];
-
-      // 4. Crear sesión de Klarna
-      final session = await KlarnaService.createKlarnaSession(
-        amount: totalAmount,
-        userId: currentUser.id,
-        customerId: stripeCustomerId,
-      );
-
-      print('✅ Klarna session created');
-      print('✅ Payment Intent ID: ${session['paymentIntentId']}');
-
-      // Cerrar loading
-      if (mounted) Navigator.of(context).pop();
-
-      // 5. Abrir Webview con Klarna
-      final checkoutUrl = KlarnaService.getKlarnaCheckoutUrl(session['clientSecret']);
-      
-      final result = await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => KlarnaWebviewPageWidget(
-            checkoutUrl: checkoutUrl,
-            returnUrl: 'landgotravel://payment-return',
-            paymentIntentId: session['paymentIntentId'],
-          ),
-        ),
-      );
-
-      // 6. Manejar resultado
-      if (result == null) {
-        print('🔄 User closed Webview without completing');
-        return;
-      }
-
-      final status = result['status'];
-      final paymentIntentId = result['paymentIntentId'];
-
-      print('🔍 DEBUG: Klarna result status: $status');
-
-      if (status == 'success') {
-        // Pago exitoso
-        print('✅ Klarna payment successful');
-        
-        // Confirmar el estado del pago
-        final confirmation = await KlarnaService.confirmKlarnaPayment(
-          paymentIntentId: paymentIntentId,
-        );
-
-        if (confirmation['status'] == 'succeeded') {
-          // Actualizar wallet
-          await _updateWalletBalance(amountWithoutFee, paymentIntentId);
-          
-          // Navegar a PaymentSuccess
-          if (mounted) {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const PaymentSuccessPagWidget(),
-              ),
-            );
-          }
-        } else {
-          _showErrorDialog('Payment is ${confirmation['status']}. We\'ll notify you when it\'s complete.');
-        }
-      } else if (status == 'failed') {
-        _showErrorDialog('Klarna payment failed. Please try another payment method.');
-      } else if (status == 'cancelled') {
-        print('🔄 User cancelled Klarna payment');
-        // Usuario canceló, no hacer nada
-      } else {
-        _showErrorDialog('Payment status: $status');
-      }
-    } catch (e) {
-      print('❌ ERROR in Klarna payment: $e');
-      if (mounted) Navigator.of(context).pop();
-      _showErrorDialog('Error processing Klarna payment: $e');
-    }
-  }
-
-  /// Actualizar balance del wallet
-  Future<void> _updateWalletBalance(double amount, String paymentIntentId) async {
-    try {
-      final currentUser = Supabase.instance.client.auth.currentUser;
-      if (currentUser == null) return;
-
-      // Obtener balance actual
-      final profileResponse = await Supabase.instance.client
-          .from('profiles')
-          .select('cashback_balance')
-          .eq('id', currentUser.id)
-          .single();
-
-      final currentBalance = (profileResponse['cashback_balance'] ?? 0.0) as num;
-      final newBalance = currentBalance.toDouble() + amount;
-
-      // Actualizar balance
-      await Supabase.instance.client
-          .from('profiles')
-          .update({'cashback_balance': newBalance})
-          .eq('id', currentUser.id);
-
-      // Registrar transacción
-      await Supabase.instance.client.from('payments').insert({
-        'user_id': currentUser.id,
-        'amount': amount,
-        'payment_method': 'klarna',
-        'status': 'completed',
-        'related_type': 'wallet_topup',
-        'description': 'Wallet top-up via Klarna (PaymentIntent: $paymentIntentId)',
-        'created_at': DateTime.now().toIso8601String(),
-      });
-
-      print('✅ Wallet balance updated: \$${currentBalance.toStringAsFixed(2)} → \$${newBalance.toStringAsFixed(2)}');
-    } catch (e) {
-      print('❌ ERROR updating wallet balance: $e');
-      rethrow;
-    }
-  }
-
-  /// Mostrar diálogo de error
-  void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF2C2C2C),
-        title: Text(
-          'Payment Error',
-          style: GoogleFonts.outfit(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Text(
-          message,
-          style: GoogleFonts.outfit(
-            color: Colors.white70,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'OK',
-              style: GoogleFonts.outfit(
-                color: const Color(0xFF4DD0E1),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
