@@ -26,7 +26,7 @@ Implementar funcionalidad real para cada método de pago usando Stripe API, uno 
 - **Tiempo estimado:** 1 día
 - **Dependencias:** Ninguna
 
-#### 2. **Apple Pay** 🍎
+#### 2. **Apple Pay** 🍎 (iOS ONLY)
 - **Prioridad:** ALTA
 - **Estado:** ⚠️ Requiere configuración iOS
 - **Tareas:**
@@ -34,12 +34,15 @@ Implementar funcionalidad real para cada método de pago usando Stripe API, uno 
   - [ ] Implementar Apple Pay SDK en Flutter
   - [ ] Crear Edge Function para Apple Pay
   - [ ] Integrar con Stripe Apple Pay API
+  - [ ] **Implementar detección de plataforma (iOS only)**
+  - [ ] **Ocultar Apple Pay en Android**
   - [ ] Probar en dispositivo iOS real
 - **Tiempo estimado:** 2-3 días
 - **Dependencias:** Dispositivo iOS, certificados Apple
+- **NOTA:** Solo visible en iOS, oculto en Android
 
 ### **FASE 2: WALLETS DIGITALES (Semana 2)**
-#### 3. **Google Pay** 🤖
+#### 3. **Google Pay** 🤖 (Android ONLY)
 - **Prioridad:** ALTA
 - **Estado:** ⚠️ Requiere configuración Android
 - **Tareas:**
@@ -47,9 +50,12 @@ Implementar funcionalidad real para cada método de pago usando Stripe API, uno 
   - [ ] Implementar Google Pay SDK en Flutter
   - [ ] Crear Edge Function para Google Pay
   - [ ] Integrar con Stripe Google Pay API
+  - [ ] **Implementar detección de plataforma (Android only)**
+  - [ ] **Ocultar Google Pay en iOS**
   - [ ] Probar en dispositivo Android real
 - **Tiempo estimado:** 2-3 días
 - **Dependencias:** Dispositivo Android, Google Play Console
+- **NOTA:** Solo visible en Android, oculto en iOS
 
 #### 4. **Cash App Pay** 💚
 - **Prioridad:** MEDIA
@@ -159,6 +165,10 @@ Implementar funcionalidad real para cada método de pago usando Stripe API, uno 
 
 ### **Frontend (Flutter)**
 - SDK específico para cada método
+- **Detección de plataforma (iOS/Android)**
+- **Métodos específicos por plataforma:**
+  - iOS: Apple Pay visible, Google Pay oculto
+  - Android: Google Pay visible, Apple Pay oculto
 - Manejo de estados de pago
 - UI/UX consistente
 - Validaciones de usuario

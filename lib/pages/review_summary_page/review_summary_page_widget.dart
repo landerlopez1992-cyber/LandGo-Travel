@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/components/back_button_widget.dart';
@@ -494,14 +495,14 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
         'logoPath': 'assets/images/payment_logos/card_logo.png',
         'color': const Color(0xFF635BFF),
       },
-      'apple_pay': {
+      if (Platform.isIOS) 'apple_pay': {
         'name': 'Apple Pay',
         'subtitle': 'Quick and secure',
         'icon': Icons.apple,
         'logoPath': 'assets/images/payment_logos/apple_pay_logo.png',
         'color': const Color(0xFF000000),
       },
-      'google_pay': {
+      if (Platform.isAndroid) 'google_pay': {
         'name': 'Google Pay',
         'subtitle': 'Fast checkout',
         'icon': Icons.account_balance_wallet,
@@ -674,25 +675,27 @@ class _PaymentMethodSelectorContentState extends State<_PaymentMethodSelectorCon
             const SizedBox(height: 12),
             
             // BILLETERAS DIGITALES
-            _buildPaymentMethod(
-              'Apple Pay',
-              'Quick and secure payment',
-              Icons.apple,
-              _selectedPaymentMethod == 'apple_pay',
-              'apple_pay',
-              const Color(0xFF000000), // Apple Black
-            ),
+            if (Platform.isIOS)
+              _buildPaymentMethod(
+                'Apple Pay',
+                'Quick and secure payment',
+                Icons.apple,
+                _selectedPaymentMethod == 'apple_pay',
+                'apple_pay',
+                const Color(0xFF000000), // Apple Black
+              ),
             
             const SizedBox(height: 12),
             
-            _buildPaymentMethod(
-              'Google Pay',
-              'Fast checkout with Google',
-              Icons.account_balance_wallet,
-              _selectedPaymentMethod == 'google_pay',
-              'google_pay',
-              const Color(0xFF4285F4), // Google Blue
-            ),
+            if (Platform.isAndroid)
+              _buildPaymentMethod(
+                'Google Pay',
+                'Fast checkout with Google',
+                Icons.account_balance_wallet,
+                _selectedPaymentMethod == 'google_pay',
+                'google_pay',
+                const Color(0xFF4285F4), // Google Blue
+              ),
             
             const SizedBox(height: 12),
             
@@ -837,14 +840,14 @@ class _PaymentMethodSelectorContentState extends State<_PaymentMethodSelectorCon
         'logoPath': 'assets/images/payment_logos/card_logo.png',
         'color': const Color(0xFF635BFF),
       },
-      'apple_pay': {
+      if (Platform.isIOS) 'apple_pay': {
         'name': 'Apple Pay',
         'subtitle': 'Quick and secure',
         'icon': Icons.apple,
         'logoPath': 'assets/images/payment_logos/apple_pay_logo.png',
         'color': const Color(0xFF000000),
       },
-      'google_pay': {
+      if (Platform.isAndroid) 'google_pay': {
         'name': 'Google Pay',
         'subtitle': 'Fast checkout',
         'icon': Icons.account_balance_wallet,
