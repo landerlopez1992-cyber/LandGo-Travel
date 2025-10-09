@@ -285,17 +285,22 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: logoPath != null ? Colors.white : paymentColor.withOpacity(0.2),
+                  color: logoPath != null ? const Color(0xFFF5F5F5) : paymentColor.withOpacity(0.2),
                   shape: BoxShape.circle,
+                  border: logoPath != null ? Border.all(
+                    color: Colors.white.withOpacity(0.1),
+                    width: 1,
+                  ) : null,
                 ),
                 child: logoPath != null
                     ? Padding(
-                        padding: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.all(6),
                         child: Image.asset(
                           logoPath,
                           fit: BoxFit.contain,
                           errorBuilder: (context, error, stackTrace) {
                             // Fallback to icon if logo fails to load
+                            print('❌ Error loading logo: $logoPath - $error');
                             return Icon(
                               paymentIcon,
                               color: paymentColor,
@@ -918,17 +923,22 @@ class _PaymentMethodSelectorContentState extends State<_PaymentMethodSelectorCon
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: logoPath != null ? Colors.white : brandColor.withOpacity(0.2),
+                color: logoPath != null ? const Color(0xFFF5F5F5) : brandColor.withOpacity(0.2),
                 shape: BoxShape.circle,
+                border: logoPath != null ? Border.all(
+                  color: Colors.white.withOpacity(0.1),
+                  width: 1,
+                ) : null,
               ),
               child: logoPath != null
                   ? Padding(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(5),
                       child: Image.asset(
                         logoPath,
                         fit: BoxFit.contain,
                         errorBuilder: (context, error, stackTrace) {
                           // Fallback to icon if logo fails to load
+                          print('❌ Error loading logo: $logoPath - $error');
                           return Icon(
                             icon,
                             color: brandColor,
