@@ -282,19 +282,15 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
           Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: 56,
+                height: 56,
                 decoration: BoxDecoration(
-                  color: logoPath != null ? const Color(0xFFF5F5F5) : paymentColor.withOpacity(0.2),
+                  color: logoPath != null ? Colors.transparent : paymentColor.withOpacity(0.2),
                   shape: BoxShape.circle,
-                  border: logoPath != null ? Border.all(
-                    color: Colors.white.withOpacity(0.1),
-                    width: 1,
-                  ) : null,
                 ),
                 child: logoPath != null
                     ? Padding(
-                        padding: const EdgeInsets.all(6),
+                        padding: const EdgeInsets.all(4),
                         child: Image.asset(
                           logoPath,
                           fit: BoxFit.contain,
@@ -304,7 +300,7 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
                             return Icon(
                               paymentIcon,
                               color: paymentColor,
-                              size: 22,
+                              size: 26,
                             );
                           },
                         ),
@@ -313,7 +309,7 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
                         child: Icon(
                           paymentIcon,
                           color: paymentColor,
-                          size: 22,
+                          size: 26,
                         ),
                       ),
               ),
@@ -945,19 +941,15 @@ class _PaymentMethodSelectorContentState extends State<_PaymentMethodSelectorCon
         child: Row(
           children: [
             Container(
-              width: 40,
-              height: 40,
+              width: 50,
+              height: 50,
               decoration: BoxDecoration(
-                color: logoPath != null ? const Color(0xFFF5F5F5) : brandColor.withOpacity(0.2),
+                color: logoPath != null ? Colors.transparent : brandColor.withOpacity(0.2),
                 shape: BoxShape.circle,
-                border: logoPath != null ? Border.all(
-                  color: Colors.white.withOpacity(0.1),
-                  width: 1,
-                ) : null,
               ),
               child: logoPath != null
                   ? Padding(
-                      padding: const EdgeInsets.all(5),
+                      padding: const EdgeInsets.all(4),
                       child: Image.asset(
                         logoPath,
                         fit: BoxFit.contain,
@@ -967,7 +959,7 @@ class _PaymentMethodSelectorContentState extends State<_PaymentMethodSelectorCon
                           return Icon(
                             icon,
                             color: brandColor,
-                            size: 22,
+                            size: 26,
                           );
                         },
                       ),
@@ -975,7 +967,7 @@ class _PaymentMethodSelectorContentState extends State<_PaymentMethodSelectorCon
                   : Icon(
                       icon,
                       color: brandColor,
-                      size: 22,
+                      size: 26,
                     ),
             ),
             const SizedBox(width: 16),
