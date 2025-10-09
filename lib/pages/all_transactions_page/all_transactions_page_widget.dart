@@ -354,6 +354,7 @@ class _AllTransactionsPageWidgetState extends State<AllTransactionsPageWidget> {
     bool isReceived = amount > 0 && paymentMethod == 'wallet'; // crédito (recepción de otro usuario)
     bool isKlarna = paymentMethod == 'klarna';
     bool isAfterpay = paymentMethod == 'afterpay' || paymentMethod == 'afterpay_clearpay';
+    bool isAffirm = paymentMethod == 'affirm';
     bool isStripePayment = paymentMethod.contains('stripe') || paymentMethod.contains('card') || paymentMethod == 'debit_card';
     
     // Determinar el tipo de transacción y obtener información del usuario
@@ -371,6 +372,11 @@ class _AllTransactionsPageWidgetState extends State<AllTransactionsPageWidget> {
       transactionType = 'Afterpay';
       userInfo = 'Agregado saldo con Afterpay';
       typeIcon = Icons.payment;
+      typeColor = const Color(0xFF4DD0E1); // Turquesa
+    } else if (isAffirm) {
+      transactionType = 'Affirm';
+      userInfo = 'Agregado saldo con Affirm';
+      typeIcon = Icons.calendar_month;
       typeColor = const Color(0xFF4DD0E1); // Turquesa
     } else if (isStripePayment) {
       transactionType = 'Debit Card';

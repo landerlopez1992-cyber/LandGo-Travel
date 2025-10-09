@@ -336,7 +336,6 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                     child: Column(
                       children: [
                         _buildMenuItem(Icons.person_outline, 'My profile'),
-                        _buildMenuItem(Icons.star_outline, 'My reviews'),
                         _buildMenuItem(Icons.favorite_outline, 'My favorites'),
                         _buildMenuItem(Icons.credit_card_outlined, 'Payment Methods'),
                         _buildMenuItem(Icons.people_outline, 'My Referrals'),
@@ -474,8 +473,6 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
               context.pushNamed('MyProfilePage'); // CONECTAR A MY PROFILE
             } else if (title == 'Settings') {
               context.pushNamed('SettingsPage'); // CONECTAR A SETTINGS
-            } else if (title == 'My reviews') {
-              // TODO: Navigate to My reviews
             } else if (title == 'My favorites') {
               print('My favorites menu item tapped');
               await Future.delayed(Duration(milliseconds: 100));
@@ -489,7 +486,11 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                 context.pushNamed('PaymentMethodsPage'); // CONECTAR A PAYMENT METHODS
               }
             } else if (title == 'My Referrals') {
-              // TODO: Navigate to My Referrals
+              print('My Referrals menu item tapped');
+              await Future.delayed(Duration(milliseconds: 100));
+              if (mounted) {
+                context.pushNamed('MyReferralsPage'); // CONECTAR A MY REFERRALS
+              }
             } else if (title == 'Support Chat') {
               context.pushNamed('SupportChatPage');
             }

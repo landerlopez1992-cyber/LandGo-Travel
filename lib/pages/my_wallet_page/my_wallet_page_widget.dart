@@ -625,6 +625,7 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
     bool isKlarna = paymentMethod == 'klarna';
     // Detectar variantes antiguas: afterpay_clearpay
     bool isAfterpay = paymentMethod == 'afterpay' || paymentMethod == 'afterpay_clearpay';
+    bool isAffirm = paymentMethod == 'affirm';
     bool isStripePayment = paymentMethod.contains('stripe') || paymentMethod.contains('card') || paymentMethod == 'debit_card';
 
     // Determinar el tipo de transacción
@@ -632,7 +633,7 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
     IconData typeIcon;
     Color typeColor;
 
-    // IMPORTANTE: Verificar Afterpay PRIMERO antes que stripe_card
+    // IMPORTANTE: Verificar métodos de pago PRIMERO antes que stripe_card
     if (isAfterpay) {
       transactionType = 'Afterpay';
       typeIcon = Icons.payment;
@@ -640,6 +641,10 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
     } else if (isKlarna) {
       transactionType = 'Klarna';
       typeIcon = Icons.payment;
+      typeColor = const Color(0xFF4DD0E1); // Turquesa
+    } else if (isAffirm) {
+      transactionType = 'Affirm';
+      typeIcon = Icons.calendar_month;
       typeColor = const Color(0xFF4DD0E1); // Turquesa
     } else if (isStripePayment) {
       transactionType = 'Debit Card';

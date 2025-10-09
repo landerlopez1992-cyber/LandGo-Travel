@@ -310,33 +310,29 @@ class _MainPageWidgetState extends State<MainPageWidget> {
     );
   }
 
-  // Categories Section (Adventure, Beach, Food & drink, Train)
+  // Categories Section (Adventure, Beach, Hotels, Flights)
   Widget _buildCategoriesSection() {
     final categories = [
       {'name': 'Adventure', 'icon': Icons.landscape, 'emoji': '🌴'},
       {'name': 'Beach', 'icon': Icons.beach_access, 'emoji': '🏖️'},
-      {'name': 'Food & drink', 'icon': Icons.restaurant, 'emoji': '🍔🥤'},
-      {'name': 'Train', 'icon': Icons.train, 'emoji': '🚆'},
+      {'name': 'Hotels', 'icon': Icons.hotel, 'emoji': '🏨'},
+      {'name': 'Flights', 'icon': Icons.flight, 'emoji': '✈️'},
     ];
 
     return Container(
-      height: 120,
       margin: const EdgeInsets.only(top: 20),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: categories.length,
-        itemBuilder: (context, index) {
-          final category = categories[index];
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly, // CENTRADO PERFECTO
+        children: categories.map((category) {
           return Container(
             width: 80,
-            margin: const EdgeInsets.only(right: 16),
-                                          child: Column(
-                                            children: [
-                                              Container(
+            child: Column(
+              children: [
+                Container(
                   width: 60,
                   height: 60,
-                                                decoration: BoxDecoration(
+                  decoration: BoxDecoration(
                     color: Colors.grey[900],
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -344,23 +340,25 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                     child: Text(
                       category['emoji'] as String,
                       style: const TextStyle(fontSize: 24),
-                                                  ),
-                                                ),
-                                              ),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 8),
-                                              Text(
+                Text(
                   category['name'] as String,
                   style: TextStyle(
-                                          color: Colors.white,
+                    color: Colors.white,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
-                                                textAlign: TextAlign.center,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
           );
-        },
+        }).toList(),
       ),
     );
   }
@@ -726,7 +724,7 @@ class _MainPageWidgetState extends State<MainPageWidget> {
   // Existing Grid of Buttons (Book Travel, Membership, Wallet, My Bookings)
   Widget _buildExistingButtonsGrid() {
     return Padding(
-      padding: const EdgeInsets.all(20.0),
+      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -739,27 +737,34 @@ class _MainPageWidgetState extends State<MainPageWidget> {
             ),
           ),
           const SizedBox(height: 16),
-          GridView.count(
-            shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            childAspectRatio: 1.2,
-            children: [
-              _buildActionCard('Book Travel', Icons.flight_takeoff_rounded, const Color(0xFF4DD0E1), () {
-                context.pushNamed('BookingPage'); // CONECTAR A BOOKING PAGE
-              }),
-              _buildActionCard('Travel Feed', Icons.travel_explore_rounded, const Color(0xFF4DD0E1), () {
-                context.pushNamed('TravelFeedPage'); // CONECTAR A TRAVEL FEED
-              }),
-              _buildActionCard('Wallet', Icons.account_balance_wallet_rounded, const Color(0xFF4DD0E1), () {
-                context.pushNamed('MyWalletPage'); // CONECTAR A MY WALLET
-              }),
-              _buildActionCard('My Bookings', Icons.calendar_month_rounded, const Color(0xFF4DD0E1), () {
-                // Navigate to bookings
-              }),
-            ],
+          Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: 400, // Máximo ancho para centrar en pantallas grandes
+              ),
+              child: GridView.count(
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                crossAxisCount: 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 1.2,
+                children: [
+                  _buildActionCard('Book Travel', Icons.flight_takeoff_rounded, const Color(0xFF4DD0E1), () {
+                    context.pushNamed('BookingPage'); // CONECTAR A BOOKING PAGE
+                  }),
+                  _buildActionCard('Travel Feed', Icons.travel_explore_rounded, const Color(0xFF4DD0E1), () {
+                    context.pushNamed('TravelFeedPage'); // CONECTAR A TRAVEL FEED
+                  }),
+                  _buildActionCard('Wallet', Icons.account_balance_wallet_rounded, const Color(0xFF4DD0E1), () {
+                    context.pushNamed('MyWalletPage'); // CONECTAR A MY WALLET
+                  }),
+                  _buildActionCard('My Bookings', Icons.calendar_month_rounded, const Color(0xFF4DD0E1), () {
+                    // Navigate to bookings
+                  }),
+                ],
+              ),
+            ),
           ),
         ],
       ),

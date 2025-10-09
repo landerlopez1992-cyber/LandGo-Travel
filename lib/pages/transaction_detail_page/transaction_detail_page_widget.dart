@@ -60,6 +60,7 @@ class _TransactionDetailPageWidgetState
     bool isReceived = amount > 0 && paymentMethod == 'wallet';
     bool isKlarna = paymentMethod == 'klarna';
     bool isAfterpay = paymentMethod == 'afterpay' || paymentMethod == 'afterpay_clearpay';
+    bool isAffirm = paymentMethod == 'affirm';
     bool isStripePayment = paymentMethod.contains('stripe') || paymentMethod.contains('card') || paymentMethod == 'debit_card';
 
     String transactionType;
@@ -73,6 +74,10 @@ class _TransactionDetailPageWidgetState
     } else if (isAfterpay) {
       transactionType = 'Afterpay';
       typeIcon = Icons.payment;
+      typeColor = const Color(0xFF4DD0E1); // Turquesa
+    } else if (isAffirm) {
+      transactionType = 'Affirm';
+      typeIcon = Icons.calendar_month;
       typeColor = const Color(0xFF4DD0E1); // Turquesa
     } else if (isStripePayment) {
       transactionType = 'Debit Card';
@@ -240,7 +245,7 @@ class _TransactionDetailPageWidgetState
                       style: GoogleFonts.outfit(
                         color: isSent
                             ? const Color(0xFFDC2626) // Rojo para enviado
-                            : (isStripePayment || isKlarna || isAfterpay)
+                            : (isStripePayment || isKlarna || isAfterpay || isAffirm)
                               ? const Color(0xFF4DD0E1) // Turquesa para métodos de pago
                               : const Color(0xFF4CAF50), // Verde para recibido
                         fontSize: 48,

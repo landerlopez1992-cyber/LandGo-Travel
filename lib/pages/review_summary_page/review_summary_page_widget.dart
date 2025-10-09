@@ -9,6 +9,8 @@ import '/payment/payment_success_pag/payment_success_pag_widget.dart';
 import '/pages/payment_failed_pag/payment_failed_pag_widget.dart';
 import '/services/klarna_service.dart';
 import '/services/afterpay_service.dart';
+import '/services/affirm_service.dart';
+import '/services/zip_service.dart';
 import '/services/stripe_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'review_summary_page_model.dart';
@@ -545,6 +547,8 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
               await _processKlarnaPayment(totalAmount);
             } else if (_selectedPaymentMethod == 'afterpay_clearpay') {
               await _processAfterpayPayment(totalAmount);
+            } else if (_selectedPaymentMethod == 'affirm') {
+              await _processAffirmPayment(totalAmount);
             } else {
               // FLUJO NORMAL - CREDIT/DEBIT CARD
               Navigator.push(
@@ -1101,6 +1105,205 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
     }
   }
 
+  /// 🆕 PROCESAR PAGO CON AFFIRM
+  Future<void> _processAffirmPayment(String totalAmountStr) async {
+    try {
+      print('🔍 DEBUG: Iniciando flujo de Affirm');
+      
+      // Convertir String a double
+      final totalAmount = double.parse(totalAmountStr);
+      final amountWithoutFee = double.parse(_amount); // Monto sin fees
+      
+      print('🔍 DEBUG: Total Amount (with fees): \$${totalAmount.toStringAsFixed(2)}');
+      print('🔍 DEBUG: Amount without fees: \$${amountWithoutFee.toStringAsFixed(2)}');
+
+      // ⚠️ VERIFICAR MONTO MÍNIMO DE AFFIRM ($35.00)
+      if (totalAmount < 35.00) {
+        _showErrorDialog(
+          'Affirm requires a minimum amount of \$35.00 USD.\n\n'
+          'Your current amount: \$${totalAmount.toStringAsFixed(2)}\n\n'
+          'Please increase the amount or use another payment method (Credit Card, Klarna, or Afterpay).'
+        );
+        return;
+      }
+
+      // Mostrar loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4DD0E1)),
+          ),
+        ),
+      );
+
+      // 1. Obtener usuario actual
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      if (currentUser == null) {
+        if (mounted) Navigator.of(context).pop();
+        _showErrorDialog('User not authenticated');
+        return;
+      }
+
+      // 2. Obtener/Crear Stripe Customer ID y nombre completo
+      final profileResponse = await Supabase.instance.client
+          .from('profiles')
+          .select('stripe_customer_id, full_name')
+          .eq('id', currentUser.id)
+          .maybeSingle();
+
+      String? stripeCustomerId = profileResponse?['stripe_customer_id'];
+      final String fullName = (profileResponse?['full_name'] as String?)?.trim().isNotEmpty == true
+          ? (profileResponse!['full_name'] as String)
+          : 'Customer';
+
+      // 3.1 Validar billing address y datos de contacto del perfil
+      final validation = await StripeService.validateBillingAddress();
+      if (validation == null || validation['valid'] != true) {
+        if (mounted) Navigator.of(context).pop();
+        _showErrorDialog(validation?['message'] ?? 'Billing address incomplete. Please complete your billing address.');
+        return;
+      }
+
+      final String userEmail = validation['email'] as String? ?? '';
+      final String userPhone = validation['phone'] as String? ?? '';
+      final Map<String, dynamic> billingAddress = Map<String, dynamic>.from(validation['billing_address'] as Map);
+
+      // 4. Crear sesión de Affirm
+      final session = await AffirmService.createAffirmSession(
+        amount: totalAmount,
+        customerId: stripeCustomerId ?? '',
+        billingDetails: {
+          'name': fullName,
+          'email': userEmail,
+          'phone': userPhone,
+          'address': billingAddress,
+        },
+      );
+
+      if (mounted) Navigator.of(context).pop(); // Cerrar loading
+
+      // 5. Abrir webview de Affirm
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PaymentWebviewPageWidget(
+            checkoutUrl: session['redirectUrl'] ?? '',
+            returnUrl: 'landgotravel://payment-return',
+            paymentIntentId: session['paymentIntentId'] ?? '',
+            paymentMethodName: 'Affirm',
+          ),
+        ),
+      );
+
+      // 6. Manejar resultado
+      if (result == null) {
+        print('🔄 User closed Affirm Webview without completing');
+        return;
+      }
+
+      final status = result['status'];
+      final paymentIntentId = result['paymentIntentId'];
+
+      print('🔍 DEBUG: Affirm result status: $status');
+
+      if (status == 'success') {
+        // Pago exitoso (aparentemente)
+        print('✅ Affirm payment successful');
+
+        // ⚠️ VERIFICAR EL ESTADO REAL del pago con Stripe
+        final confirmation = await AffirmService.confirmAffirmPayment(
+          paymentIntentId: paymentIntentId,
+        );
+
+        print('🔍 DEBUG: Payment Intent status from Stripe: ${confirmation['status']}');
+
+        // Solo actualizar wallet si el pago realmente fue exitoso
+        if (confirmation['status'] == 'succeeded') {
+          print('✅ Payment confirmed as SUCCEEDED by Stripe');
+          // Actualizar wallet
+          await _updateWalletBalance(amountWithoutFee, paymentIntentId);
+
+          // Navegar a PaymentSuccess con datos del pago
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const PaymentSuccessPagWidget(),
+                settings: RouteSettings(
+                  arguments: {
+                    'paymentIntentId': paymentIntentId,
+                    'chargeId': 'N/A', // Affirm no usa charge ID tradicional
+                    'customerName': fullName,
+                    'cardBrand': 'Affirm',
+                    'cardLast4': 'N/A',
+                    'cardExpiry': 'N/A',
+                    'amount': amountWithoutFee.toString(),
+                    'currency': 'USD',
+                    'alreadyPersisted': true,
+                  },
+                ),
+              ),
+            );
+          }
+        } else if (confirmation['status'] == 'requires_payment_method') {
+          // El pago fue denegado/cancelado por Affirm
+          print('⚠️ Payment was declined by Affirm');
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const PaymentFailedPagWidget(),
+                settings: RouteSettings(
+                  arguments: {
+                    'amount': totalAmountStr,
+                    'paymentMethod': 'Affirm',
+                    'error': 'Payment was declined. Please try another payment method or contact your bank.',
+                  },
+                ),
+              ),
+            );
+          }
+        } else if (confirmation['status'] == 'canceled') {
+          print('⚠️ Payment was cancelled by user');
+          // Usuario canceló, no hacer nada (solo cerrar webview)
+        } else {
+          print('⚠️ Unexpected payment status: ${confirmation['status']}. Full confirmation response: $confirmation');
+          _showErrorDialog('Payment is ${confirmation['status']}. We\'ll notify you when it\'s complete.');
+        }
+      } else if (status == 'failed') {
+        // Usuario hizo clic en "FAIL TEST PAYMENT" dentro del webview
+        print('❌ Payment intentionally failed (FAIL TEST PAYMENT)');
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const PaymentFailedPagWidget(),
+              settings: RouteSettings(
+                arguments: {
+                  'amount': totalAmountStr,
+                  'paymentMethod': 'Affirm',
+                  'error': 'Payment was declined. This is a test failure.',
+                },
+              ),
+            ),
+          );
+        }
+      } else if (status == 'cancelled') {
+        print('🔄 User cancelled Affirm payment (closed webview)');
+        // Usuario canceló explícitamente (cerró webview), no hacer nada
+      } else {
+        print('⚠️ Unknown payment status: $status');
+        _showErrorDialog('Payment status: $status');
+      }
+    } catch (e) {
+      print('❌ ERROR in Affirm payment: $e');
+      if (mounted) Navigator.of(context).pop();
+      _showErrorDialog('Error processing Affirm payment: $e');
+    }
+  }
+
   /// Actualizar balance del wallet
   Future<void> _updateWalletBalance(double amount, String paymentIntentId) async {
     try {
@@ -1127,11 +1330,10 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
       await Supabase.instance.client.from('payments').insert({
         'user_id': currentUser.id,
         'amount': amount,
-        'payment_method': _selectedPaymentMethod == 'klarna' ? 'klarna' : 'afterpay',
+        'payment_method': _selectedPaymentMethod == 'klarna' ? 'klarna' : (_selectedPaymentMethod == 'affirm' ? 'affirm' : 'afterpay'),
         'status': 'completed',
         'related_type': 'wallet_topup',
-        'description': 'Wallet top-up via ${_selectedPaymentMethod == 'klarna' ? 'Klarna' : 'Afterpay'} (PaymentIntent: $paymentIntentId)',
-        'created_at': DateTime.now().toIso8601String(),
+        'description': 'Wallet top-up via ${_selectedPaymentMethod == 'klarna' ? 'Klarna' : (_selectedPaymentMethod == 'affirm' ? 'Affirm' : 'Afterpay')} (PaymentIntent: $paymentIntentId)',
       });
 
       print('✅ Wallet balance updated: \$${currentBalance.toStringAsFixed(2)} → \$${newBalance.toStringAsFixed(2)}');

@@ -170,6 +170,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           ),
         ),
         FFRoute(
+          name: MyReferralsPageWidget.routeName,
+          path: MyReferralsPageWidget.routePath,
+          builder: (context, params) => MyReferralsPageWidget(),
+        ),
+        FFRoute(
           name: TravelFeedPageWidget.routeName,
           path: TravelFeedPageWidget.routePath,
           builder: (context, params) => TravelFeedPageWidget(),

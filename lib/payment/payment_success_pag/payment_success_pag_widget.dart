@@ -296,8 +296,18 @@ class _PaymentSuccessPagWidgetState extends State<PaymentSuccessPagWidget> {
                       child: InkWell(
                         borderRadius: BorderRadius.circular(16),
                         onTap: () {
-                          // Navegar a My Wallet usando context.go
-                          context.goNamed('MyWalletPage');
+                          try {
+                            print('🔍 DEBUG: Accept tapped → navigating to MyWalletPage');
+                            // Cerrar cualquier diálogo/webview residual si lo hubiera
+                            if (Navigator.canPop(context)) {
+                              Navigator.popUntil(context, (route) => route.isFirst);
+                            }
+                            context.goNamed('MyWalletPage');
+                          } catch (e) {
+                            print('❌ DEBUG: Navigation error: $e');
+                            // Fallback
+                            Navigator.of(context).pushNamed('/myWalletPage');
+                          }
                         },
                         child: Center(
                           child: Text(
