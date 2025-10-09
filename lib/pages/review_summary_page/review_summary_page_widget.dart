@@ -277,78 +277,154 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
         color: const Color(0xFF2C2C2C), // GRIS OSCURO LANDGO
         borderRadius: BorderRadius.circular(16),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Payment Method Logo
+          // Header: "Payment Method" with hint text
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: logoPath != null ? Colors.transparent : paymentColor.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-                child: logoPath != null
-                    ? Padding(
-                        padding: const EdgeInsets.all(4),
-                        child: Image.asset(
-                          logoPath,
-                          fit: BoxFit.contain,
-                          errorBuilder: (context, error, stackTrace) {
-                            // Fallback to icon if logo fails to load
-                            print('❌ Error loading logo: $logoPath - $error');
-                            return Icon(
-                              paymentIcon,
-                              color: paymentColor,
-                              size: 26,
-                            );
-                          },
-                        ),
-                      )
-                    : Center(
-                        child: Icon(
-                          paymentIcon,
-                          color: paymentColor,
-                          size: 26,
-                        ),
-                      ),
-              ),
-              const SizedBox(width: 12),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    paymentName,
+                    'Payment Method',
                     style: GoogleFonts.outfit(
                       color: Colors.white,
-                      fontSize: 16,
+                      fontSize: 18,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
+                  const SizedBox(height: 4),
                   Text(
-                    paymentSubtitle,
+                    'Available Payment Methods',
                     style: GoogleFonts.outfit(
-                      color: Colors.white70,
+                      color: const Color(0xFF4DD0E1), // TURQUESA LANDGO
                       fontSize: 12,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ],
               ),
             ],
           ),
-          // Change Button
-          GestureDetector(
-            onTap: () => _showPaymentMethodSelector(),
-            child: Text(
-              'Change',
-              style: GoogleFonts.outfit(
-                color: const Color(0xFFDC2626), // ROJO LANDGO
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
+          
+          const SizedBox(height: 16),
+          
+          // Divider
+          Container(
+            height: 1,
+            color: Colors.white.withOpacity(0.1),
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Selected Payment Method
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Payment Method Logo and Details
+              Row(
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: logoPath != null ? Colors.transparent : paymentColor.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: logoPath != null
+                        ? Padding(
+                            padding: const EdgeInsets.all(4),
+                            child: Image.asset(
+                              logoPath,
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) {
+                                // Fallback to icon if logo fails to load
+                                print('❌ Error loading logo: $logoPath - $error');
+                                return Icon(
+                                  paymentIcon,
+                                  color: paymentColor,
+                                  size: 26,
+                                );
+                              },
+                            ),
+                          )
+                        : Center(
+                            child: Icon(
+                              paymentIcon,
+                              color: paymentColor,
+                              size: 26,
+                            ),
+                          ),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        paymentName,
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        paymentSubtitle,
+                        style: GoogleFonts.outfit(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ),
+              
+              // Modern Change Button
+              GestureDetector(
+                onTap: () => _showPaymentMethodSelector(),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        const Color(0xFF4DD0E1).withOpacity(0.15),
+                        const Color(0xFF4DD0E1).withOpacity(0.05),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: const Color(0xFF4DD0E1).withOpacity(0.3),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.swap_horiz_rounded,
+                        color: Color(0xFF4DD0E1),
+                        size: 18,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Change',
+                        style: GoogleFonts.outfit(
+                          color: const Color(0xFF4DD0E1), // TURQUESA LANDGO
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),
