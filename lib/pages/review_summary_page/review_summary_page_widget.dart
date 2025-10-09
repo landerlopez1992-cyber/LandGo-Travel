@@ -495,7 +495,7 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
         'name': 'Credit/Debit Card',
         'subtitle': 'Visa, Mastercard, Amex',
         'icon': Icons.credit_card,
-        'logoPath': null, // Use generic icon for cards
+        'logoPath': 'assets/images/payment_logos/card_logo.png',
         'color': const Color(0xFF635BFF),
       },
       'apple_pay': {
@@ -838,7 +838,7 @@ class _PaymentMethodSelectorContentState extends State<_PaymentMethodSelectorCon
         'name': 'Credit/Debit Card',
         'subtitle': 'Visa, Mastercard, Amex',
         'icon': Icons.credit_card,
-        'logoPath': null, // Use generic icon for cards
+        'logoPath': 'assets/images/payment_logos/card_logo.png',
         'color': const Color(0xFF635BFF),
       },
       'apple_pay': {
