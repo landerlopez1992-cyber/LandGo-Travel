@@ -561,6 +561,13 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
         'logoPath': 'assets/images/payment_logos/wechat_pay_logo.png',
         'color': const Color(0xFF09BB07),
       },
+      'zip': {
+        'name': 'Zip',
+        'subtitle': 'Buy now, pay later',
+        'icon': Icons.payment,
+        'logoPath': 'assets/images/payment_logos/zip_logo.png',
+        'color': const Color(0xFFE91E63),
+      },
     };
     
     return methods[methodId] ?? methods['card']!;
@@ -771,6 +778,17 @@ class _PaymentMethodSelectorContentState extends State<_PaymentMethodSelectorCon
               const Color(0xFF09BB07), // WeChat Green
             ),
             
+            const SizedBox(height: 12),
+            
+            _buildPaymentMethod(
+              'Zip',
+              'Buy now, pay later',
+              Icons.payment,
+              _selectedPaymentMethod == 'zip',
+              'zip',
+              const Color(0xFFE91E63), // Zip Pink
+            ),
+            
             const SizedBox(height: 40),
             
             // Select Button
@@ -804,7 +822,7 @@ class _PaymentMethodSelectorContentState extends State<_PaymentMethodSelectorCon
               ),
             ),
             
-            const SizedBox(height: 20), // Padding bottom
+            SizedBox(height: MediaQuery.of(context).padding.bottom + 20), // Safe area bottom
                 ],
               ),
             ),
@@ -886,8 +904,15 @@ class _PaymentMethodSelectorContentState extends State<_PaymentMethodSelectorCon
         'logoPath': 'assets/images/payment_logos/wechat_pay_logo.png',
         'color': const Color(0xFF09BB07),
       },
+      'zip': {
+        'name': 'Zip',
+        'subtitle': 'Buy now, pay later',
+        'icon': Icons.payment,
+        'logoPath': 'assets/images/payment_logos/zip_logo.png',
+        'color': const Color(0xFFE91E63),
+      },
     };
-    
+
     return methods[methodId] ?? methods['card']!;
   }
 
