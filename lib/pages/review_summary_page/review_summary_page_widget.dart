@@ -680,9 +680,13 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
   }
 
   /// Procesar pago con Google Pay
-  Future<void> _processGooglePayPayment(double totalAmount) async {
+  Future<void> _processGooglePayPayment(String totalAmountStr) async {
     try {
       print('🔍 DEBUG: Iniciando flujo de Google Pay');
+      
+      // Convertir String a double
+      final totalAmount = double.parse(totalAmountStr);
+      final amountWithoutFee = double.parse(_amount);
       
       // 1. Mostrar loading
       showDialog(
@@ -825,10 +829,14 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => PaymentSuccessPagWidget(
-                amount: _amount, // Monto sin fees
-                totalPaid: totalAmount, // Total pagado con fees
-                paymentMethod: 'google_pay',
+              builder: (context) => const PaymentSuccessPagWidget(),
+              settings: RouteSettings(
+                arguments: {
+                  'amount': amountWithoutFee, // Monto sin fees (double)
+                  'totalPaid': totalAmount, // Total pagado con fees (double)
+                  'paymentMethod': 'google_pay',
+                  'paymentIntentId': paymentResult['paymentIntentId'] ?? 'N/A',
+                },
               ),
             ),
           );
