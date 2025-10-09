@@ -53,12 +53,18 @@ class KlarnaService {
       print('✅ Klarna session created successfully');
       print('✅ Payment Intent ID: ${data['paymentIntentId']}');
       print('✅ Status: ${data['status']}');
+      if (data['redirectUrl'] != null) {
+        print('✅ Redirect URL: ${data['redirectUrl']}');
+      } else {
+        print('⚠️ No redirectUrl provided by backend; will fallback to checkout.stripe.com');
+      }
 
       return {
         'paymentIntentId': data['paymentIntentId'],
         'clientSecret': data['clientSecret'],
         'status': data['status'],
         'amount': data['amount'],
+        'redirectUrl': data['redirectUrl'],
       };
     } catch (e) {
       print('❌ ERROR creating Klarna session: $e');

@@ -45,6 +45,11 @@ serve(async (req) => {
         return await createKlarnaSession(data)
       case 'confirm_klarna_payment':
         return await confirmKlarnaPayment(data)
+      // 🆕 AFTERPAY ACTIONS
+      case 'create_afterpay_session':
+        return await createAfterpaySession(data)
+      case 'confirm_afterpay_payment':
+        return await confirmAfterpayPayment(data)
       default:
         throw new Error(`Unknown action: ${action}`)
     }
@@ -239,24 +244,45 @@ async function attachPaymentMethod(data: any) {
 
 // ✅ Create PaymentIntent
 async function createPaymentIntent(data: any) {
-  const { amount, currency, customerId, paymentMethodId } = data
+  const { amount, currency, customerId, paymentMethodId, billingDetails } = data
   
   console.log('🔍 DEBUG: Creating PaymentIntent with data:', {
     amount,
     currency,
     customerId,
-    paymentMethodId
+    paymentMethodId,
+    billingDetails: billingDetails ? 'Present' : 'Not provided'
   })
 
   const body: any = {
     'amount': Math.round(amount * 100), // Convert to cents
     'currency': currency || 'usd',
     'confirm': 'true',
-    'return_url': 'https://landgotravel.com/payment/return',
+    'return_url': 'landgotravel://payment-return',
   }
 
   if (customerId) body['customer'] = customerId
   if (paymentMethodId) body['payment_method'] = paymentMethodId
+
+  // Add billing details if provided
+  if (billingDetails) {
+    console.log('🔍 DEBUG: Adding billing details to PaymentIntent')
+    if (billingDetails.email) body['receipt_email'] = billingDetails.email
+    if (billingDetails.phone || billingDetails.address) {
+      body['shipping'] = {
+        name: billingDetails.name || 'Customer',
+        phone: billingDetails.phone,
+        address: {
+          line1: billingDetails.address?.line1,
+          line2: billingDetails.address?.line2,
+          city: billingDetails.address?.city,
+          state: billingDetails.address?.state,
+          postal_code: billingDetails.address?.postal_code,
+          country: billingDetails.address?.country,
+        }
+      }
+    }
+  }
 
   const response = await fetch(`${STRIPE_API_URL}/payment_intents`, {
     method: 'POST',
@@ -276,6 +302,7 @@ async function createPaymentIntent(data: any) {
   })
 
   if (!response.ok) {
+    console.error('❌ Stripe PaymentIntent Error:', result.error)
     throw new Error(`Stripe PaymentIntent Error: ${result.error?.message || 'Unknown error'}`)
   }
 
@@ -370,6 +397,256 @@ async function validateCard(data: any) {
     JSON.stringify({ 
       success: true, 
       setupIntent: result 
+    }),
+    { 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    }
+  )
+}
+
+// 🆕 KLARNA FUNCTIONS
+
+// ✅ Create Klarna Session
+async function createKlarnaSession(data: any) {
+  const { amount, currency, customerId, billingDetails } = data
+  
+  console.log('🔍 DEBUG: Creating Klarna session with data:', {
+    amount,
+    currency,
+    customerId,
+    billingDetails: billingDetails ? 'Present' : 'Not provided'
+  })
+
+  const body: any = {
+    'amount': Math.round(amount * 100), // Convert to cents
+    'currency': currency || 'usd',
+    'payment_method_types[]': 'klarna',
+    'payment_method_data[type]': 'klarna',
+    'confirm': 'true',
+    'return_url': 'landgotravel://payment-return',
+  }
+
+  if (customerId) body['customer'] = customerId
+
+  // Add billing details if provided
+  if (billingDetails) {
+    console.log('🔍 DEBUG: Adding billing details to Klarna session')
+    if (billingDetails.email) body['receipt_email'] = billingDetails.email
+    if (billingDetails.phone || billingDetails.address) {
+      body['shipping'] = {
+        name: billingDetails.name || 'Customer',
+        phone: billingDetails.phone,
+        address: {
+          line1: billingDetails.address?.line1,
+          line2: billingDetails.address?.line2,
+          city: billingDetails.address?.city,
+          state: billingDetails.address?.state,
+          postal_code: billingDetails.address?.postal_code,
+          country: billingDetails.address?.country,
+        }
+      }
+    }
+  }
+
+  const response = await fetch(`${STRIPE_API_URL}/payment_intents`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams(body),
+  })
+
+  const result = await response.json()
+  console.log('🔍 DEBUG: Stripe Klarna session response:', {
+    status: response.status,
+    success: response.ok,
+    id: result.id,
+    status: result.status,
+    nextAction: result.next_action?.type
+  })
+
+  if (!response.ok) {
+    console.error('❌ Stripe Klarna session error:', result.error)
+    throw new Error(`Stripe Klarna session error: ${result.error?.message || 'Unknown error'}`)
+  }
+
+  // Extract redirect URL for Klarna checkout
+  const redirectUrl = result.next_action?.redirect_to_url?.url
+  if (!redirectUrl) {
+    throw new Error('No redirect URL received from Klarna')
+  }
+
+  return new Response(
+    JSON.stringify({ 
+      success: true, 
+      paymentIntent: result,
+      clientSecret: result.client_secret,
+      paymentIntentId: result.id,
+      redirectUrl: redirectUrl
+    }),
+    { 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    }
+  )
+}
+
+// ✅ Confirm Klarna Payment
+async function confirmKlarnaPayment(data: any) {
+  const { paymentIntentId } = data
+  
+  console.log('🔍 DEBUG: Confirming Klarna payment:', { paymentIntentId })
+
+  const response = await fetch(`${STRIPE_API_URL}/payment_intents/${paymentIntentId}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+  })
+
+  const result = await response.json()
+  console.log('🔍 DEBUG: Stripe Klarna payment status:', {
+    status: response.status,
+    success: response.ok,
+    id: result.id,
+    paymentStatus: result.status
+  })
+
+  if (!response.ok) {
+    throw new Error(`Stripe Klarna payment status error: ${result.error?.message || 'Unknown error'}`)
+  }
+
+  return new Response(
+    JSON.stringify({ 
+      success: true, 
+      paymentIntent: result,
+      status: result.status
+    }),
+    { 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    }
+  )
+}
+
+// 🆕 AFTERPAY FUNCTIONS
+
+// ✅ Create Afterpay Session
+async function createAfterpaySession(data: any) {
+  const { amount, currency, customerId, billingDetails } = data
+  
+  console.log('🔍 DEBUG: Creating Afterpay session with data:', {
+    amount,
+    currency,
+    customerId,
+    billingDetails: billingDetails ? 'Present' : 'Not provided'
+  })
+
+  const body: any = {
+    'amount': Math.round(amount * 100), // Convert to cents
+    'currency': currency || 'usd',
+    'payment_method_types[]': 'afterpay_clearpay',
+    'payment_method_data[type]': 'afterpay_clearpay',
+    'confirm': 'true',
+    'return_url': 'landgotravel://payment-return',
+  }
+
+  if (customerId) body['customer'] = customerId
+
+  // Add billing details if provided
+  if (billingDetails) {
+    console.log('🔍 DEBUG: Adding billing details to Afterpay session')
+    if (billingDetails.email) body['receipt_email'] = billingDetails.email
+    if (billingDetails.phone || billingDetails.address) {
+      body['shipping'] = {
+        name: billingDetails.name || 'Customer',
+        phone: billingDetails.phone,
+        address: {
+          line1: billingDetails.address?.line1,
+          line2: billingDetails.address?.line2,
+          city: billingDetails.address?.city,
+          state: billingDetails.address?.state,
+          postal_code: billingDetails.address?.postal_code,
+          country: billingDetails.address?.country,
+        }
+      }
+    }
+  }
+
+  const response = await fetch(`${STRIPE_API_URL}/payment_intents`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams(body),
+  })
+
+  const result = await response.json()
+  console.log('🔍 DEBUG: Stripe Afterpay session response:', {
+    status: response.status,
+    success: response.ok,
+    id: result.id,
+    status: result.status,
+    nextAction: result.next_action?.type
+  })
+
+  if (!response.ok) {
+    console.error('❌ Stripe Afterpay session error:', result.error)
+    throw new Error(`Stripe Afterpay session error: ${result.error?.message || 'Unknown error'}`)
+  }
+
+  // Extract redirect URL for Afterpay checkout
+  const redirectUrl = result.next_action?.redirect_to_url?.url
+  if (!redirectUrl) {
+    throw new Error('No redirect URL received from Afterpay')
+  }
+
+  return new Response(
+    JSON.stringify({ 
+      success: true, 
+      paymentIntent: result,
+      clientSecret: result.client_secret,
+      paymentIntentId: result.id,
+      redirectUrl: redirectUrl
+    }),
+    { 
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+    }
+  )
+}
+
+// ✅ Confirm Afterpay Payment
+async function confirmAfterpayPayment(data: any) {
+  const { paymentIntentId } = data
+  
+  console.log('🔍 DEBUG: Confirming Afterpay payment:', { paymentIntentId })
+
+  const response = await fetch(`${STRIPE_API_URL}/payment_intents/${paymentIntentId}`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+  })
+
+  const result = await response.json()
+  console.log('🔍 DEBUG: Stripe Afterpay payment status:', {
+    status: response.status,
+    success: response.ok,
+    id: result.id,
+    paymentStatus: result.status
+  })
+
+  if (!response.ok) {
+    throw new Error(`Stripe Afterpay payment status error: ${result.error?.message || 'Unknown error'}`)
+  }
+
+  return new Response(
+    JSON.stringify({ 
+      success: true, 
+      paymentIntent: result,
+      status: result.status
     }),
     { 
       headers: { ...corsHeaders, 'Content-Type': 'application/json' } 

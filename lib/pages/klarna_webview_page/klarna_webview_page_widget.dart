@@ -33,7 +33,7 @@ class _KlarnaWebviewPageWidgetState extends State<KlarnaWebviewPageWidget> {
   void _initializeWebView() {
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(const Color(0xFF1A1A1A))
+      ..setBackgroundColor(Colors.white) // Cambiar a blanco para Klarna
       ..setNavigationDelegate(
         NavigationDelegate(
           onPageStarted: (String url) {
@@ -115,53 +115,59 @@ class _KlarnaWebviewPageWidgetState extends State<KlarnaWebviewPageWidget> {
         ),
         centerTitle: true,
       ),
-      body: Stack(
-        children: [
-          // Webview
-          WebViewWidget(controller: _controller),
-
-          // Loading indicator
-          if (_isLoading)
+      body: SafeArea(
+        child: Stack(
+          children: [
+            // Webview con ajuste responsivo
             Container(
-              color: const Color(0xFF1A1A1A),
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Logo de Klarna (turquesa)
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF4DD0E1).withOpacity(0.1),
-                        shape: BoxShape.circle,
+              width: double.infinity,
+              height: double.infinity,
+              child: WebViewWidget(controller: _controller),
+            ),
+
+            // Loading indicator
+            if (_isLoading)
+              Container(
+                color: const Color(0xFF1A1A1A),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Logo de Klarna (turquesa)
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4DD0E1).withOpacity(0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.schedule,
+                          size: 40,
+                          color: Color(0xFF4DD0E1),
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.schedule,
-                        size: 40,
-                        color: Color(0xFF4DD0E1),
+                      const SizedBox(height: 24),
+                      // Loading spinner
+                      const CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4DD0E1)),
                       ),
-                    ),
-                    const SizedBox(height: 24),
-                    // Loading spinner
-                    const CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4DD0E1)),
-                    ),
-                    const SizedBox(height: 16),
-                    // Texto
-                    Text(
-                      'Loading Klarna...',
-                      style: GoogleFonts.outfit(
-                        color: Colors.white70,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
+                      const SizedBox(height: 16),
+                      // Texto
+                      Text(
+                        'Loading Klarna...',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white70,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

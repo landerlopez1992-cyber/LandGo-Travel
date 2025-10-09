@@ -4,8 +4,10 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/components/back_button_widget.dart';
 import '/pages/payment_cards_page/payment_cards_page_widget.dart';
 import '/pages/klarna_webview_page/klarna_webview_page_widget.dart';
+import '/pages/payment_webview_page/payment_webview_page_widget.dart';
 import '/payment/payment_success_pag/payment_success_pag_widget.dart';
 import '/services/klarna_service.dart';
+import '/services/afterpay_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'review_summary_page_model.dart';
 export 'review_summary_page_model.dart';
@@ -536,9 +538,11 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
             print('🔍 DEBUG: Original Amount: $_amount');
             print('🔍 DEBUG: Total Amount (with fees): $totalAmount');
             
-            // 🆕 DETECTAR SI ES KLARNA
+            // 🆕 DETECTAR MÉTODO DE PAGO
             if (_selectedPaymentMethod == 'klarna') {
               await _processKlarnaPayment(totalAmount);
+            } else if (_selectedPaymentMethod == 'afterpay_clearpay') {
+              await _processAfterpayPayment(totalAmount);
             } else {
               // FLUJO NORMAL - CREDIT/DEBIT CARD
               Navigator.push(
@@ -747,7 +751,11 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
       if (mounted) Navigator.of(context).pop();
 
       // 5. Abrir Webview con Klarna
-      final checkoutUrl = KlarnaService.getKlarnaCheckoutUrl(session['clientSecret']);
+      // Preferir la URL oficial devuelta por el backend (redirectUrl)
+      final redirectUrl = (session['redirectUrl'] as String?)?.trim();
+      final checkoutUrl = (redirectUrl != null && redirectUrl.isNotEmpty)
+          ? redirectUrl
+          : KlarnaService.getKlarnaCheckoutUrl(session['clientSecret']);
       
       final result = await Navigator.push(
         context,
@@ -811,6 +819,139 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
     }
   }
 
+  /// 🆕 PROCESAR PAGO CON AFTERPAY
+  Future<void> _processAfterpayPayment(String totalAmountStr) async {
+    try {
+      print('🔍 DEBUG: Iniciando flujo de Afterpay');
+      
+      // Convertir String a double
+      final totalAmount = double.parse(totalAmountStr);
+      final amountWithoutFee = double.parse(_amount);
+      
+      // 1. Mostrar loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Center(
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2C2C2C),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4DD0E1)),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Creating Afterpay session...',
+                  style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      // 2. Obtener usuario actual
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      if (currentUser == null) {
+        if (mounted) Navigator.of(context).pop();
+        _showErrorDialog('User not logged in');
+        return;
+      }
+
+      // 3. Obtener/Crear Stripe Customer ID
+      final profileResponse = await Supabase.instance.client
+          .from('profiles')
+          .select('stripe_customer_id')
+          .eq('id', currentUser.id)
+          .maybeSingle();
+      
+      String? stripeCustomerId = profileResponse?['stripe_customer_id'];
+
+      // 4. Crear sesión de Afterpay
+      final session = await AfterpayService.createAfterpaySession(
+        amount: totalAmount,
+        customerId: stripeCustomerId ?? '',
+      );
+
+      print('✅ Afterpay session created');
+      print('✅ Payment Intent ID: ${session['paymentIntentId']}');
+
+      // Cerrar loading
+      if (mounted) Navigator.of(context).pop();
+
+      // 5. Abrir Webview con Afterpay
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PaymentWebviewPageWidget(
+            checkoutUrl: session['redirectUrl'],
+            returnUrl: 'landgotravel://payment-return',
+            paymentIntentId: session['paymentIntentId'],
+            paymentMethodName: 'Afterpay',
+          ),
+        ),
+      );
+
+      // 6. Manejar resultado
+      if (result == null) {
+        print('🔄 User closed Afterpay Webview without completing');
+        return;
+      }
+
+      final status = result['status'];
+      final paymentIntentId = result['paymentIntentId'];
+
+      print('🔍 DEBUG: Afterpay result status: $status');
+
+      if (status == 'success') {
+        // Pago exitoso
+        print('✅ Afterpay payment successful');
+        
+        // Confirmar el estado del pago
+        final confirmation = await AfterpayService.confirmAfterpayPayment(
+          paymentIntentId: paymentIntentId,
+        );
+
+        if (confirmation['status'] == 'succeeded') {
+          // Actualizar wallet
+          await _updateWalletBalance(amountWithoutFee, paymentIntentId);
+          
+          // Navegar a PaymentSuccess
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const PaymentSuccessPagWidget(),
+              ),
+            );
+          }
+        } else {
+          _showErrorDialog('Payment is ${confirmation['status']}. We\'ll notify you when it\'s complete.');
+        }
+      } else if (status == 'failed') {
+        _showErrorDialog('Afterpay payment failed. Please try another payment method.');
+      } else if (status == 'cancelled') {
+        print('🔄 User cancelled Afterpay payment');
+        // Usuario canceló, no hacer nada
+      } else {
+        _showErrorDialog('Payment status: $status');
+      }
+    } catch (e) {
+      print('❌ ERROR in Afterpay payment: $e');
+      if (mounted) Navigator.of(context).pop();
+      _showErrorDialog('Error processing Afterpay payment: $e');
+    }
+  }
+
   /// Actualizar balance del wallet
   Future<void> _updateWalletBalance(double amount, String paymentIntentId) async {
     try {
@@ -837,10 +978,10 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
       await Supabase.instance.client.from('payments').insert({
         'user_id': currentUser.id,
         'amount': amount,
-        'payment_method': 'klarna',
+        'payment_method': _selectedPaymentMethod == 'klarna' ? 'klarna' : 'afterpay_clearpay',
         'status': 'completed',
         'related_type': 'wallet_topup',
-        'description': 'Wallet top-up via Klarna (PaymentIntent: $paymentIntentId)',
+        'description': 'Wallet top-up via ${_selectedPaymentMethod == 'klarna' ? 'Klarna' : 'Afterpay'} (PaymentIntent: $paymentIntentId)',
         'created_at': DateTime.now().toIso8601String(),
       });
 

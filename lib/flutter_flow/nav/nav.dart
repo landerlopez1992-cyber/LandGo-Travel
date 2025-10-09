@@ -290,6 +290,16 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => PaymentSuccessPagWidget(),
         ),
         FFRoute(
+          name: PaymentWebviewPageWidget.routeName,
+          path: PaymentWebviewPageWidget.routePath,
+          builder: (context, params) => PaymentWebviewPageWidget(
+            checkoutUrl: params.getParam<String>('checkoutUrl', ParamType.String) ?? '',
+            returnUrl: params.getParam<String>('returnUrl', ParamType.String) ?? '',
+            paymentIntentId: params.getParam<String>('paymentIntentId', ParamType.String) ?? '',
+            paymentMethodName: params.getParam<String>('paymentMethodName', ParamType.String) ?? 'Payment',
+          ),
+        ),
+        FFRoute(
           name: MyBookingsPageWidget.routeName,
           path: MyBookingsPageWidget.routePath,
           builder: (context, params) => MyBookingsPageWidget(),

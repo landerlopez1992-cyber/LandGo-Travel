@@ -203,65 +203,71 @@ class _NewWelcomePageWidgetState extends State<NewWelcomePageWidget> {
                 
                 const SizedBox(height: 48),
                 
-                // Botones centrados y con ancho limitado
+                // Botones centrados y responsivos
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // Skip button
-                    SizedBox(
-                      width: 180,
-                      height: 56,
-                      child: OutlinedButton(
-                        onPressed: () async {
-                          context.pushNamed('LoginPage');
-                        },
-                        style: OutlinedButton.styleFrom(
-                          backgroundColor: Colors.transparent,
-                          side: BorderSide(
-                            color: Colors.white.withOpacity(0.4),
-                            width: 2,
+                    Flexible(
+                      flex: 3,
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: OutlinedButton(
+                          onPressed: () async {
+                            context.pushNamed('LoginPage');
+                          },
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            side: BorderSide(
+                              color: Colors.white.withOpacity(0.4),
+                              width: 2,
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                        ),
-                        child: Text(
-                          'Skip',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                          child: Text(
+                            'Skip',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ),
                     ),
                     
-                    const SizedBox(width: 24),
+                    const SizedBox(width: 16),
                     
                     // Next button
-                    SizedBox(
-                      width: 220,
-                      height: 56,
-                      child: ElevatedButton(
-                        onPressed: _nextPage,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF4DD0E1),
-                          foregroundColor: Colors.black,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
+                    Flexible(
+                      flex: 4,
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: _nextPage,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF4DD0E1),
+                            foregroundColor: Colors.black,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                            ),
                           ),
-                        ),
-                        child: Text(
-                          _currentPage == _onboardingData.length - 1 
-                              ? 'Get Started' 
-                              : 'Next',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            color: Colors.black,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                          child: Text(
+                            _currentPage == _onboardingData.length - 1 
+                                ? 'Get Started' 
+                                : 'Next',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              color: Colors.black,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
                       ),
