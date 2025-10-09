@@ -43,61 +43,16 @@ class GooglePayService {
   }) async {
     try {
       print('🔍 DEBUG GooglePay: Iniciando pago de \$$amount');
+      print('⚠️ NOTA: Funcionalidad de Google Pay en desarrollo');
+      print('⚠️ Por ahora, redirigiendo a flujo de Credit/Debit Card');
       
-      // 1. Inicializar Google Pay con Stripe
-      await Stripe.instance.initGooglePay(
-        GooglePayInitParams(
-          merchantName: merchantName,
-          countryCode: countryCode,
-          testEnv: true, // Cambiar a false en producción
-        ),
-      );
-      
-      print('✅ Google Pay inicializado');
-      
-      // 2. Presentar Google Pay sheet
-      await Stripe.instance.presentGooglePay(
-        PresentGooglePayParams(
-          clientSecret: '', // No necesitamos clientSecret aún
-          forSetupIntent: false,
-          currencyCode: currency,
-        ),
-      );
-      
-      print('✅ Google Pay sheet presentado');
-      
-      // 3. Confirmar el pago de Google Pay
-      // Esto crea automáticamente el PaymentMethod
-      final paymentMethod = await Stripe.instance.createGooglePayPaymentMethod(
-        CreateGooglePayPaymentMethodParams(
-          currencyCode: currency,
-          amount: (amount * 100).toInt(), // Stripe usa centavos
-        ),
-      );
-      
-      print('✅ PaymentMethod creado: ${paymentMethod.id}');
-      
-      // 4. Retornar el PaymentMethod ID para procesarlo
-      return {
-        'success': true,
-        'paymentMethodId': paymentMethod.id,
-      };
-      
-    } on StripeException catch (e) {
-      print('❌ Stripe Error GooglePay: ${e.error.message}');
-      
-      if (e.error.code == FailureCode.Canceled) {
-        return {
-          'success': false,
-          'error': 'cancelled',
-          'message': 'Payment cancelled by user',
-        };
-      }
+      // TODO: Implementar Google Pay con la versión correcta de flutter_stripe
+      // Por ahora, retornamos error para que use el flujo de tarjeta normal
       
       return {
         'success': false,
-        'error': 'stripe_error',
-        'message': e.error.message ?? 'Unknown Stripe error',
+        'error': 'not_implemented',
+        'message': 'Google Pay is not yet implemented. Please use Credit/Debit Card.',
       };
       
     } catch (e, stackTrace) {
