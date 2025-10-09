@@ -349,10 +349,12 @@ class _AllTransactionsPageWidgetState extends State<AllTransactionsPageWidget> {
     final status = (tx['status'] ?? 'completed').toString().toLowerCase();
     final createdAt = tx['created_at']?.toString() ?? '';
     
-    // Determinar si es envío, recepción o pago con Stripe
+    // Determinar si es envío, recepción o pago con métodos de pago
     bool isSent = amount < 0; // débito (envío)
-    bool isReceived = amount > 0; // crédito (recepción)
-    bool isStripePayment = paymentMethod.contains('stripe') || paymentMethod.contains('card');
+    bool isReceived = amount > 0 && paymentMethod == 'wallet'; // crédito (recepción de otro usuario)
+    bool isKlarna = paymentMethod == 'klarna';
+    bool isAfterpay = paymentMethod == 'afterpay' || paymentMethod == 'afterpay_clearpay';
+    bool isStripePayment = paymentMethod.contains('stripe') || paymentMethod.contains('card') || paymentMethod == 'debit_card';
     
     // Determinar el tipo de transacción y obtener información del usuario
     String transactionType;
@@ -360,8 +362,18 @@ class _AllTransactionsPageWidgetState extends State<AllTransactionsPageWidget> {
     IconData typeIcon;
     Color typeColor;
     
-    if (isStripePayment) {
-      transactionType = 'Pago con Tarjeta';
+    if (isKlarna) {
+      transactionType = 'Klarna';
+      userInfo = 'Agregado saldo con Klarna';
+      typeIcon = Icons.payment;
+      typeColor = const Color(0xFF4DD0E1); // Turquesa
+    } else if (isAfterpay) {
+      transactionType = 'Afterpay';
+      userInfo = 'Agregado saldo con Afterpay';
+      typeIcon = Icons.payment;
+      typeColor = const Color(0xFF4DD0E1); // Turquesa
+    } else if (isStripePayment) {
+      transactionType = 'Debit Card';
       userInfo = 'Agregado saldo con tarjeta';
       typeIcon = Icons.credit_card;
       typeColor = const Color(0xFF4DD0E1); // Turquesa
@@ -508,8 +520,8 @@ class _AllTransactionsPageWidgetState extends State<AllTransactionsPageWidget> {
                 style: GoogleFonts.outfit(
                   color: isSent 
                     ? const Color(0xFFDC2626) // Rojo para enviado
-                    : isStripePayment 
-                      ? const Color(0xFF4DD0E1) // Turquesa para tarjeta
+                    : (isStripePayment || isKlarna || isAfterpay)
+                      ? const Color(0xFF4DD0E1) // Turquesa para métodos de pago
                       : const Color(0xFF4CAF50), // Verde para recibido
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -517,12 +529,20 @@ class _AllTransactionsPageWidgetState extends State<AllTransactionsPageWidget> {
               ),
               const SizedBox(height: 2),
               Text(
-                isSent ? 'Enviado' : isStripePayment ? 'Tarjeta' : 'Recibido',
+                isSent 
+                  ? 'Enviado' 
+                  : isKlarna 
+                    ? 'Klarna' 
+                    : isAfterpay 
+                      ? 'Afterpay' 
+                      : isStripePayment 
+                        ? 'Debit Card' 
+                        : 'Recibido',
                 style: GoogleFonts.outfit(
                   color: isSent 
                     ? const Color(0xFFDC2626) // Rojo para enviado
-                    : isStripePayment 
-                      ? const Color(0xFF4DD0E1) // Turquesa para tarjeta
+                    : (isStripePayment || isKlarna || isAfterpay)
+                      ? const Color(0xFF4DD0E1) // Turquesa para métodos de pago
                       : const Color(0xFF4CAF50), // Verde para recibido
                   fontSize: 10,
                   fontWeight: FontWeight.w500,
@@ -539,8 +559,9 @@ class _AllTransactionsPageWidgetState extends State<AllTransactionsPageWidget> {
     if (dateString == null || dateString.isEmpty) return 'Unknown date';
     try {
       final date = DateTime.parse(dateString);
+      final localDate = date.toLocal(); // Convertir a hora local del dispositivo
       final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      return '${months[date.month - 1]} ${date.day}, ${date.year} • ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+      return '${months[localDate.month - 1]} ${localDate.day}, ${localDate.year} • ${localDate.hour}:${localDate.minute.toString().padLeft(2, '0')}';
     } catch (e) {
       return 'Unknown date';
     }

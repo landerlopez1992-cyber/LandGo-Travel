@@ -42,6 +42,14 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
     WidgetsBinding.instance.addPostFrameCallback((_) => setState(() {}));
   }
   
+  @override
+  void reassemble() {
+    super.reassemble();
+    // Forzar recarga tras Hot Reload para ver top-ups recientes
+    print('🔄 REASSEMBLE: Recargando wallet tras hot reload...');
+    _loadWalletBalance();
+  }
+  
   /// Método público para refrescar el balance cuando sea necesario
   Future<void> refreshBalance() async {
     if (mounted) {
@@ -291,20 +299,44 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF4DD0E1), // TURQUESA LANDGO
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  'Active',
-                  style: GoogleFonts.outfit(
-                    color: Colors.black,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+              Row(
+                children: [
+                  // Botón de refresh junto al chip Active
+                  GestureDetector(
+                    onTap: () {
+                      print('🔄 Manual refresh triggered');
+                      _loadWalletBalance();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4DD0E1).withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.refresh,
+                        color: Color(0xFF4DD0E1),
+                        size: 18,
+                      ),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF4DD0E1), // TURQUESA LANDGO
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Active',
+                      style: GoogleFonts.outfit(
+                        color: Colors.black,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -587,18 +619,30 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
     final amount = (tx['amount'] as num?)?.toDouble() ?? 0.0;
     final paymentMethod = (tx['payment_method'] ?? '').toString().toLowerCase();
     
-    // Determinar si es envío, recepción o pago con Stripe
+    // Determinar si es envío, recepción o pago con métodos de pago
     bool isSent = amount < 0; // débito (envío)
-    bool isReceived = amount > 0; // crédito (recepción)
-    bool isStripePayment = paymentMethod.contains('stripe') || paymentMethod.contains('card');
-    
+    bool isReceived = amount > 0 && paymentMethod == 'wallet'; // crédito (recepción de otro usuario)
+    bool isKlarna = paymentMethod == 'klarna';
+    // Detectar variantes antiguas: afterpay_clearpay
+    bool isAfterpay = paymentMethod == 'afterpay' || paymentMethod == 'afterpay_clearpay';
+    bool isStripePayment = paymentMethod.contains('stripe') || paymentMethod.contains('card') || paymentMethod == 'debit_card';
+
     // Determinar el tipo de transacción
     String transactionType;
     IconData typeIcon;
     Color typeColor;
-    
-    if (isStripePayment) {
-      transactionType = 'Pago con Tarjeta';
+
+    // IMPORTANTE: Verificar Afterpay PRIMERO antes que stripe_card
+    if (isAfterpay) {
+      transactionType = 'Afterpay';
+      typeIcon = Icons.payment;
+      typeColor = const Color(0xFF4DD0E1); // Turquesa
+    } else if (isKlarna) {
+      transactionType = 'Klarna';
+      typeIcon = Icons.payment;
+      typeColor = const Color(0xFF4DD0E1); // Turquesa
+    } else if (isStripePayment) {
+      transactionType = 'Debit Card';
       typeIcon = Icons.credit_card;
       typeColor = const Color(0xFF4DD0E1); // Turquesa
     } else if (isSent) {
@@ -702,8 +746,8 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
             style: GoogleFonts.outfit(
               color: isSent 
                 ? const Color(0xFFDC2626) // Rojo para enviado
-                : isStripePayment 
-                  ? const Color(0xFF4DD0E1) // Turquesa para tarjeta
+                : (isStripePayment || isKlarna || isAfterpay)
+                  ? const Color(0xFF4DD0E1) // Turquesa para métodos de pago
                   : const Color(0xFF4CAF50), // Verde para recibido
               fontSize: 16,
               fontWeight: FontWeight.bold,
@@ -718,8 +762,9 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
     if (dateString == null || dateString.isEmpty) return 'Unknown date';
     try {
       final date = DateTime.parse(dateString);
+      final localDate = date.toLocal(); // Convertir a hora local del dispositivo
       final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      return '${months[date.month - 1]} ${date.day}, ${date.year} • ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+      return '${months[localDate.month - 1]} ${localDate.day}, ${localDate.year} • ${localDate.hour}:${localDate.minute.toString().padLeft(2, '0')}';
     } catch (e) {
       return 'Unknown date';
     }

@@ -56,6 +56,13 @@ class _PaymentWebviewPageWidgetState extends State<PaymentWebviewPageWidget> {
           onNavigationRequest: (NavigationRequest request) {
             print('🔍 DEBUG: Navigation request: ${request.url}');
 
+            // Detectar pago fallido (Afterpay/Klarna)
+            if (request.url.contains('/cancel') && request.url.contains('status=FAILED')) {
+              print('❌ Payment FAILED detected in URL');
+              Navigator.pop(context, {'status': 'failed', 'paymentIntentId': widget.paymentIntentId});
+              return NavigationDecision.prevent;
+            }
+
             // Detectar redirección de vuelta a la app
             if (request.url.startsWith(widget.returnUrl)) {
               _handleReturnUrl(request.url);
@@ -78,20 +85,33 @@ class _PaymentWebviewPageWidgetState extends State<PaymentWebviewPageWidget> {
     print('🔍 DEBUG: Handling return URL: $url');
 
     final uri = Uri.parse(url);
-    final status = uri.queryParameters['redirect_status'];
+    
+    // Klarna usa 'redirect_status', Afterpay usa 'payment_intent' y 'payment_intent_client_secret'
+    final redirectStatus = uri.queryParameters['redirect_status'];
+    final paymentIntent = uri.queryParameters['payment_intent'];
+    final paymentIntentClientSecret = uri.queryParameters['payment_intent_client_secret'];
 
-    print('🔍 DEBUG: Redirect status: $status');
+    print('🔍 DEBUG: Redirect status: $redirectStatus');
+    print('🔍 DEBUG: Payment Intent: $paymentIntent');
+    print('🔍 DEBUG: Client Secret: ${paymentIntentClientSecret != null ? "present" : "null"}');
 
-    // Cerrar Webview y devolver resultado
-    if (status == 'succeeded') {
+    // Si tiene payment_intent y client_secret, es Afterpay exitoso
+    if (paymentIntent != null && paymentIntentClientSecret != null) {
+      print('✅ ${widget.paymentMethodName} payment succeeded (detected via payment_intent)');
+      Navigator.pop(context, {'status': 'success', 'paymentIntentId': widget.paymentIntentId});
+      return;
+    }
+
+    // Si tiene redirect_status, es Klarna
+    if (redirectStatus == 'succeeded') {
       print('✅ ${widget.paymentMethodName} payment succeeded');
       Navigator.pop(context, {'status': 'success', 'paymentIntentId': widget.paymentIntentId});
-    } else if (status == 'failed') {
+    } else if (redirectStatus == 'failed') {
       print('❌ ${widget.paymentMethodName} payment failed');
       Navigator.pop(context, {'status': 'failed', 'paymentIntentId': widget.paymentIntentId});
     } else {
-      print('⏳ ${widget.paymentMethodName} payment status: $status');
-      Navigator.pop(context, {'status': status, 'paymentIntentId': widget.paymentIntentId});
+      print('⏳ ${widget.paymentMethodName} payment status: $redirectStatus');
+      Navigator.pop(context, {'status': redirectStatus ?? 'unknown', 'paymentIntentId': widget.paymentIntentId});
     }
   }
 

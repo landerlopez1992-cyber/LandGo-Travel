@@ -57,15 +57,25 @@ class _TransactionDetailPageWidgetState
 
     // Determinar tipo de transacción
     bool isSent = amount < 0;
-    bool isReceived = amount > 0;
-    bool isStripePayment = paymentMethod.contains('stripe') || paymentMethod.contains('card');
+    bool isReceived = amount > 0 && paymentMethod == 'wallet';
+    bool isKlarna = paymentMethod == 'klarna';
+    bool isAfterpay = paymentMethod == 'afterpay' || paymentMethod == 'afterpay_clearpay';
+    bool isStripePayment = paymentMethod.contains('stripe') || paymentMethod.contains('card') || paymentMethod == 'debit_card';
 
     String transactionType;
     IconData typeIcon;
     Color typeColor;
 
-    if (isStripePayment) {
-      transactionType = 'Pago con Tarjeta';
+    if (isKlarna) {
+      transactionType = 'Klarna';
+      typeIcon = Icons.payment;
+      typeColor = const Color(0xFF4DD0E1); // Turquesa
+    } else if (isAfterpay) {
+      transactionType = 'Afterpay';
+      typeIcon = Icons.payment;
+      typeColor = const Color(0xFF4DD0E1); // Turquesa
+    } else if (isStripePayment) {
+      transactionType = 'Debit Card';
       typeIcon = Icons.credit_card;
       typeColor = const Color(0xFF4DD0E1); // Turquesa
     } else if (isSent) {
@@ -230,8 +240,8 @@ class _TransactionDetailPageWidgetState
                       style: GoogleFonts.outfit(
                         color: isSent
                             ? const Color(0xFFDC2626) // Rojo para enviado
-                            : isStripePayment 
-                              ? const Color(0xFF4DD0E1) // Turquesa para tarjeta
+                            : (isStripePayment || isKlarna || isAfterpay)
+                              ? const Color(0xFF4DD0E1) // Turquesa para métodos de pago
                               : const Color(0xFF4CAF50), // Verde para recibido
                         fontSize: 48,
                         fontWeight: FontWeight.bold,

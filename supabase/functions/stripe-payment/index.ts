@@ -1,574 +1,361 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
+};
 
-// Stripe API configuration
-const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY')
-if (!STRIPE_SECRET_KEY) {
-  throw new Error('STRIPE_SECRET_KEY environment variable is required')
-}
-const STRIPE_API_URL = 'https://api.stripe.com/v1'
+const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY') || 'sk_test_51SBkaB2aG6cmZRHQwkLRrfMl5vR2Id6KhpGGqlbXheXV9FKc21ORQVPEFssJ8OsjA5cYtsHnyRSNhrfGiBzSIoSm00Q1TX4TBI';
+const STRIPE_API_URL = 'https://api.stripe.com/v1';
 
 serve(async (req) => {
-  // Handle CORS preflight requests
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+  if (req.method === 'OPTIONS') return new Response('ok', {
+    headers: corsHeaders
+  });
 
   try {
-    // Parse request body
-    const { action, ...data } = await req.json()
-    
-    console.log('🔍 DEBUG: Stripe Edge Function called with action:', action)
-    console.log('🔍 DEBUG: Data received:', JSON.stringify(data, null, 2))
+    const { action, ...data } = await req.json();
+    console.log('🔍 action =', action);
+    console.log('🔍 data =', JSON.stringify(data, null, 2));
 
     switch (action) {
       case 'create_customer':
-        return await createCustomer(data)
+        return await createCustomer(data);
       case 'create_payment_method':
-        return await createPaymentMethod(data)
-      case 'create_payment_method_with_token':
-        return await createPaymentMethodWithToken(data)
+        return await createPaymentMethod(data);
       case 'attach_payment_method':
-        return await attachPaymentMethod(data)
+        return await attachPaymentMethod(data);
       case 'create_payment_intent':
-        return await createPaymentIntent(data)
+        return await createPaymentIntent(data);
       case 'confirm_payment':
-        return await confirmPayment(data)
-      case 'validate_card':
-        return await validateCard(data)
+        return await confirmPayment(data);
+      case 'list_payment_methods':
+        return await listPaymentMethods(data);
+      case 'detach_payment_method':
+        return await detachPaymentMethod(data);
       // 🆕 KLARNA ACTIONS
       case 'create_klarna_session':
-        return await createKlarnaSession(data)
+        return await createKlarnaSession(data);
       case 'confirm_klarna_payment':
-        return await confirmKlarnaPayment(data)
+        return await confirmKlarnaPayment(data);
       // 🆕 AFTERPAY ACTIONS
       case 'create_afterpay_session':
-        return await createAfterpaySession(data)
+        return await createAfterpaySession(data);
       case 'confirm_afterpay_payment':
-        return await confirmAfterpayPayment(data)
+        return await confirmAfterpayPayment(data);
+      case 'test_edge_function':
+        return await testEdgeFunction();
       default:
-        throw new Error(`Unknown action: ${action}`)
+        throw new Error(`Unknown action: ${action}`);
     }
   } catch (error) {
-    console.error('❌ ERROR in Stripe Edge Function:', error)
-    return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error.message 
-      }),
-      { 
-        status: 400, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    )
+    console.error('❌ EDGE ERROR:', error);
+    return json({
+      success: false,
+      error: String(error?.message ?? error)
+    }, 400);
   }
-})
+});
 
-// ✅ Create PaymentMethod with Test Token (FUNCIONA 100%)
-async function createPaymentMethodWithToken(data: any) {
-  const { testToken, cardholderName } = data
-  
-  console.log('🔍 DEBUG: Creating PaymentMethod with test token:', testToken)
-
-  const response = await fetch(`${STRIPE_API_URL}/payment_methods`, {
-    method: 'POST',
+/* ========== COMMON ========== */
+function json(payload, status = 200) {
+  return new Response(JSON.stringify(payload), {
+    status,
     headers: {
-      'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      'type': 'card',
-      'card[token]': testToken,
-      'billing_details[name]': cardholderName,
-    }),
-  })
-
-  const result = await response.json()
-  console.log('🔍 DEBUG: Stripe PaymentMethod response:', {
-    status: response.status,
-    success: response.ok,
-    id: result.id
-  })
-
-  if (!response.ok) {
-    throw new Error(`Stripe PaymentMethod Error: ${result.error?.message || 'Unknown error'}`)
-  }
-
-  return new Response(
-    JSON.stringify({ 
-      success: true, 
-      paymentMethod: result 
-    }),
-    { 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      ...corsHeaders,
+      'Content-Type': 'application/json'
     }
-  )
+  });
 }
 
-// ✅ Create PaymentMethod
-async function createPaymentMethod(data: any) {
-  const { cardNumber, expiryMonth, expiryYear, cvv, cardholderName } = data
-  
-  console.log('🔍 DEBUG: Creating PaymentMethod with data:', {
-    cardNumber: cardNumber?.replace(/\d(?=\d{4})/g, "*"), // Mask card number
-    expiryMonth,
-    expiryYear,
-    cvv: cvv ? "***" : undefined,
-    cardholderName
-  })
-
-  const response = await fetch(`${STRIPE_API_URL}/payment_methods`, {
+/* ========== CORE APIS ========== */
+async function createPaymentMethod(data) {
+  const { cardNumber, expiryMonth, expiryYear, cvv, cardholderName } = data;
+  const res = await fetch(`${STRIPE_API_URL}/payment_methods`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Type': 'application/x-www-form-urlencoded'
     },
     body: new URLSearchParams({
       'type': 'card',
       'card[number]': cardNumber,
-      'card[exp_month]': expiryMonth,
-      'card[exp_year]': expiryYear,
-      'card[cvc]': cvv,
-      'billing_details[name]': cardholderName,
-    }),
-  })
-
-  const result = await response.json()
-  console.log('🔍 DEBUG: Stripe PaymentMethod response:', {
-    status: response.status,
-    success: response.ok,
-    id: result.id
-  })
-
-  if (!response.ok) {
-    throw new Error(`Stripe PaymentMethod Error: ${result.error?.message || 'Unknown error'}`)
-  }
-
-  return new Response(
-    JSON.stringify({ 
-      success: true, 
-      paymentMethod: result 
-    }),
-    { 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-    }
-  )
+      'card[exp_month]': String(expiryMonth),
+      'card[exp_year]': String(expiryYear),
+      'card[cvc]': cvv ?? '',
+      'billing_details[name]': cardholderName ?? ''
+    })
+  });
+  const result = await res.json();
+  if (!res.ok) throw new Error(result?.error?.message ?? 'Stripe PaymentMethod error');
+  return json({
+    success: true,
+    paymentMethod: result
+  });
 }
 
-// ✅ Create Customer
-async function createCustomer(data: any) {
-  const { email, name, phone } = data
-  
-  console.log('🔍 DEBUG: Creating Customer with data:', { email, name, phone })
-
-  const response = await fetch(`${STRIPE_API_URL}/customers`, {
+async function createCustomer(data) {
+  const { email, name, phone } = data;
+  const res = await fetch(`${STRIPE_API_URL}/customers`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Type': 'application/x-www-form-urlencoded'
     },
     body: new URLSearchParams({
-      'email': email,
-      ...(name && { 'name': name }),
-      ...(phone && { 'phone': phone }),
-    }),
-  })
-
-  const result = await response.json()
-  console.log('🔍 DEBUG: Stripe Customer response:', {
-    status: response.status,
-    success: response.ok,
-    id: result.id
-  })
-
-  if (!response.ok) {
-    throw new Error(`Stripe Customer Error: ${result.error?.message || 'Unknown error'}`)
-  }
-
-  return new Response(
-    JSON.stringify({ 
-      success: true, 
-      customer: result 
-    }),
-    { 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-    }
-  )
+      ...email ? {
+        'email': email
+      } : {},
+      ...name ? {
+        'name': name
+      } : {},
+      ...phone ? {
+        'phone': phone
+      } : {}
+    })
+  });
+  const result = await res.json();
+  if (!res.ok) throw new Error(result?.error?.message ?? 'Stripe Customer error');
+  return json({
+    success: true,
+    customer: result
+  });
 }
 
-// ✅ Attach PaymentMethod to Customer
-async function attachPaymentMethod(data: any) {
-  const { customerId, paymentMethodId } = data
-  
-  console.log('🔍 DEBUG: Attaching PaymentMethod to Customer:', {
-    customerId,
-    paymentMethodId
-  })
-
-  const response = await fetch(`${STRIPE_API_URL}/payment_methods/${paymentMethodId}/attach`, {
+async function attachPaymentMethod(data) {
+  const { customerId, paymentMethodId } = data;
+  const res = await fetch(`${STRIPE_API_URL}/payment_methods/${paymentMethodId}/attach`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Type': 'application/x-www-form-urlencoded'
     },
     body: new URLSearchParams({
-      'customer': customerId,
-    }),
-  })
-
-  const result = await response.json()
-  console.log('🔍 DEBUG: Stripe Attach PaymentMethod response:', {
-    status: response.status,
-    success: response.ok,
-    id: result.id
-  })
-
-  if (!response.ok) {
-    throw new Error(`Stripe Attach PaymentMethod Error: ${result.error?.message || 'Unknown error'}`)
-  }
-
-  return new Response(
-    JSON.stringify({ 
-      success: true, 
-      paymentMethod: result 
-    }),
-    { 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-    }
-  )
+      'customer': customerId
+    })
+  });
+  const result = await res.json();
+  if (!res.ok) throw new Error(result?.error?.message ?? 'Stripe Attach error');
+  return json({
+    success: true,
+    paymentMethod: result
+  });
 }
 
-// ✅ Create PaymentIntent
-async function createPaymentIntent(data: any) {
-  const { amount, currency, customerId, paymentMethodId, billingDetails } = data
-  
-  console.log('🔍 DEBUG: Creating PaymentIntent with data:', {
-    amount,
-    currency,
-    customerId,
-    paymentMethodId,
-    billingDetails: billingDetails ? 'Present' : 'Not provided'
-  })
-
-  const body: any = {
-    'amount': Math.round(amount * 100), // Convert to cents
+async function createPaymentIntent(data) {
+  const { amount, currency, customerId, paymentMethodId, billingDetails } = data;
+  const body = {
+    'amount': String(Math.round(Number(amount) * 100)),
     'currency': currency || 'usd',
     'confirm': 'true',
-    'return_url': 'landgotravel://payment-return',
-  }
-
-  if (customerId) body['customer'] = customerId
-  if (paymentMethodId) body['payment_method'] = paymentMethodId
-
-  // Add billing details if provided
+    'return_url': 'https://landgotravel.com/payment/return'
+  };
+  if (customerId) body['customer'] = customerId;
+  if (paymentMethodId) body['payment_method'] = paymentMethodId;
   if (billingDetails) {
-    console.log('🔍 DEBUG: Adding billing details to PaymentIntent')
-    if (billingDetails.email) body['receipt_email'] = billingDetails.email
-    if (billingDetails.phone || billingDetails.address) {
-      body['shipping'] = {
-        name: billingDetails.name || 'Customer',
-        phone: billingDetails.phone,
-        address: {
-          line1: billingDetails.address?.line1,
-          line2: billingDetails.address?.line2,
-          city: billingDetails.address?.city,
-          state: billingDetails.address?.state,
-          postal_code: billingDetails.address?.postal_code,
-          country: billingDetails.address?.country,
-        }
-      }
-    }
+    if (billingDetails.email) body['receipt_email'] = billingDetails.email;
+    const a = billingDetails.address || {};
+    body['shipping[name]'] = billingDetails.email || 'Customer';
+    if (billingDetails.phone) body['shipping[phone]'] = billingDetails.phone;
+    if (a.line1) body['shipping[address][line1]'] = a.line1;
+    if (a.line2) body['shipping[address][line2]'] = a.line2;
+    if (a.city) body['shipping[address][city]'] = a.city;
+    if (a.state) body['shipping[address][state]'] = a.state;
+    if (a.postal_code) body['shipping[address][postal_code]'] = a.postal_code;
+    if (a.country) body['shipping[address][country]'] = a.country;
   }
-
-  const response = await fetch(`${STRIPE_API_URL}/payment_intents`, {
+  const res = await fetch(`${STRIPE_API_URL}/payment_intents`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Type': 'application/x-www-form-urlencoded'
     },
-    body: new URLSearchParams(body),
-  })
-
-  const result = await response.json()
-  console.log('🔍 DEBUG: Stripe PaymentIntent response:', {
-    status: response.status,
-    success: response.ok,
-    id: result.id,
-    paymentStatus: result.status
-  })
-
-  if (!response.ok) {
-    console.error('❌ Stripe PaymentIntent Error:', result.error)
-    throw new Error(`Stripe PaymentIntent Error: ${result.error?.message || 'Unknown error'}`)
-  }
-
-  return new Response(
-    JSON.stringify({ 
-      success: true, 
-      paymentIntent: result 
-    }),
-    { 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-    }
-  )
+    body: new URLSearchParams(body)
+  });
+  const result = await res.json();
+  if (!res.ok) throw new Error(result?.error?.message ?? 'Stripe PaymentIntent error');
+  return json({
+    success: true,
+    paymentIntent: result
+  });
 }
 
-// ✅ Confirm Payment
-async function confirmPayment(data: any) {
-  const { paymentIntentId, paymentMethodId } = data
-  
-  console.log('🔍 DEBUG: Confirming Payment with data:', {
-    paymentIntentId,
-    paymentMethodId
-  })
-
-  const response = await fetch(`${STRIPE_API_URL}/payment_intents/${paymentIntentId}/confirm`, {
+async function confirmPayment(data) {
+  const { paymentIntentId, paymentMethodId } = data;
+  const res = await fetch(`${STRIPE_API_URL}/payment_intents/${paymentIntentId}/confirm`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Type': 'application/x-www-form-urlencoded'
     },
     body: new URLSearchParams({
-      'payment_method': paymentMethodId,
-    }),
-  })
-
-  const result = await response.json()
-  console.log('🔍 DEBUG: Stripe Confirm Payment response:', {
-    status: response.status,
-    success: response.ok,
-    id: result.id,
-    paymentStatus: result.status
-  })
-
-  if (!response.ok) {
-    throw new Error(`Stripe Confirm Payment Error: ${result.error?.message || 'Unknown error'}`)
-  }
-
-  return new Response(
-    JSON.stringify({ 
-      success: true, 
-      paymentIntent: result 
-    }),
-    { 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-    }
-  )
+      'payment_method': paymentMethodId
+    })
+  });
+  const result = await res.json();
+  if (!res.ok) throw new Error(result?.error?.message ?? 'Stripe Confirm error');
+  return json({
+    success: true,
+    paymentIntent: result
+  });
 }
 
-// Validate Card with SetupIntent (no charge)
-async function validateCard(data: any) {
-  const { paymentMethodId } = data
-  
-  console.log('🔍 DEBUG: Validating card with SetupIntent:', {
-    paymentMethodId
-  })
+async function listPaymentMethods(data) {
+  const { customerId } = data;
+  if (!customerId) throw new Error('Customer ID is required');
+  const res = await fetch(`${STRIPE_API_URL}/payment_methods?customer=${customerId}&type=card`, {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+      'Content-Type': 'application/json'
+    }
+  });
+  const result = await res.json();
+  if (!res.ok) throw new Error(result?.error?.message ?? 'Stripe List error');
+  return json({
+    success: true,
+    paymentMethods: result.data ?? []
+  });
+}
 
-  const response = await fetch(`${STRIPE_API_URL}/setup_intents`, {
+async function detachPaymentMethod(data) {
+  const { paymentMethodId } = data;
+  if (!paymentMethodId) throw new Error('Payment Method ID is required');
+  const res = await fetch(`${STRIPE_API_URL}/payment_methods/${paymentMethodId}/detach`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      'payment_method': paymentMethodId,
-      'confirm': 'true',
-      'usage': 'off_session',
-    }),
-  })
-
-  const result = await response.json()
-  console.log('🔍 DEBUG: Stripe SetupIntent response:', {
-    status: response.status,
-    success: response.ok,
-    id: result.id,
-    status: result.status
-  })
-
-  if (!response.ok) {
-    throw new Error(`Stripe SetupIntent Error: ${result.error?.message || 'Unknown error'}`)
-  }
-
-  return new Response(
-    JSON.stringify({ 
-      success: true, 
-      setupIntent: result 
-    }),
-    { 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      'Content-Type': 'application/x-www-form-urlencoded'
     }
-  )
+  });
+  const result = await res.json();
+  if (!res.ok) throw new Error(result?.error?.message ?? 'Stripe Detach error');
+  return json({
+    success: true,
+    paymentMethod: result
+  });
 }
 
-// 🆕 KLARNA FUNCTIONS
-
-// ✅ Create Klarna Session
-async function createKlarnaSession(data: any) {
-  const { amount, currency, customerId, billingDetails } = data
-  
-  console.log('🔍 DEBUG: Creating Klarna session with data:', {
-    amount,
-    currency,
-    customerId,
-    billingDetails: billingDetails ? 'Present' : 'Not provided'
-  })
-
-  const body: any = {
-    'amount': Math.round(amount * 100), // Convert to cents
+/* ========== KLARNA ========== */
+// Crea PaymentIntent para Klarna y devuelve la URL de redirección oficial de Stripe.
+async function createKlarnaSession(data) {
+  const { amount, currency, customerId, userId, billingDetails } = data;
+  const body = {
+    'amount': String(Math.round(Number(amount) * 100)),
     'currency': currency || 'usd',
     'payment_method_types[]': 'klarna',
     'payment_method_data[type]': 'klarna',
     'confirm': 'true',
-    'return_url': 'landgotravel://payment-return',
-  }
-
-  if (customerId) body['customer'] = customerId
-
-  // Add billing details if provided
-  if (billingDetails) {
-    console.log('🔍 DEBUG: Adding billing details to Klarna session')
-    if (billingDetails.email) body['receipt_email'] = billingDetails.email
-    if (billingDetails.phone || billingDetails.address) {
-      body['shipping'] = {
-        name: billingDetails.name || 'Customer',
-        phone: billingDetails.phone,
-        address: {
-          line1: billingDetails.address?.line1,
-          line2: billingDetails.address?.line2,
-          city: billingDetails.address?.city,
-          state: billingDetails.address?.state,
-          postal_code: billingDetails.address?.postal_code,
-          country: billingDetails.address?.country,
-        }
-      }
-    }
-  }
-
-  const response = await fetch(`${STRIPE_API_URL}/payment_intents`, {
+    'return_url': 'landgotravel://payment-return'
+  };
+  if (customerId) body['customer'] = customerId;
+  if (userId) body['metadata[user_id]'] = userId;
+  body['metadata[payment_type]'] = 'klarna_wallet_topup';
+  if (billingDetails?.email) body['receipt_email'] = billingDetails.email;
+  
+  const res = await fetch(`${STRIPE_API_URL}/payment_intents`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Type': 'application/x-www-form-urlencoded'
     },
-    body: new URLSearchParams(body),
-  })
-
-  const result = await response.json()
-  console.log('🔍 DEBUG: Stripe Klarna session response:', {
-    status: response.status,
-    success: response.ok,
-    id: result.id,
+    body: new URLSearchParams(body)
+  });
+  const result = await res.json();
+  const redirectUrl = result?.next_action?.redirect_to_url?.url ?? null;
+  console.log('🔗 Klarna next_action:', result?.next_action?.type, ' url=', redirectUrl);
+  if (!res.ok) throw new Error(result?.error?.message ?? 'Stripe Klarna Session error');
+  return json({
+    success: true,
+    paymentIntentId: result.id,
+    clientSecret: result.client_secret,
     status: result.status,
-    nextAction: result.next_action?.type
-  })
-
-  if (!response.ok) {
-    console.error('❌ Stripe Klarna session error:', result.error)
-    throw new Error(`Stripe Klarna session error: ${result.error?.message || 'Unknown error'}`)
-  }
-
-  // Extract redirect URL for Klarna checkout
-  const redirectUrl = result.next_action?.redirect_to_url?.url
-  if (!redirectUrl) {
-    throw new Error('No redirect URL received from Klarna')
-  }
-
-  return new Response(
-    JSON.stringify({ 
-      success: true, 
-      paymentIntent: result,
-      clientSecret: result.client_secret,
-      paymentIntentId: result.id,
-      redirectUrl: redirectUrl
-    }),
-    { 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-    }
-  )
+    amount: (result.amount ?? 0) / 100,
+    redirectUrl
+  });
 }
 
-// ✅ Confirm Klarna Payment
-async function confirmKlarnaPayment(data: any) {
-  const { paymentIntentId } = data
-  
-  console.log('🔍 DEBUG: Confirming Klarna payment:', { paymentIntentId })
-
-  const response = await fetch(`${STRIPE_API_URL}/payment_intents/${paymentIntentId}`, {
+async function confirmKlarnaPayment(data) {
+  const { paymentIntentId } = data;
+  if (!paymentIntentId) throw new Error('Payment Intent ID is required');
+  const res = await fetch(`${STRIPE_API_URL}/payment_intents/${paymentIntentId}`, {
     method: 'GET',
     headers: {
       'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-  })
-
-  const result = await response.json()
-  console.log('🔍 DEBUG: Stripe Klarna payment status:', {
-    status: response.status,
-    success: response.ok,
-    id: result.id,
-    paymentStatus: result.status
-  })
-
-  if (!response.ok) {
-    throw new Error(`Stripe Klarna payment status error: ${result.error?.message || 'Unknown error'}`)
-  }
-
-  return new Response(
-    JSON.stringify({ 
-      success: true, 
-      paymentIntent: result,
-      status: result.status
-    }),
-    { 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+      'Content-Type': 'application/json'
     }
-  )
+  });
+  const result = await res.json();
+  if (!res.ok) throw new Error(result?.error?.message ?? 'Stripe Klarna Confirm error');
+  return json({
+    success: true,
+    paymentIntent: result,
+    status: result.status,
+    amount: (result.amount ?? 0) / 100,
+    metadata: result.metadata
+  });
 }
 
-// 🆕 AFTERPAY FUNCTIONS
-
-// ✅ Create Afterpay Session
-async function createAfterpaySession(data: any) {
-  const { amount, currency, customerId, billingDetails } = data
-  
-  console.log('🔍 DEBUG: Creating Afterpay session with data:', {
-    amount,
-    currency,
-    customerId,
-    billingDetails: billingDetails ? 'Present' : 'Not provided'
-  })
+/* ========== AFTERPAY ========== */
+// 🆕 Create Afterpay Session
+async function createAfterpaySession(data) {
+  const { amount, customerId, userId, billingDetails } = data;
+  console.log('🔍 DEBUG: Creating Afterpay session for customer:', customerId, 'amount:', amount);
 
   const body: any = {
-    'amount': Math.round(amount * 100), // Convert to cents
-    'currency': currency || 'usd',
+    'amount': Math.round(Number(amount) * 100), // Convert to cents
+    'currency': 'usd',
     'payment_method_types[]': 'afterpay_clearpay',
     'payment_method_data[type]': 'afterpay_clearpay',
     'confirm': 'true',
-    'return_url': 'landgotravel://payment-return',
-  }
+    'return_url': 'landgotravel://payment-return', // Deep link for app return
+  };
 
-  if (customerId) body['customer'] = customerId
+  if (customerId) body['customer'] = customerId;
+  if (userId) body['metadata[user_id]'] = userId;
+  body['metadata[payment_type]'] = 'afterpay_wallet_topup';
+  if (billingDetails?.email) body['receipt_email'] = billingDetails.email;
 
-  // Add billing details if provided
+  // Map billing details (required: name)
   if (billingDetails) {
-    console.log('🔍 DEBUG: Adding billing details to Afterpay session')
-    if (billingDetails.email) body['receipt_email'] = billingDetails.email
-    if (billingDetails.phone || billingDetails.address) {
-      body['shipping'] = {
-        name: billingDetails.name || 'Customer',
-        phone: billingDetails.phone,
-        address: {
-          line1: billingDetails.address?.line1,
-          line2: billingDetails.address?.line2,
-          city: billingDetails.address?.city,
-          state: billingDetails.address?.state,
-          postal_code: billingDetails.address?.postal_code,
-          country: billingDetails.address?.country,
-        }
+    const name = billingDetails.name ?? billingDetails.full_name ?? billingDetails.fullName;
+    if (name) body['payment_method_data[billing_details][name]'] = String(name);
+
+    if (billingDetails.email) body['payment_method_data[billing_details][email]'] = String(billingDetails.email);
+    if (billingDetails.phone) body['payment_method_data[billing_details][phone]'] = String(billingDetails.phone);
+
+    const addr = billingDetails.address || {};
+    if (addr.line1) body['payment_method_data[billing_details][address][line1]'] = String(addr.line1);
+    if (addr.line2) body['payment_method_data[billing_details][address][line2]'] = String(addr.line2);
+    if (addr.city) body['payment_method_data[billing_details][address][city]'] = String(addr.city);
+    if (addr.state) body['payment_method_data[billing_details][address][state]'] = String(addr.state);
+    if (addr.postal_code) body['payment_method_data[billing_details][address][postal_code]'] = String(addr.postal_code);
+
+    // Country must be 2-letter code; sanitize common variants
+    if (addr.country) {
+      const raw = String(addr.country).trim();
+      const map: Record<string,string> = {
+        'USA': 'US', 
+        'United States': 'US', 
+        'United States of America': 'US',
+        'Estados Unidos': 'US', // Added Spanish
+        'EEUU': 'US',
+        'EE.UU.': 'US',
+        'México': 'MX', 
+        'Mexico': 'MX',
+        'Canada': 'CA', 
+        'Canadá': 'CA',
+        'CAN': 'CA',
+        'United Kingdom': 'GB',
+        'Reino Unido': 'GB',
+        'UK': 'GB'
+      };
+      const country = map[raw] || (raw.length === 2 ? raw.toUpperCase() : undefined);
+      if (country) {
+        body['payment_method_data[billing_details][address][country]'] = country;
+        console.log('🔍 DEBUG: Country converted:', raw, '→', country);
+      } else {
+        console.log('⚠️ WARNING: Unknown country format:', raw);
       }
     }
   }
@@ -580,76 +367,87 @@ async function createAfterpaySession(data: any) {
       'Content-Type': 'application/x-www-form-urlencoded',
     },
     body: new URLSearchParams(body),
-  })
+  });
 
-  const result = await response.json()
-  console.log('🔍 DEBUG: Stripe Afterpay session response:', {
+  const result = await response.json();
+  console.log('🔍 DEBUG: Stripe Afterpay PaymentIntent response:', {
     status: response.status,
     success: response.ok,
     id: result.id,
-    status: result.status,
-    nextAction: result.next_action?.type
-  })
+    paymentStatus: result.status,
+    nextAction: result.next_action,
+  });
 
   if (!response.ok) {
-    console.error('❌ Stripe Afterpay session error:', result.error)
-    throw new Error(`Stripe Afterpay session error: ${result.error?.message || 'Unknown error'}`)
+    throw new Error(`Stripe Afterpay Session Error: ${result.error?.message || 'Unknown error'}`);
   }
 
-  // Extract redirect URL for Afterpay checkout
-  const redirectUrl = result.next_action?.redirect_to_url?.url
-  if (!redirectUrl) {
-    throw new Error('No redirect URL received from Afterpay')
-  }
+  const redirectUrl = result?.next_action?.redirect_to_url?.url ?? null;
+  console.log('🔗 Afterpay next_action:', result?.next_action?.type, ' url=', redirectUrl);
 
-  return new Response(
-    JSON.stringify({ 
-      success: true, 
-      paymentIntent: result,
-      clientSecret: result.client_secret,
-      paymentIntentId: result.id,
-      redirectUrl: redirectUrl
-    }),
-    { 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-    }
-  )
+  return json({
+    success: true,
+    paymentIntentId: result.id,
+    clientSecret: result.client_secret,
+    status: result.status,
+    amount: (result.amount ?? 0) / 100,
+    redirectUrl
+  });
 }
 
-// ✅ Confirm Afterpay Payment
-async function confirmAfterpayPayment(data: any) {
-  const { paymentIntentId } = data
-  
-  console.log('🔍 DEBUG: Confirming Afterpay payment:', { paymentIntentId })
+// 🆕 Confirm Afterpay Payment
+async function confirmAfterpayPayment(data) {
+  const { paymentIntentId } = data;
+  console.log('🔍 DEBUG: Confirming Afterpay PaymentIntent:', paymentIntentId);
 
   const response = await fetch(`${STRIPE_API_URL}/payment_intents/${paymentIntentId}`, {
-    method: 'GET',
+    method: 'GET', // GET para obtener el estado actual
     headers: {
       'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
     },
-  })
+  });
 
-  const result = await response.json()
-  console.log('🔍 DEBUG: Stripe Afterpay payment status:', {
+  const result = await response.json();
+  console.log('🔍 DEBUG: Stripe Confirm Afterpay Payment response:', {
     status: response.status,
     success: response.ok,
     id: result.id,
     paymentStatus: result.status
-  })
+  });
 
   if (!response.ok) {
-    throw new Error(`Stripe Afterpay payment status error: ${result.error?.message || 'Unknown error'}`)
+    throw new Error(`Stripe Confirm Afterpay Payment Error: ${result.error?.message || 'Unknown error'}`);
   }
 
-  return new Response(
-    JSON.stringify({ 
-      success: true, 
-      paymentIntent: result,
-      status: result.status
-    }),
-    { 
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-    }
-  )
+  return json({
+    success: true,
+    paymentIntent: result,
+    status: result.status,
+    amount: (result.amount ?? 0) / 100,
+    metadata: result.metadata
+  });
+}
+
+/* ========== TEST ========== */
+async function testEdgeFunction() {
+  try {
+    const ping = await fetch(`${STRIPE_API_URL}/balance`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${STRIPE_SECRET_KEY}`
+      }
+    });
+    const balance = await ping.json();
+    return json({
+      success: true,
+      stripeKeyLoaded: !!STRIPE_SECRET_KEY,
+      stripeReachable: ping.ok,
+      availableBalance: balance?.available ?? null
+    });
+  } catch (e) {
+    return json({
+      success: false,
+      error: String(e)
+    }, 500);
+  }
 }

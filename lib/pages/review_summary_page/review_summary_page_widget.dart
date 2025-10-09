@@ -6,8 +6,10 @@ import '/pages/payment_cards_page/payment_cards_page_widget.dart';
 import '/pages/klarna_webview_page/klarna_webview_page_widget.dart';
 import '/pages/payment_webview_page/payment_webview_page_widget.dart';
 import '/payment/payment_success_pag/payment_success_pag_widget.dart';
+import '/pages/payment_failed_pag/payment_failed_pag_widget.dart';
 import '/services/klarna_service.dart';
 import '/services/afterpay_service.dart';
+import '/services/stripe_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'review_summary_page_model.dart';
 export 'review_summary_page_model.dart';
@@ -728,14 +730,29 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
         return;
       }
 
-      // 3. Obtener/Crear Stripe Customer ID
+      // 3. Obtener/Crear Stripe Customer ID y nombre completo
       final profileResponse = await Supabase.instance.client
           .from('profiles')
-          .select('stripe_customer_id')
+          .select('stripe_customer_id, full_name')
           .eq('id', currentUser.id)
           .maybeSingle();
       
       String? stripeCustomerId = profileResponse?['stripe_customer_id'];
+      final String fullName = (profileResponse?['full_name'] as String?)?.trim().isNotEmpty == true
+          ? (profileResponse!['full_name'] as String)
+          : 'Customer';
+
+      // 3.1 Validar billing address y datos de contacto del perfil
+      final validation = await StripeService.validateBillingAddress();
+      if (validation == null || validation['valid'] != true) {
+        if (mounted) Navigator.of(context).pop();
+        _showErrorDialog(validation?['message'] ?? 'Billing address incomplete. Please complete your billing address.');
+        return;
+      }
+
+      final String userEmail = validation['email'] as String? ?? '';
+      final String userPhone = validation['phone'] as String? ?? '';
+      final Map<String, dynamic> billingAddress = Map<String, dynamic>.from(validation['billing_address'] as Map);
 
       // 4. Crear sesión de Klarna
       final session = await KlarnaService.createKlarnaSession(
@@ -792,24 +809,75 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
           // Actualizar wallet
           await _updateWalletBalance(amountWithoutFee, paymentIntentId);
           
-          // Navegar a PaymentSuccess
+          // Navegar a PaymentSuccess con datos
           if (mounted) {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
                 builder: (context) => const PaymentSuccessPagWidget(),
+                settings: RouteSettings(
+                  arguments: {
+                    'paymentIntentId': paymentIntentId,
+                    'chargeId': 'N/A',
+                    'customerName': 'Customer',
+                    'cardBrand': 'Klarna',
+                    'cardLast4': 'N/A',
+                    'cardExpiry': 'N/A',
+                    'amount': amountWithoutFee.toString(),
+                    'currency': 'USD',
+                    'alreadyPersisted': true, // ✅ Ya fue persistido en _updateWalletBalance
+                  },
+                ),
               ),
             );
           }
+        } else if (confirmation['status'] == 'requires_payment_method') {
+          // Klarna denegó el pago
+          print('⚠️ Payment was declined by Klarna');
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const PaymentFailedPagWidget(),
+                settings: RouteSettings(
+                  arguments: {
+                    'amount': totalAmountStr,
+                    'paymentMethod': 'Klarna',
+                    'error': 'Payment was declined. Please try another payment method.',
+                  },
+                ),
+              ),
+            );
+          }
+        } else if (confirmation['status'] == 'canceled') {
+          print('⚠️ Payment was cancelled by user');
+          // Usuario canceló, no hacer nada
         } else {
           _showErrorDialog('Payment is ${confirmation['status']}. We\'ll notify you when it\'s complete.');
         }
       } else if (status == 'failed') {
-        _showErrorDialog('Klarna payment failed. Please try another payment method.');
+        // Usuario hizo clic en "FAIL TEST PAYMENT" dentro del webview
+        print('❌ Klarna payment intentionally failed (FAIL TEST PAYMENT)');
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const PaymentFailedPagWidget(),
+              settings: RouteSettings(
+                arguments: {
+                  'amount': totalAmountStr,
+                  'paymentMethod': 'Klarna',
+                  'error': 'Payment was declined. This is a test failure.',
+                },
+              ),
+            ),
+          );
+        }
       } else if (status == 'cancelled') {
-        print('🔄 User cancelled Klarna payment');
-        // Usuario canceló, no hacer nada
+        print('🔄 User cancelled Klarna payment (closed webview)');
+        // Usuario canceló explícitamente (cerró webview), no hacer nada
       } else {
+        print('⚠️ Unknown payment status: $status');
         _showErrorDialog('Payment status: $status');
       }
     } catch (e) {
@@ -867,19 +935,40 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
         return;
       }
 
-      // 3. Obtener/Crear Stripe Customer ID
+      // 3. Obtener/Crear Stripe Customer ID y nombre completo
       final profileResponse = await Supabase.instance.client
           .from('profiles')
-          .select('stripe_customer_id')
+          .select('stripe_customer_id, full_name')
           .eq('id', currentUser.id)
           .maybeSingle();
       
       String? stripeCustomerId = profileResponse?['stripe_customer_id'];
+      final String fullName = (profileResponse?['full_name'] as String?)?.trim().isNotEmpty == true
+          ? (profileResponse!['full_name'] as String)
+          : 'Customer';
+
+      // 3.1 Validar billing address y datos de contacto del perfil
+      final validation = await StripeService.validateBillingAddress();
+      if (validation == null || validation['valid'] != true) {
+        if (mounted) Navigator.of(context).pop();
+        _showErrorDialog(validation?['message'] ?? 'Billing address incomplete. Please complete your billing address.');
+        return;
+      }
+
+      final String userEmail = validation['email'] as String? ?? '';
+      final String userPhone = validation['phone'] as String? ?? '';
+      final Map<String, dynamic> billingAddress = Map<String, dynamic>.from(validation['billing_address'] as Map);
 
       // 4. Crear sesión de Afterpay
       final session = await AfterpayService.createAfterpaySession(
         amount: totalAmount,
         customerId: stripeCustomerId ?? '',
+        billingDetails: {
+          'name': fullName,
+          'email': userEmail,
+          'phone': userPhone,
+          'address': billingAddress,
+        },
       );
 
       print('✅ Afterpay session created');
@@ -911,38 +1000,98 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
       final paymentIntentId = result['paymentIntentId'];
 
       print('🔍 DEBUG: Afterpay result status: $status');
+      print('🔍 DEBUG: PaymentIntent ID: $paymentIntentId');
 
       if (status == 'success') {
-        // Pago exitoso
-        print('✅ Afterpay payment successful');
+        // Pago exitoso (aparentemente)
+        print('✅ Afterpay payment successful - VERIFYING with Stripe...');
         
-        // Confirmar el estado del pago
+        // ⚠️ VERIFICAR EL ESTADO REAL del pago con Stripe
         final confirmation = await AfterpayService.confirmAfterpayPayment(
           paymentIntentId: paymentIntentId,
         );
 
+        print('🔍 DEBUG: Payment Intent status from Stripe: ${confirmation['status']}');
+        print('🔍 DEBUG: Full confirmation response: $confirmation');
+
+        // Solo actualizar wallet si el pago realmente fue exitoso
         if (confirmation['status'] == 'succeeded') {
+          print('✅ Payment confirmed as SUCCEEDED by Stripe');
+          print('🔍 DEBUG: About to update wallet balance with amount: $amountWithoutFee');
           // Actualizar wallet
           await _updateWalletBalance(amountWithoutFee, paymentIntentId);
+          print('✅ DEBUG: Wallet balance updated successfully');
           
-          // Navegar a PaymentSuccess
+          // Navegar a PaymentSuccess con datos del pago
           if (mounted) {
             Navigator.pushReplacement(
               context,
               MaterialPageRoute(
                 builder: (context) => const PaymentSuccessPagWidget(),
+                settings: RouteSettings(
+                  arguments: {
+                    'paymentIntentId': paymentIntentId,
+                    'chargeId': 'N/A', // Afterpay no usa charge ID tradicional
+                    'customerName': fullName,
+                    'cardBrand': 'Afterpay',
+                    'cardLast4': 'N/A',
+                    'cardExpiry': 'N/A',
+                    'amount': amountWithoutFee.toString(),
+                    'currency': 'USD',
+                    'alreadyPersisted': true, // ✅ Ya fue persistido en _updateWalletBalance
+                  },
+                ),
               ),
             );
           }
+        } else if (confirmation['status'] == 'requires_payment_method') {
+          // El pago fue denegado/cancelado por Afterpay
+          print('⚠️ Payment was declined by Afterpay');
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const PaymentFailedPagWidget(),
+                settings: RouteSettings(
+                  arguments: {
+                    'amount': totalAmountStr,
+                    'paymentMethod': 'Afterpay',
+                    'error': 'Payment was declined. Please try another payment method or contact your bank.',
+                  },
+                ),
+              ),
+            );
+          }
+        } else if (confirmation['status'] == 'canceled') {
+          print('⚠️ Payment was cancelled by user');
+          // Usuario canceló, no hacer nada (solo cerrar webview)
         } else {
+          print('⚠️ Unexpected payment status: ${confirmation['status']}');
           _showErrorDialog('Payment is ${confirmation['status']}. We\'ll notify you when it\'s complete.');
         }
       } else if (status == 'failed') {
-        _showErrorDialog('Afterpay payment failed. Please try another payment method.');
+        // Usuario hizo clic en "FAIL TEST PAYMENT" dentro del webview
+        print('❌ Payment intentionally failed (FAIL TEST PAYMENT)');
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const PaymentFailedPagWidget(),
+              settings: RouteSettings(
+                arguments: {
+                  'amount': totalAmountStr,
+                  'paymentMethod': 'Afterpay',
+                  'error': 'Payment was declined. This is a test failure.',
+                },
+              ),
+            ),
+          );
+        }
       } else if (status == 'cancelled') {
-        print('🔄 User cancelled Afterpay payment');
-        // Usuario canceló, no hacer nada
+        print('🔄 User cancelled Afterpay payment (closed webview)');
+        // Usuario canceló explícitamente (cerró webview), no hacer nada
       } else {
+        print('⚠️ Unknown payment status: $status');
         _showErrorDialog('Payment status: $status');
       }
     } catch (e) {
@@ -978,7 +1127,7 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
       await Supabase.instance.client.from('payments').insert({
         'user_id': currentUser.id,
         'amount': amount,
-        'payment_method': _selectedPaymentMethod == 'klarna' ? 'klarna' : 'afterpay_clearpay',
+        'payment_method': _selectedPaymentMethod == 'klarna' ? 'klarna' : 'afterpay',
         'status': 'completed',
         'related_type': 'wallet_topup',
         'description': 'Wallet top-up via ${_selectedPaymentMethod == 'klarna' ? 'Klarna' : 'Afterpay'} (PaymentIntent: $paymentIntentId)',

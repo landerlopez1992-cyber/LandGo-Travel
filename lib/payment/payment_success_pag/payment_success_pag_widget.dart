@@ -66,8 +66,17 @@ class _PaymentSuccessPagWidgetState extends State<PaymentSuccessPagWidget> {
       });
       print('✅ Payment details loaded: amount=\$${_amount}, card=$_cardBrand **** $_cardLast4');
 
-      // Persistir en base de datos (payments + actualizar balance)
-      _persistWalletTopUpIfNeeded();
+      // Verificar si la transacción ya fue persistida (Klarna/Afterpay)
+      final alreadyPersisted = args['alreadyPersisted'] as bool? ?? false;
+      
+      if (alreadyPersisted) {
+        print('ℹ️ Transaction already persisted (Klarna/Afterpay). Skipping persistence.');
+        _persistenceCompleted = true; // Marcar como completado para evitar duplicación
+      } else {
+        print('🔍 DEBUG: Transaction not persisted yet. Will persist now.');
+        // Persistir en base de datos (payments + actualizar balance)
+        _persistWalletTopUpIfNeeded();
+      }
     }
   }
 
@@ -287,15 +296,8 @@ class _PaymentSuccessPagWidgetState extends State<PaymentSuccessPagWidget> {
                       child: InkWell(
                         borderRadius: BorderRadius.circular(16),
                         onTap: () {
-                          // Navegar a My Wallet haciendo 3 pops
-                          // Pop 1: PaymentSuccessPag
-                          // Pop 2: PaymentCardsPage
-                          // Pop 3: ReviewSummaryPage
-                          // Resultado: Vuelves a MyWalletPage
-                          int count = 0;
-                          Navigator.of(context).popUntil((route) {
-                            return count++ >= 3 || route.isFirst;
-                          });
+                          // Navegar a My Wallet usando context.go
+                          context.goNamed('MyWalletPage');
                         },
                         child: Center(
                           child: Text(
