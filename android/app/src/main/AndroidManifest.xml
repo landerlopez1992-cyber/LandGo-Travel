@@ -56,7 +56,10 @@
             android:name="flutterEmbedding"
             android:value="2" />
 
-
+        <!-- Google Pay -->
+        <meta-data
+            android:name="com.google.android.gms.wallet.api.enabled"
+            android:value="true" />
 
 
     </application>

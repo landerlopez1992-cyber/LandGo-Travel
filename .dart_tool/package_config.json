@@ -578,6 +578,30 @@
       "languageVersion": "3.2"
     },
     {
+      "name": "pay",
+      "rootUri": "file:///Users/cubcolexpress/.pub-cache/hosted/pub.dev/pay-2.0.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
+      "name": "pay_android",
+      "rootUri": "file:///Users/cubcolexpress/.pub-cache/hosted/pub.dev/pay_android-2.0.0",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
+      "name": "pay_ios",
+      "rootUri": "file:///Users/cubcolexpress/.pub-cache/hosted/pub.dev/pay_ios-1.0.11",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
+      "name": "pay_platform_interface",
+      "rootUri": "file:///Users/cubcolexpress/.pub-cache/hosted/pub.dev/pay_platform_interface-1.0.4",
+      "packageUri": "lib/",
+      "languageVersion": "3.0"
+    },
+    {
       "name": "petitparser",
       "rootUri": "file:///Users/cubcolexpress/.pub-cache/hosted/pub.dev/petitparser-6.1.0",
       "packageUri": "lib/",
