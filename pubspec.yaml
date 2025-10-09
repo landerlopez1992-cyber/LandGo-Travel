@@ -144,6 +144,7 @@ flutter:
   assets:
     - assets/fonts/
     - assets/images/
+    - assets/images/payment_logos/
     - assets/videos/
     - assets/audios/
     - assets/rive_animations/
