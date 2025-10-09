@@ -678,6 +678,174 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
       }
     });
   }
+
+  /// Procesar pago con Google Pay
+  Future<void> _processGooglePayPayment(double totalAmount) async {
+    try {
+      print('🔍 DEBUG: Iniciando flujo de Google Pay');
+      
+      // 1. Mostrar loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Center(
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2C2C2C),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(
+                  color: Color(0xFF4DD0E1),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Processing Google Pay...',
+                  style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      
+      // 2. Llamar a Google Pay con Stripe
+      final result = await GooglePayService.processPayment(
+        amount: totalAmount,
+        merchantName: 'LandGo Travel',
+      );
+      
+      // Cerrar loading
+      if (mounted) Navigator.of(context).pop();
+      
+      if (result['success'] != true) {
+        // Error o cancelación
+        _showErrorDialog(
+          result['message'] ?? 'Payment failed',
+        );
+        return;
+      }
+      
+      final paymentMethodId = result['paymentMethodId'];
+      print('✅ PaymentMethod ID de Google Pay: $paymentMethodId');
+      
+      // 3. Mostrar loading de procesamiento con Stripe
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Center(
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2C2C2C),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(
+                  color: Color(0xFF4DD0E1),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Processing payment with Stripe...',
+                  style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      
+      // 4. Procesar pago con Stripe usando el PaymentMethod de Google Pay
+      final paymentResult = await StripeService.processPayment(
+        amount: totalAmount,
+        currency: 'usd',
+        paymentMethodId: paymentMethodId,
+      );
+      
+      // Cerrar loading
+      if (mounted) Navigator.of(context).pop();
+      
+      if (paymentResult['success'] == true) {
+        print('✅ Pago procesado exitosamente con Google Pay');
+        
+        // 5. Navegar a Payment Success
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PaymentSuccessPagWidget(
+                amount: _amount, // Monto sin fees
+                totalPaid: totalAmount, // Total pagado con fees
+                paymentMethod: 'google_pay',
+              ),
+            ),
+          );
+        }
+      } else {
+        _showErrorDialog(
+          paymentResult['error'] ?? 'Payment failed',
+        );
+      }
+      
+    } catch (e, stackTrace) {
+      print('❌ Error en flujo de Google Pay: $e');
+      print('Stack trace: $stackTrace');
+      
+      // Cerrar cualquier dialog abierto
+      if (mounted) {
+        Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
+      }
+      
+      _showErrorDialog('Payment failed: ${e.toString()}');
+    }
+  }
+  
+  void _showErrorDialog(String message) {
+    if (!mounted) return;
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF2C2C2C),
+        title: Text(
+          'Payment Error',
+          style: GoogleFonts.outfit(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        content: Text(
+          message,
+          style: GoogleFonts.outfit(
+            color: Colors.white70,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text(
+              'OK',
+              style: GoogleFonts.outfit(
+                color: const Color(0xFF4DD0E1),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // WIDGET SEPARADO PARA EL SELECTOR DE MÉTODOS DE PAGO
@@ -1092,219 +1260,6 @@ class _PaymentMethodSelectorContentState extends State<_PaymentMethodSelectorCon
               ),
           ],
         ),
-      ),
-    );
-  }
-
-  /// Procesar pago con Google Pay
-  Future<void> _processGooglePayPayment(double totalAmount) async {
-    try {
-      print('🔍 DEBUG: Iniciando flujo de Google Pay');
-      
-      // 1. Mostrar loading
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => Center(
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: const Color(0xFF2C2C2C),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CircularProgressIndicator(
-                  color: Color(0xFF4DD0E1),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Processing Google Pay...',
-                  style: GoogleFonts.outfit(
-                    color: Colors.white,
-                    fontSize: 16,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-      
-      // 2. Llamar a Google Pay
-      final result = await GooglePayService.processPayment(
-        amount: totalAmount,
-      );
-      
-      // Cerrar loading
-      Navigator.of(context).pop();
-      
-      if (result == null || result['success'] != true) {
-        // Error o cancelación
-        _showErrorDialog(
-          result?['message'] ?? 'Payment failed',
-        );
-        return;
-      }
-      
-      print('✅ Token de Google Pay recibido');
-      
-      // 3. Mostrar loading de procesamiento
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => Center(
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: const Color(0xFF2C2C2C),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CircularProgressIndicator(
-                  color: Color(0xFF4DD0E1),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Processing payment with Stripe...',
-                  style: GoogleFonts.outfit(
-                    color: Colors.white,
-                    fontSize: 16,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-      
-      // 4. Extraer token de Google Pay
-      final paymentData = result['paymentData'];
-      final tokenData = paymentData['paymentMethodData']['tokenizationData'];
-      final googlePayToken = tokenData['token'];
-      
-      print('🔍 DEBUG: Token extraído: ${googlePayToken.substring(0, 30)}...');
-      
-      // 5. Crear PaymentMethod con token de Google Pay
-      // Nota: El token de Google Pay ya es un token de Stripe,
-      // por lo que podemos usarlo directamente
-      
-      // 6. Obtener/Crear Stripe Customer ID
-      final currentUser = Supabase.instance.client.auth.currentUser;
-      if (currentUser == null) {
-        Navigator.of(context).pop();
-        _showErrorDialog('User not logged in');
-        return;
-      }
-      
-      // Obtener stripe_customer_id del perfil
-      final profileResponse = await Supabase.instance.client
-          .from('profiles')
-          .select('stripe_customer_id')
-          .eq('id', currentUser.id)
-          .maybeSingle();
-      
-      String? stripeCustomerId = profileResponse?['stripe_customer_id'];
-      
-      // Si no existe, crear uno
-      if (stripeCustomerId == null || stripeCustomerId.isEmpty) {
-        print('🔍 DEBUG: Creando nuevo Stripe Customer...');
-        stripeCustomerId = await StripeService.createCustomer(
-          email: currentUser.email!,
-          name: currentUser.userMetadata?['full_name'] ?? 'User',
-        );
-        
-        if (stripeCustomerId == null) {
-          Navigator.of(context).pop();
-          _showErrorDialog('Failed to create Stripe customer');
-          return;
-        }
-        
-        // Guardar en perfil
-        await Supabase.instance.client
-            .from('profiles')
-            .update({'stripe_customer_id': stripeCustomerId})
-            .eq('id', currentUser.id);
-      }
-      
-      print('✅ Stripe Customer ID: $stripeCustomerId');
-      
-      // 7. Procesar pago con Stripe usando el token de Google Pay
-      // El token de Google Pay se puede usar directamente como paymentMethodId
-      final paymentResult = await StripeService.processPayment(
-        amount: totalAmount,
-        currency: 'usd',
-        paymentMethodId: googlePayToken, // Usar token de Google Pay
-        stripeCustomerId: stripeCustomerId,
-      );
-      
-      // Cerrar loading
-      Navigator.of(context).pop();
-      
-      if (paymentResult['success'] == true) {
-        print('✅ Pago procesado exitosamente');
-        
-        // 8. Navegar a Payment Success
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (context) => PaymentSuccessPagWidget(
-              amount: _amount, // Monto sin fees
-              totalPaid: totalAmount, // Total pagado con fees
-              paymentMethod: 'google_pay',
-            ),
-          ),
-        );
-      } else {
-        _showErrorDialog(
-          paymentResult['error'] ?? 'Payment failed',
-        );
-      }
-      
-    } catch (e, stackTrace) {
-      print('❌ Error en flujo de Google Pay: $e');
-      print('Stack trace: $stackTrace');
-      
-      // Cerrar cualquier dialog abierto
-      Navigator.of(context, rootNavigator: true).popUntil((route) => route.isFirst);
-      
-      _showErrorDialog('Payment failed: ${e.toString()}');
-    }
-  }
-  
-  void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF2C2C2C),
-        title: Text(
-          'Payment Error',
-          style: GoogleFonts.outfit(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        content: Text(
-          message,
-          style: GoogleFonts.outfit(
-            color: Colors.white70,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text(
-              'OK',
-              style: GoogleFonts.outfit(
-                color: const Color(0xFF4DD0E1),
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
