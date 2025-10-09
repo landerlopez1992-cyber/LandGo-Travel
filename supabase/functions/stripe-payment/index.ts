@@ -40,6 +40,11 @@ serve(async (req) => {
         return await confirmPayment(data)
       case 'validate_card':
         return await validateCard(data)
+      // 🆕 KLARNA ACTIONS
+      case 'create_klarna_session':
+        return await createKlarnaSession(data)
+      case 'confirm_klarna_payment':
+        return await confirmKlarnaPayment(data)
       default:
         throw new Error(`Unknown action: ${action}`)
     }
