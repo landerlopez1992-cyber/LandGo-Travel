@@ -759,8 +759,8 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                   _buildActionCard('Wallet', Icons.account_balance_wallet_rounded, const Color(0xFF4DD0E1), () {
                     context.pushNamed('MyWalletPage'); // CONECTAR A MY WALLET
                   }),
-                  _buildActionCard('My Bookings', Icons.calendar_month_rounded, const Color(0xFF4DD0E1), () {
-                    // Navigate to bookings
+                  _buildActionCard('Memberships', Icons.card_membership_rounded, const Color(0xFF4DD0E1), () {
+                    context.pushNamed('MembershipsPage'); // CONECTAR A MEMBERSHIPS
                   }),
                 ],
               ),

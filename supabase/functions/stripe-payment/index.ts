@@ -53,6 +53,11 @@ serve(async (req) => {
         return await createZipSession(data);
       case 'confirm_zip_payment':
         return await confirmZipPayment(data);
+      // 🆕 CASH APP ACTIONS
+      case 'create_cashapp_session':
+        return await createCashAppSession(data);
+      case 'confirm_cashapp_payment':
+        return await confirmCashAppPayment(data);
       case 'test_edge_function':
         return await testEdgeFunction();
       default:
@@ -250,18 +255,65 @@ async function detachPaymentMethod(data) {
 // Crea PaymentIntent para Klarna y devuelve la URL de redirección oficial de Stripe.
 async function createKlarnaSession(data) {
   const { amount, currency, customerId, userId, billingDetails } = data;
-  const body = {
-    'amount': String(Math.round(Number(amount) * 100)),
+  console.log('🔍 DEBUG: Creating Klarna session for customer:', customerId, 'amount:', amount);
+
+  const body: any = {
+    'amount': Math.round(Number(amount) * 100), // Convert to cents
     'currency': currency || 'usd',
     'payment_method_types[]': 'klarna',
     'payment_method_data[type]': 'klarna',
     'confirm': 'true',
-    'return_url': 'landgotravel://payment-return'
+    'return_url': 'landgotravel://payment-return', // Deep link for app return
   };
+
   if (customerId) body['customer'] = customerId;
   if (userId) body['metadata[user_id]'] = userId;
   body['metadata[payment_type]'] = 'klarna_wallet_topup';
   if (billingDetails?.email) body['receipt_email'] = billingDetails.email;
+
+  // 🆕 AGREGAR BILLING DETAILS (igual que Afterpay)
+  if (billingDetails) {
+    const name = billingDetails.name ?? billingDetails.full_name ?? billingDetails.fullName;
+    if (name) body['payment_method_data[billing_details][name]'] = String(name);
+
+    if (billingDetails.email) body['payment_method_data[billing_details][email]'] = String(billingDetails.email);
+    if (billingDetails.phone) body['payment_method_data[billing_details][phone]'] = String(billingDetails.phone);
+
+    const addr = billingDetails.address || {};
+    if (addr.line1) body['payment_method_data[billing_details][address][line1]'] = String(addr.line1);
+    if (addr.line2) body['payment_method_data[billing_details][address][line2]'] = String(addr.line2);
+    if (addr.city) body['payment_method_data[billing_details][address][city]'] = String(addr.city);
+    if (addr.state) body['payment_method_data[billing_details][address][state]'] = String(addr.state);
+    if (addr.postal_code) body['payment_method_data[billing_details][address][postal_code]'] = String(addr.postal_code);
+
+    // Country must be 2-letter code; sanitize common variants
+    if (addr.country) {
+      const raw = String(addr.country).trim();
+      const map: Record<string,string> = {
+        'USA': 'US', 
+        'United States': 'US', 
+        'United States of America': 'US',
+        'Estados Unidos': 'US',
+        'EEUU': 'US',
+        'EE.UU.': 'US',
+        'México': 'MX', 
+        'Mexico': 'MX',
+        'Canada': 'CA', 
+        'Canadá': 'CA',
+        'CAN': 'CA',
+        'United Kingdom': 'GB',
+        'Reino Unido': 'GB',
+        'UK': 'GB'
+      };
+      const country = map[raw] || (raw.length === 2 ? raw.toUpperCase() : undefined);
+      if (country) {
+        body['payment_method_data[billing_details][address][country]'] = country;
+        console.log('🔍 DEBUG: Country converted:', raw, '→', country);
+      } else {
+        console.log('⚠️ WARNING: Unknown country format:', raw);
+      }
+    }
+  }
   
   const res = await fetch(`${STRIPE_API_URL}/payment_intents`, {
     method: 'POST',
@@ -691,6 +743,138 @@ async function confirmZipPayment(data) {
 
   if (!response.ok) {
     throw new Error(`Stripe Confirm Zip Payment Error: ${result.error?.message || 'Unknown error'}`);
+  }
+
+  return json({
+    success: true,
+    paymentIntent: result,
+    status: result.status,
+    amount: (result.amount ?? 0) / 100,
+    metadata: result.metadata
+  });
+}
+
+/* ========== CASH APP ========== */
+// 🆕 Create Cash App Session
+async function createCashAppSession(data) {
+  const { amount, customerId, userId, billingDetails } = data;
+  console.log('🔍 DEBUG: Creating Cash App session for customer:', customerId, 'amount:', amount);
+
+  const body: any = {
+    'amount': Math.round(Number(amount) * 100), // Convert to cents
+    'currency': 'usd',
+    'payment_method_types[]': 'cashapp',
+    'payment_method_data[type]': 'cashapp',
+    'confirm': 'true',
+    'return_url': 'landgotravel://payment-return', // Deep link for app return
+  };
+
+  if (customerId) body['customer'] = customerId;
+  if (userId) body['metadata[user_id]'] = userId;
+  body['metadata[payment_type]'] = 'cashapp_wallet_topup';
+  if (billingDetails?.email) body['receipt_email'] = billingDetails.email;
+
+  // Map billing details (required: name)
+  if (billingDetails) {
+    const name = billingDetails.name ?? billingDetails.full_name ?? billingDetails.fullName;
+    if (name) body['payment_method_data[billing_details][name]'] = String(name);
+
+    if (billingDetails.email) body['payment_method_data[billing_details][email]'] = String(billingDetails.email);
+    if (billingDetails.phone) body['payment_method_data[billing_details][phone]'] = String(billingDetails.phone);
+
+    const addr = billingDetails.address || {};
+    if (addr.line1) body['payment_method_data[billing_details][address][line1]'] = String(addr.line1);
+    if (addr.line2) body['payment_method_data[billing_details][address][line2]'] = String(addr.line2);
+    if (addr.city) body['payment_method_data[billing_details][address][city]'] = String(addr.city);
+    if (addr.state) body['payment_method_data[billing_details][address][state]'] = String(addr.state);
+    if (addr.postal_code) body['payment_method_data[billing_details][address][postal_code]'] = String(addr.postal_code);
+
+    // Country must be 2-letter code; sanitize common variants
+    if (addr.country) {
+      const raw = String(addr.country).trim();
+      const map: Record<string,string> = {
+        'USA': 'US', 
+        'United States': 'US', 
+        'United States of America': 'US',
+        'Estados Unidos': 'US', // Added Spanish
+        'EEUU': 'US',
+        'EE.UU.': 'US',
+        'México': 'MX', 
+        'Mexico': 'MX',
+        'Canada': 'CA', 
+        'Canadá': 'CA',
+        'CAN': 'CA',
+        'United Kingdom': 'GB',
+        'Reino Unido': 'GB',
+        'UK': 'GB'
+      };
+      const country = map[raw] || (raw.length === 2 ? raw.toUpperCase() : undefined);
+      if (country) {
+        body['payment_method_data[billing_details][address][country]'] = country;
+        console.log('🔍 DEBUG: Country converted:', raw, '→', country);
+      } else {
+        console.log('⚠️ WARNING: Unknown country format:', raw);
+      }
+    }
+  }
+
+  const response = await fetch(`${STRIPE_API_URL}/payment_intents`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams(body),
+  });
+
+  const result = await response.json();
+  console.log('🔍 DEBUG: Stripe Cash App PaymentIntent response:', {
+    status: response.status,
+    success: response.ok,
+    id: result.id,
+    paymentStatus: result.status,
+    nextAction: result.next_action,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Stripe Cash App Session Error: ${result.error?.message || 'Unknown error'}`);
+  }
+
+  const redirectUrl = result?.next_action?.redirect_to_url?.url ?? null;
+  console.log('🔗 Cash App next_action:', result?.next_action?.type, ' url=', redirectUrl);
+
+  return json({
+    success: true,
+    paymentIntentId: result.id,
+    clientSecret: result.client_secret,
+    status: result.status,
+    amount: (result.amount ?? 0) / 100,
+    redirectUrl
+  });
+}
+
+// 🆕 Confirm Cash App Payment
+async function confirmCashAppPayment(data) {
+  const { paymentIntentId } = data;
+  console.log('🔍 DEBUG: Confirming Cash App PaymentIntent:', paymentIntentId);
+
+  const response = await fetch(`${STRIPE_API_URL}/payment_intents/${paymentIntentId}`, {
+    method: 'GET', // GET para obtener el estado actual
+    headers: {
+      'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+    },
+  });
+
+  const result = await response.json();
+  console.log('🔍 DEBUG: Stripe Confirm Cash App Payment response:', {
+    status: response.status,
+    success: response.ok,
+    id: result.id,
+    paymentStatus: result.status
+  });
+
+  if (!response.ok) {
+    throw new Error(`Stripe Confirm Cash App Payment Error: ${result.error?.message || 'Unknown error'}`);
   }
 
   return json({

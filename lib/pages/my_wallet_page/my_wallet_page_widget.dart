@@ -626,29 +626,40 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
     // Detectar variantes antiguas: afterpay_clearpay
     bool isAfterpay = paymentMethod == 'afterpay' || paymentMethod == 'afterpay_clearpay';
     bool isAffirm = paymentMethod == 'affirm';
+    bool isZip = paymentMethod == 'zip';
+    bool isCashApp = paymentMethod == 'cashapp';
     bool isStripePayment = paymentMethod.contains('stripe') || paymentMethod.contains('card') || paymentMethod == 'debit_card';
 
     // Determinar el tipo de transacción
     String transactionType;
-    IconData typeIcon;
+    String? logoPath; // Para logos de métodos de pago
+    IconData? typeIcon; // Para iconos genéricos
     Color typeColor;
 
     // IMPORTANTE: Verificar métodos de pago PRIMERO antes que stripe_card
     if (isAfterpay) {
       transactionType = 'Afterpay';
-      typeIcon = Icons.payment;
+      logoPath = 'assets/images/payment_logos/afterpay_logo.png';
       typeColor = const Color(0xFF4DD0E1); // Turquesa
     } else if (isKlarna) {
       transactionType = 'Klarna';
-      typeIcon = Icons.payment;
+      logoPath = 'assets/images/payment_logos/klarna_logo.png';
       typeColor = const Color(0xFF4DD0E1); // Turquesa
     } else if (isAffirm) {
       transactionType = 'Affirm';
-      typeIcon = Icons.calendar_month;
+      logoPath = 'assets/images/payment_logos/affirm_logo.png';
+      typeColor = const Color(0xFF4DD0E1); // Turquesa
+    } else if (isZip) {
+      transactionType = 'Zip';
+      logoPath = 'assets/images/payment_logos/zip_logo.png';
+      typeColor = const Color(0xFF4DD0E1); // Turquesa
+    } else if (isCashApp) {
+      transactionType = 'Cash App';
+      logoPath = 'assets/images/payment_logos/cashapp_logo.png';
       typeColor = const Color(0xFF4DD0E1); // Turquesa
     } else if (isStripePayment) {
       transactionType = 'Debit Card';
-      typeIcon = Icons.credit_card;
+      logoPath = 'assets/images/payment_logos/card_logo.png';
       typeColor = const Color(0xFF4DD0E1); // Turquesa
     } else if (isSent) {
       transactionType = 'Enviado';
@@ -700,11 +711,21 @@ class _MyWalletPageWidgetState extends State<MyWalletPageWidget> {
               color: typeColor.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              typeIcon,
-              color: typeColor,
-              size: 22,
-            ),
+            child: logoPath != null
+                ? Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Image.asset(
+                      logoPath!,
+                      width: 28,
+                      height: 28,
+                      fit: BoxFit.contain,
+                    ),
+                  )
+                : Icon(
+                    typeIcon!,
+                    color: typeColor,
+                    size: 22,
+                  ),
           ),
           const SizedBox(width: 12),
           

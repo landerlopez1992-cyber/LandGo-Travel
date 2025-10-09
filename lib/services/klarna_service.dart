@@ -18,6 +18,7 @@ class KlarnaService {
     required double amount,
     required String userId,
     String? customerId,
+    Map<String, dynamic>? billingDetails,
   }) async {
     try {
       print('🔍 DEBUG: Creating Klarna session...');
@@ -34,6 +35,7 @@ class KlarnaService {
           'currency': 'usd',
           'userId': userId,
           if (customerId != null) 'customerId': customerId,
+          if (billingDetails != null) 'billingDetails': billingDetails,
         },
       );
 

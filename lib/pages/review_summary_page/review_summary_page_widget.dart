@@ -11,6 +11,7 @@ import '/services/klarna_service.dart';
 import '/services/afterpay_service.dart';
 import '/services/affirm_service.dart';
 import '/services/zip_service.dart';
+import '/services/cashapp_service.dart';
 import '/services/stripe_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'review_summary_page_model.dart';
@@ -228,7 +229,42 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
   String _calculateProcessingFee() {
     try {
       final amount = double.parse(_amount);
-      final fee = amount * 0.03; // 3% processing fee
+      
+      // 🆕 FEES DINÁMICOS SEGÚN MÉTODO DE PAGO
+      double feePercentage = 0.029; // Default: Credit Card 2.9%
+      double fixedFee = 0.30; // Fixed fee for most methods
+      
+      switch (_selectedPaymentMethod) {
+        case 'card':
+          feePercentage = 0.029; // 2.9%
+          fixedFee = 0.30;
+          break;
+        case 'klarna':
+          feePercentage = 0.0599; // 5.99%
+          fixedFee = 0.30;
+          break;
+        case 'afterpay_clearpay':
+          feePercentage = 0.06; // 6.0%
+          fixedFee = 0.30;
+          break;
+        case 'affirm':
+          feePercentage = 0.06; // 6.0%
+          fixedFee = 0.30;
+          break;
+        case 'zip':
+          feePercentage = 0.055; // 5.5%
+          fixedFee = 0.30;
+          break;
+        case 'cashapp':
+          feePercentage = 0.029; // 2.9%
+          fixedFee = 0.30;
+          break;
+        default:
+          feePercentage = 0.029; // Default 2.9%
+          fixedFee = 0.30;
+      }
+      
+      final fee = (amount * feePercentage) + fixedFee;
       return fee.toStringAsFixed(2);
     } catch (e) {
       return '0.00';
@@ -238,7 +274,7 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
   String _calculateSubTotal() {
     try {
       final amount = double.parse(_amount);
-      final fee = amount * 0.03;
+      final fee = double.parse(_calculateProcessingFee());
       final total = amount + fee;
       return total.toStringAsFixed(2);
     } catch (e) {
@@ -461,7 +497,7 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
           const SizedBox(height: 16),
           _buildPaymentRow('Amount to Add', '\$${_amount}'),
           const SizedBox(height: 12),
-          _buildPaymentRow('Processing fee (3%)', '\$${_calculateProcessingFee()}'),
+          _buildPaymentRow('Tax', '\$${_calculateProcessingFee()}'),
           const SizedBox(height: 12),
           _buildPaymentRow('Sub Total', '\$${_calculateSubTotal()}'),
           const SizedBox(height: 12),
@@ -549,6 +585,10 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
               await _processAfterpayPayment(totalAmount);
             } else if (_selectedPaymentMethod == 'affirm') {
               await _processAffirmPayment(totalAmount);
+            } else if (_selectedPaymentMethod == 'zip') {
+              await _processZipPayment(totalAmount);
+            } else if (_selectedPaymentMethod == 'cashapp') {
+              await _processCashAppPayment(totalAmount);
             } else {
               // FLUJO NORMAL - CREDIT/DEBIT CARD
               Navigator.push(
@@ -763,6 +803,12 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
         amount: totalAmount,
         userId: currentUser.id,
         customerId: stripeCustomerId,
+        billingDetails: {
+          'name': fullName,
+          'email': userEmail,
+          'phone': userPhone,
+          'address': billingAddress,
+        },
       );
 
       print('✅ Klarna session created');
@@ -1304,6 +1350,415 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
     }
   }
 
+  /// 🆕 PROCESAR PAGO CON ZIP
+  Future<void> _processZipPayment(String totalAmountStr) async {
+    try {
+      print('🔍 DEBUG: Iniciando flujo de Zip');
+      
+      // Convertir String a double
+      final totalAmount = double.parse(totalAmountStr);
+      final amountWithoutFee = double.parse(_amount); // Monto sin fees
+      
+      print('🔍 DEBUG: Total Amount (with fees): \$${totalAmount.toStringAsFixed(2)}');
+      print('🔍 DEBUG: Amount without fees: \$${amountWithoutFee.toStringAsFixed(2)}');
+
+      // Mostrar loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4DD0E1)),
+          ),
+        ),
+      );
+
+      // 1. Obtener usuario actual
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      if (currentUser == null) {
+        if (mounted) Navigator.of(context).pop();
+        _showErrorDialog('User not authenticated');
+        return;
+      }
+
+      // 2. Obtener/Crear Stripe Customer ID y nombre completo
+      final profileResponse = await Supabase.instance.client
+          .from('profiles')
+          .select('stripe_customer_id, full_name')
+          .eq('id', currentUser.id)
+          .maybeSingle();
+
+      String? stripeCustomerId = profileResponse?['stripe_customer_id'];
+      final String fullName = (profileResponse?['full_name'] as String?)?.trim().isNotEmpty == true
+          ? (profileResponse!['full_name'] as String)
+          : 'Customer';
+
+      // 3.1 Validar billing address y datos de contacto del perfil
+      final validation = await StripeService.validateBillingAddress();
+      if (validation == null || validation['valid'] != true) {
+        if (mounted) Navigator.of(context).pop();
+        _showErrorDialog(validation?['message'] ?? 'Billing address incomplete. Please complete your billing address.');
+        return;
+      }
+
+      final String userEmail = validation['email'] as String? ?? '';
+      final String userPhone = validation['phone'] as String? ?? '';
+      final Map<String, dynamic> billingAddress = Map<String, dynamic>.from(validation['billing_address'] as Map);
+
+      // 4. Crear sesión de Zip
+      final session = await ZipService.createZipSession(
+        amount: totalAmount,
+        customerId: stripeCustomerId ?? '',
+        billingDetails: {
+          'name': fullName,
+          'email': userEmail,
+          'phone': userPhone,
+          'address': billingAddress,
+        },
+      );
+
+      if (mounted) Navigator.of(context).pop(); // Cerrar loading
+
+      // 5. Abrir webview de Zip
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => PaymentWebviewPageWidget(
+            checkoutUrl: session['redirectUrl'] ?? '',
+            returnUrl: 'landgotravel://payment-return',
+            paymentIntentId: session['paymentIntentId'] ?? '',
+            paymentMethodName: 'Zip',
+          ),
+        ),
+      );
+
+      // 6. Manejar resultado
+      if (result == null) {
+        print('🔄 User closed Zip Webview without completing');
+        return;
+      }
+
+      final status = result['status'];
+      final paymentIntentId = result['paymentIntentId'];
+
+      print('🔍 DEBUG: Zip result status: $status');
+
+      if (status == 'success') {
+        // Pago exitoso (aparentemente)
+        print('✅ Zip payment successful');
+
+        // ⚠️ VERIFICAR EL ESTADO REAL del pago con Stripe
+        final confirmation = await ZipService.confirmZipPayment(
+          paymentIntentId: paymentIntentId,
+        );
+
+        print('🔍 DEBUG: Payment Intent status from Stripe: ${confirmation['status']}');
+
+        // Solo actualizar wallet si el pago realmente fue exitoso
+        if (confirmation['status'] == 'succeeded') {
+          print('✅ Payment confirmed as SUCCEEDED by Stripe');
+          // Actualizar wallet
+          await _updateWalletBalance(amountWithoutFee, paymentIntentId);
+
+          // Navegar a PaymentSuccess con datos del pago
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const PaymentSuccessPagWidget(),
+                settings: RouteSettings(
+                  arguments: {
+                    'paymentIntentId': paymentIntentId,
+                    'chargeId': 'N/A', // Zip no usa charge ID tradicional
+                    'customerName': fullName,
+                    'cardBrand': 'Zip',
+                    'cardLast4': 'N/A',
+                    'cardExpiry': 'N/A',
+                    'amount': amountWithoutFee.toString(),
+                    'currency': 'USD',
+                    'alreadyPersisted': true,
+                  },
+                ),
+              ),
+            );
+          }
+        } else if (confirmation['status'] == 'requires_payment_method') {
+          // El pago fue denegado/cancelado por Zip
+          print('⚠️ Payment was declined by Zip');
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const PaymentFailedPagWidget(),
+                settings: RouteSettings(
+                  arguments: {
+                    'amount': totalAmountStr,
+                    'paymentMethod': 'Zip',
+                    'error': 'Payment was declined. Please try another payment method or contact your bank.',
+                  },
+                ),
+              ),
+            );
+          }
+        } else if (confirmation['status'] == 'canceled') {
+          print('⚠️ Payment was cancelled by user');
+          // Usuario canceló, no hacer nada (solo cerrar webview)
+        } else {
+          print('⚠️ Unexpected payment status: ${confirmation['status']}. Full confirmation response: $confirmation');
+          _showErrorDialog('Payment is ${confirmation['status']}. We\'ll notify you when it\'s complete.');
+        }
+      } else if (status == 'failed') {
+        // Usuario hizo clic en "FAIL TEST PAYMENT" dentro del webview
+        print('❌ Payment intentionally failed (FAIL TEST PAYMENT)');
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const PaymentFailedPagWidget(),
+              settings: RouteSettings(
+                arguments: {
+                  'amount': totalAmountStr,
+                  'paymentMethod': 'Zip',
+                  'error': 'Payment was declined. This is a test failure.',
+                },
+              ),
+            ),
+          );
+        }
+      } else if (status == 'cancelled') {
+        print('🔄 User cancelled Zip payment (closed webview)');
+        // Usuario canceló explícitamente (cerró webview), no hacer nada
+      } else {
+        print('⚠️ Unknown payment status: $status');
+        _showErrorDialog('Payment status: $status');
+      }
+    } catch (e) {
+      print('❌ ERROR in Zip payment: $e');
+      if (mounted) Navigator.of(context).pop();
+      _showErrorDialog('Error processing Zip payment: $e');
+    }
+  }
+
+  // 🆕 CASH APP PAYMENT PROCESSING
+  Future<void> _processCashAppPayment(String totalAmountStr) async {
+    try {
+      print('🔍 DEBUG: Iniciando flujo de Cash App');
+      
+      // Convertir String a double
+      final totalAmount = double.parse(totalAmountStr);
+      final amountWithoutFee = double.parse(_amount); // Monto sin fees
+      
+      print('🔍 DEBUG: Total Amount (with fees): \$${totalAmount.toStringAsFixed(2)}');
+      print('🔍 DEBUG: Amount without fees: \$${amountWithoutFee.toStringAsFixed(2)}');
+
+      // Mostrar loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4DD0E1)),
+          ),
+        ),
+      );
+
+      // 1. Obtener usuario actual
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      if (currentUser == null) {
+        if (mounted) Navigator.of(context).pop();
+        _showErrorDialog('User not authenticated');
+        return;
+      }
+
+      // 2. Obtener/Crear Stripe Customer ID y nombre completo
+      final profileResponse = await Supabase.instance.client
+          .from('profiles')
+          .select('stripe_customer_id, full_name')
+          .eq('id', currentUser.id)
+          .maybeSingle();
+
+      String? stripeCustomerId = profileResponse?['stripe_customer_id'];
+      final String fullName = (profileResponse?['full_name'] as String?)?.trim().isNotEmpty == true
+          ? (profileResponse!['full_name'] as String)
+          : 'Customer';
+
+      // 3.1 Validar billing address y datos de contacto del perfil
+      final validation = await StripeService.validateBillingAddress();
+      if (validation == null || validation['valid'] != true) {
+        if (mounted) Navigator.of(context).pop();
+        _showErrorDialog(validation?['message'] ?? 'Billing address incomplete. Please complete your billing address.');
+        return;
+      }
+
+      final String userEmail = validation['email'] as String? ?? '';
+      final String userPhone = validation['phone'] as String? ?? '';
+      final Map<String, dynamic> billingAddress = validation['address'] as Map<String, dynamic>? ?? {};
+
+      // 3.2 Crear/Actualizar Stripe Customer si no existe
+      if (stripeCustomerId == null) {
+        print('🔍 DEBUG: Creating new Stripe customer for Cash App');
+        final customerId = await StripeService.createCustomer(
+          email: userEmail,
+          name: fullName,
+          phone: userPhone,
+        );
+        stripeCustomerId = customerId;
+      }
+
+      // 4. Crear sesión de Cash App
+      print('🔍 DEBUG: Creating Cash App session');
+      final sessionResult = await CashAppService.createCashAppSession(
+        amount: totalAmount,
+        customerId: stripeCustomerId!,
+        billingDetails: {
+          'name': fullName,
+          'email': userEmail,
+          'phone': userPhone,
+          'address': billingAddress,
+        },
+      );
+
+      if (!sessionResult['success']) {
+        if (mounted) Navigator.of(context).pop();
+        _showErrorDialog('Failed to create Cash App session');
+        return;
+      }
+
+      final redirectUrl = sessionResult['redirectUrl'];
+      final paymentIntentId = sessionResult['paymentIntentId'];
+
+      print('🔍 DEBUG: Cash App session created, redirectUrl: $redirectUrl');
+
+      if (redirectUrl == null) {
+        if (mounted) Navigator.of(context).pop();
+        _showErrorDialog('No redirect URL received from Cash App');
+        return;
+      }
+
+      // 5. Abrir webview para Cash App
+      if (mounted) {
+        Navigator.of(context).pop(); // Cerrar loading
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => PaymentWebviewPageWidget(
+              checkoutUrl: redirectUrl,
+              returnUrl: 'landgotravel://payment-return',
+              paymentIntentId: paymentIntentId,
+              paymentMethodName: 'Cash App',
+            ),
+          ),
+        );
+
+        print('🔍 DEBUG: Cash App webview result: $result');
+
+        if (result == null) {
+          print('🔄 User cancelled Cash App payment (closed webview)');
+          return;
+        }
+
+        final status = result['status'];
+        final returnedPaymentIntentId = result['paymentIntentId'];
+
+        print('🔍 DEBUG: Cash App result status: $status');
+
+        if (status == 'success') {
+          // Pago exitoso (aparentemente)
+          print('✅ Cash App payment successful');
+
+          // ⚠️ VERIFICAR EL ESTADO REAL del pago con Stripe
+          final confirmation = await CashAppService.confirmCashAppPayment(
+            paymentIntentId: returnedPaymentIntentId,
+          );
+
+          print('🔍 DEBUG: Payment Intent status from Stripe: ${confirmation['status']}');
+
+          // Solo actualizar wallet si el pago realmente fue exitoso
+          if (confirmation['status'] == 'succeeded') {
+            print('✅ Payment confirmed as SUCCEEDED by Stripe');
+            // Actualizar wallet
+            await _updateWalletBalance(amountWithoutFee, returnedPaymentIntentId);
+
+            // Navegar a PaymentSuccess con datos del pago
+            if (mounted) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PaymentSuccessPagWidget(),
+                  settings: RouteSettings(
+                    arguments: {
+                      'paymentIntentId': returnedPaymentIntentId,
+                      'chargeId': 'N/A', // Cash App no usa charge ID tradicional
+                      'customerName': fullName,
+                      'cardBrand': 'Cash App',
+                      'cardLast4': 'N/A',
+                      'cardExpiry': 'N/A',
+                      'amount': amountWithoutFee.toString(),
+                      'currency': 'USD',
+                      'alreadyPersisted': true,
+                    },
+                  ),
+                ),
+              );
+            }
+          } else if (confirmation['status'] == 'requires_payment_method') {
+            // El pago fue denegado/cancelado por Cash App
+            print('⚠️ Payment was declined by Cash App');
+            if (mounted) {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PaymentFailedPagWidget(),
+                  settings: RouteSettings(
+                    arguments: {
+                      'amount': totalAmountStr,
+                      'paymentMethod': 'Cash App',
+                      'error': 'Payment was declined. Please try another payment method or contact your bank.',
+                    },
+                  ),
+                ),
+              );
+            }
+          } else if (confirmation['status'] == 'canceled') {
+            print('⚠️ Payment was cancelled by user');
+            // Usuario canceló, no hacer nada (solo cerrar webview)
+          } else {
+            print('⚠️ Unexpected payment status: ${confirmation['status']}. Full confirmation response: $confirmation');
+            _showErrorDialog('Payment is ${confirmation['status']}. We\'ll notify you when it\'s complete.');
+          }
+        } else if (status == 'failed') {
+          // Usuario hizo clic en "FAIL TEST PAYMENT" dentro del webview
+          print('❌ Payment intentionally failed (FAIL TEST PAYMENT)');
+          if (mounted) {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const PaymentFailedPagWidget(),
+                settings: RouteSettings(
+                  arguments: {
+                    'amount': totalAmountStr,
+                    'paymentMethod': 'Cash App',
+                    'error': 'Payment was declined. This is a test failure.',
+                  },
+                ),
+              ),
+            );
+          }
+        } else if (status == 'cancelled') {
+          print('🔄 User cancelled Cash App payment (closed webview)');
+          // Usuario canceló explícitamente (cerró webview), no hacer nada
+        } else {
+          print('⚠️ Unknown payment status: $status');
+          _showErrorDialog('Payment status: $status');
+        }
+      }
+    } catch (e) {
+      print('❌ ERROR in Cash App payment: $e');
+      if (mounted) Navigator.of(context).pop();
+      _showErrorDialog('Error processing Cash App payment: $e');
+    }
+  }
+
   /// Actualizar balance del wallet
   Future<void> _updateWalletBalance(double amount, String paymentIntentId) async {
     try {
@@ -1327,13 +1782,30 @@ class _ReviewSummaryPageWidgetState extends State<ReviewSummaryPageWidget> {
           .eq('id', currentUser.id);
 
       // Registrar transacción
+      String paymentMethod = 'afterpay'; // Default
+      String methodName = 'Afterpay'; // Default
+      
+      if (_selectedPaymentMethod == 'klarna') {
+        paymentMethod = 'klarna';
+        methodName = 'Klarna';
+      } else if (_selectedPaymentMethod == 'affirm') {
+        paymentMethod = 'affirm';
+        methodName = 'Affirm';
+      } else if (_selectedPaymentMethod == 'zip') {
+        paymentMethod = 'zip';
+        methodName = 'Zip';
+      } else if (_selectedPaymentMethod == 'cashapp') {
+        paymentMethod = 'cashapp';
+        methodName = 'Cash App';
+      }
+
       await Supabase.instance.client.from('payments').insert({
         'user_id': currentUser.id,
         'amount': amount,
-        'payment_method': _selectedPaymentMethod == 'klarna' ? 'klarna' : (_selectedPaymentMethod == 'affirm' ? 'affirm' : 'afterpay'),
+        'payment_method': paymentMethod,
         'status': 'completed',
         'related_type': 'wallet_topup',
-        'description': 'Wallet top-up via ${_selectedPaymentMethod == 'klarna' ? 'Klarna' : (_selectedPaymentMethod == 'affirm' ? 'Affirm' : 'Afterpay')} (PaymentIntent: $paymentIntentId)',
+        'description': 'Wallet top-up via $methodName (PaymentIntent: $paymentIntentId)',
       });
 
       print('✅ Wallet balance updated: \$${currentBalance.toStringAsFixed(2)} → \$${newBalance.toStringAsFixed(2)}');
@@ -1487,11 +1959,12 @@ class _PaymentMethodSelectorContentState extends State<_PaymentMethodSelectorCon
             
             _buildPaymentMethod(
               'Cash App Pay',
-              'Pay with Cash App',
+              'Coming Soon - US Only',
               Icons.attach_money,
               _selectedPaymentMethod == 'cashapp',
               'cashapp',
               const Color(0xFF00D54B), // Cash App Green
+              isDisabled: true, // ✅ DESHABILITADO
             ),
             
             const SizedBox(height: 12),
@@ -1701,12 +2174,12 @@ class _PaymentMethodSelectorContentState extends State<_PaymentMethodSelectorCon
     return methods[methodId] ?? methods['card']!;
   }
 
-  Widget _buildPaymentMethod(String title, String subtitle, IconData icon, bool isSelected, String methodId, Color brandColor) {
+  Widget _buildPaymentMethod(String title, String subtitle, IconData icon, bool isSelected, String methodId, Color brandColor, {bool isDisabled = false}) {
     final paymentDetails = _getPaymentMethodDetails(methodId);
     final logoPath = paymentDetails['logoPath'] as String?;
     
     return GestureDetector(
-      onTap: () {
+      onTap: isDisabled ? null : () {
         print('🔍 DEBUG: Tapped payment method: $methodId');
         print('🔍 DEBUG: Previous selection: $_selectedPaymentMethod');
         setState(() {
@@ -1720,10 +2193,14 @@ class _PaymentMethodSelectorContentState extends State<_PaymentMethodSelectorCon
         width: double.infinity,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: isSelected ? brandColor.withOpacity(0.15) : const Color(0xFF2C2C2C),
+          color: isDisabled 
+              ? Colors.grey.withOpacity(0.1) 
+              : (isSelected ? brandColor.withOpacity(0.15) : const Color(0xFF2C2C2C)),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? brandColor : Colors.white.withOpacity(0.2),
+            color: isDisabled 
+                ? Colors.grey.withOpacity(0.3)
+                : (isSelected ? brandColor : Colors.white.withOpacity(0.2)),
             width: isSelected ? 2 : 1,
           ),
         ),
@@ -1733,7 +2210,9 @@ class _PaymentMethodSelectorContentState extends State<_PaymentMethodSelectorCon
               width: 50,
               height: 50,
               decoration: BoxDecoration(
-                color: logoPath != null ? Colors.transparent : brandColor.withOpacity(0.2),
+                color: logoPath != null 
+                    ? Colors.transparent 
+                    : (isDisabled ? Colors.grey.withOpacity(0.2) : brandColor.withOpacity(0.2)),
                 shape: BoxShape.circle,
               ),
               child: logoPath != null

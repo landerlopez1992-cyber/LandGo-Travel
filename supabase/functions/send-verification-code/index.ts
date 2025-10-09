@@ -813,6 +813,34 @@ serve(async (req) => {
         console.log('🔍 DEBUG: Profile update email prepared successfully')
         break
 
+      case 'password_change':
+        // ⭐ CASO PARA CAMBIO DE CONTRASEÑA (requiere código de verificación) ⭐
+        console.log('🔍 DEBUG: Processing password_change case')
+        emailSubject = 'LandGo Travel - Password Change Verification Code'
+        emailHtml = generateBaseHTML(`
+          <div style="text-align: center;">
+            <div class="success-icon">🔐</div>
+            <h2 style="color: #1F2937; margin: 0 0 20px 0;">Password Change Verification</h2>
+          </div>
+          
+          <p>Hello <strong>${fullName || 'User'}</strong>,</p>
+          <p>You requested to change your password for your LandGo Travel account. For security, please use the verification code below:</p>
+          
+          <div style="text-align: center; margin: 30px 0;">
+            <div class="verification-code">${code}</div>
+          </div>
+          
+          <div class="security-notice">
+            <p style="margin: 0;"><strong>Security Notice:</strong> This code is valid for 10 minutes only. If you didn't request this password change, please ignore this email and contact our support team immediately at info@landgotravel.com</p>
+          </div>
+          
+          <p>After entering the code, you'll be able to set your new password.</p>
+          <p>Thank you for keeping your account secure!</p>
+          <p style="margin: 20px 0 0 0;"><strong>The LandGo Travel Team</strong></p>
+        `)
+        console.log('🔍 DEBUG: Password change email prepared with code:', code)
+        break
+
       case 'password_changed':
         emailSubject = 'LandGo Travel - Password Updated Successfully'
         emailHtml = generateBaseHTML(`

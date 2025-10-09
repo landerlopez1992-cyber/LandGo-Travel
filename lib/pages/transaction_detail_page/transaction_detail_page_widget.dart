@@ -61,27 +61,38 @@ class _TransactionDetailPageWidgetState
     bool isKlarna = paymentMethod == 'klarna';
     bool isAfterpay = paymentMethod == 'afterpay' || paymentMethod == 'afterpay_clearpay';
     bool isAffirm = paymentMethod == 'affirm';
+    bool isZip = paymentMethod == 'zip';
+    bool isCashApp = paymentMethod == 'cashapp';
     bool isStripePayment = paymentMethod.contains('stripe') || paymentMethod.contains('card') || paymentMethod == 'debit_card';
 
     String transactionType;
-    IconData typeIcon;
+    String? logoPath; // Para logos de métodos de pago
+    IconData? typeIcon; // Para iconos genéricos
     Color typeColor;
 
     if (isKlarna) {
       transactionType = 'Klarna';
-      typeIcon = Icons.payment;
+      logoPath = 'assets/images/payment_logos/klarna_logo.png';
       typeColor = const Color(0xFF4DD0E1); // Turquesa
     } else if (isAfterpay) {
       transactionType = 'Afterpay';
-      typeIcon = Icons.payment;
+      logoPath = 'assets/images/payment_logos/afterpay_logo.png';
       typeColor = const Color(0xFF4DD0E1); // Turquesa
     } else if (isAffirm) {
       transactionType = 'Affirm';
-      typeIcon = Icons.calendar_month;
+      logoPath = 'assets/images/payment_logos/affirm_logo.png';
+      typeColor = const Color(0xFF4DD0E1); // Turquesa
+    } else if (isZip) {
+      transactionType = 'Zip';
+      logoPath = 'assets/images/payment_logos/zip_logo.png';
+      typeColor = const Color(0xFF4DD0E1); // Turquesa
+    } else if (isCashApp) {
+      transactionType = 'Cash App';
+      logoPath = 'assets/images/payment_logos/cashapp_logo.png';
       typeColor = const Color(0xFF4DD0E1); // Turquesa
     } else if (isStripePayment) {
       transactionType = 'Debit Card';
-      typeIcon = Icons.credit_card;
+      logoPath = 'assets/images/payment_logos/card_logo.png';
       typeColor = const Color(0xFF4DD0E1); // Turquesa
     } else if (isSent) {
       transactionType = 'Dinero Enviado';
@@ -183,11 +194,21 @@ class _TransactionDetailPageWidgetState
                             color: typeColor.withOpacity(0.2),
                             shape: BoxShape.circle,
                           ),
-                          child: Icon(
-                            typeIcon,
-                            size: 50,
-                            color: typeColor,
-                          ),
+                          child: logoPath != null
+                              ? Padding(
+                                  padding: const EdgeInsets.all(20.0),
+                                  child: Image.asset(
+                                    logoPath!,
+                                    width: 60,
+                                    height: 60,
+                                    fit: BoxFit.contain,
+                                  ),
+                                )
+                              : Icon(
+                                  typeIcon!,
+                                  size: 50,
+                                  color: typeColor,
+                                ),
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -245,7 +266,7 @@ class _TransactionDetailPageWidgetState
                       style: GoogleFonts.outfit(
                         color: isSent
                             ? const Color(0xFFDC2626) // Rojo para enviado
-                            : (isStripePayment || isKlarna || isAfterpay || isAffirm)
+                            : (isStripePayment || isKlarna || isAfterpay || isAffirm || isZip)
                               ? const Color(0xFF4DD0E1) // Turquesa para métodos de pago
                               : const Color(0xFF4CAF50), // Verde para recibido
                         fontSize: 48,

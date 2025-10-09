@@ -216,7 +216,7 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
           icon: Icons.lock_outline,
           title: 'Change password',
           onTap: () {
-            // TODO: Navigate to change password
+            context.pushNamed('ChangePasswordPage');
           },
         ),
         

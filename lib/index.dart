@@ -15,6 +15,7 @@ export '/pages/my_wallet_page/my_wallet_page_widget.dart' show MyWalletPageWidge
 export '/pages/all_transactions_page/all_transactions_page_widget.dart' show AllTransactionsPageWidget;
 export '/pages/transaction_detail_page/transaction_detail_page_widget.dart' show TransactionDetailPageWidget;
 export '/pages/my_referrals_page/my_referrals_page_widget.dart' show MyReferralsPageWidget;
+export '/pages/change_password_page/change_password_page_widget.dart' show ChangePasswordPageWidget;
 export '/pages/travel_feed_page/travel_feed_page_widget.dart' show TravelFeedPageWidget;
 // NOTA: WalletPageWidget eliminado - solo usamos MyWalletPageWidget
 export '/pages/my_profile_page/my_profile_page_widget.dart' show MyProfilePageWidget;
@@ -23,6 +24,7 @@ export '/pages/billing_address_error_page/billing_address_error_page_widget.dart
 export '/pages/add_card_page/add_card_page_widget.dart' show AddCardPageWidget;
 export '/pages/klarna_webview_page/klarna_webview_page_widget.dart' show KlarnaWebviewPageWidget;
 export '/pages/payment_webview_page/payment_webview_page_widget.dart' show PaymentWebviewPageWidget;
+export '/pages/memberships_page/memberships_page_widget.dart' show MembershipsPageWidget;
 export '/pages/profile_page/profile_page_widget.dart' show ProfilePageWidget;
 export '/user/my_favorites_page/my_favorites_page_widget.dart' show MyFavoritesPageWidget;
 export '/user/my_trip_page/my_trip_page_widget.dart' show MyTripPageWidget;

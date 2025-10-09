@@ -355,33 +355,46 @@ class _AllTransactionsPageWidgetState extends State<AllTransactionsPageWidget> {
     bool isKlarna = paymentMethod == 'klarna';
     bool isAfterpay = paymentMethod == 'afterpay' || paymentMethod == 'afterpay_clearpay';
     bool isAffirm = paymentMethod == 'affirm';
+    bool isZip = paymentMethod == 'zip';
+    bool isCashApp = paymentMethod == 'cashapp';
     bool isStripePayment = paymentMethod.contains('stripe') || paymentMethod.contains('card') || paymentMethod == 'debit_card';
     
     // Determinar el tipo de transacción y obtener información del usuario
     String transactionType;
     String userInfo;
-    IconData typeIcon;
+    String? logoPath; // Para logos de métodos de pago
+    IconData? typeIcon; // Para iconos genéricos
     Color typeColor;
     
     if (isKlarna) {
       transactionType = 'Klarna';
       userInfo = 'Agregado saldo con Klarna';
-      typeIcon = Icons.payment;
+      logoPath = 'assets/images/payment_logos/klarna_logo.png';
       typeColor = const Color(0xFF4DD0E1); // Turquesa
     } else if (isAfterpay) {
       transactionType = 'Afterpay';
       userInfo = 'Agregado saldo con Afterpay';
-      typeIcon = Icons.payment;
+      logoPath = 'assets/images/payment_logos/afterpay_logo.png';
       typeColor = const Color(0xFF4DD0E1); // Turquesa
     } else if (isAffirm) {
       transactionType = 'Affirm';
       userInfo = 'Agregado saldo con Affirm';
-      typeIcon = Icons.calendar_month;
+      logoPath = 'assets/images/payment_logos/affirm_logo.png';
+      typeColor = const Color(0xFF4DD0E1); // Turquesa
+    } else if (isZip) {
+      transactionType = 'Zip';
+      userInfo = 'Agregado saldo con Zip';
+      logoPath = 'assets/images/payment_logos/zip_logo.png';
+      typeColor = const Color(0xFF4DD0E1); // Turquesa
+    } else if (isCashApp) {
+      transactionType = 'Cash App';
+      userInfo = 'Agregado saldo con Cash App';
+      logoPath = 'assets/images/payment_logos/cashapp_logo.png';
       typeColor = const Color(0xFF4DD0E1); // Turquesa
     } else if (isStripePayment) {
       transactionType = 'Debit Card';
       userInfo = 'Agregado saldo con tarjeta';
-      typeIcon = Icons.credit_card;
+      logoPath = 'assets/images/payment_logos/card_logo.png';
       typeColor = const Color(0xFF4DD0E1); // Turquesa
     } else if (isSent) {
       transactionType = 'Enviado';
@@ -444,11 +457,21 @@ class _AllTransactionsPageWidgetState extends State<AllTransactionsPageWidget> {
               color: typeColor.withValues(alpha: 0.2),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              typeIcon,
-              color: typeColor,
-              size: 24,
-            ),
+            child: logoPath != null
+                ? Padding(
+                    padding: const EdgeInsets.all(10.0),
+                    child: Image.asset(
+                      logoPath!,
+                      width: 28,
+                      height: 28,
+                      fit: BoxFit.contain,
+                    ),
+                  )
+                : Icon(
+                    typeIcon!,
+                    color: typeColor,
+                    size: 24,
+                  ),
           ),
           const SizedBox(width: 16),
           
