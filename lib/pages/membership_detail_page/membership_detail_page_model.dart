@@ -19,3 +19,5 @@ class MembershipDetailPageModel extends FlutterFlowModel<MembershipDetailPageWid
   }
 }
 
+
+

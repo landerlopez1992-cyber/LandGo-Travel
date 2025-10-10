@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/components/back_button_widget.dart';
 import '/pages/membership_detail_page/membership_detail_page_widget.dart';
+import '/backend/supabase/supabase.dart';
 import 'memberships_page_model.dart';
 export 'memberships_page_model.dart';
 
@@ -20,12 +21,61 @@ class _MembershipsPageWidgetState extends State<MembershipsPageWidget> {
   late MembershipsPageModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
+  String _currentMembershipType = 'Free'; // Plan actual del usuario
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _model = createModel(context, () => MembershipsPageModel());
+    _loadCurrentMembership();
     WidgetsBinding.instance.addPostFrameCallback((_) => setState(() {}));
+  }
+  
+  Future<void> _loadCurrentMembership() async {
+    try {
+      final currentUser = SupaFlow.client.auth.currentUser;
+      if (currentUser == null) {
+        print('❌ [MEMBERSHIP] No current user found');
+        setState(() {
+          _isLoading = false;
+        });
+        return;
+      }
+
+      print('🔍 [MEMBERSHIP] Loading membership for user: ${currentUser.id}');
+
+      // Obtener membresía actual desde Supabase
+      final response = await SupaFlow.client
+          .from('memberships')
+          .select('membership_type, status, stripe_subscription_id')
+          .eq('user_id', currentUser.id)
+          .eq('status', 'active')
+          .maybeSingle();
+
+      print('🔍 [MEMBERSHIP] Supabase response: $response');
+
+      if (response != null) {
+        final membershipType = response['membership_type'] as String?;
+        print('✅ [MEMBERSHIP] Found active membership: $membershipType');
+        setState(() {
+          _currentMembershipType = membershipType ?? 'Free';
+          _isLoading = false;
+        });
+      } else {
+        print('⚠️ [MEMBERSHIP] No active membership found, defaulting to Free');
+        setState(() {
+          _currentMembershipType = 'Free';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('❌ [MEMBERSHIP] Error loading membership: $e');
+      setState(() {
+        _currentMembershipType = 'Free';
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -103,7 +153,7 @@ class _MembershipsPageWidgetState extends State<MembershipsPageWidget> {
                       'Standard customer support',
                     ],
                     color: const Color(0xFF4DD0E1), // TURQUESA AZUL EXISTENTE
-                    isCurrentPlan: true,
+                    isCurrentPlan: _currentMembershipType == 'Free',
                   ),
                   
                   const SizedBox(height: 10),
@@ -121,6 +171,7 @@ class _MembershipsPageWidgetState extends State<MembershipsPageWidget> {
                     ],
                     color: const Color(0xFF00E676), // VERDE LLAMATIVO FUERTE
                     isPopular: true,
+                    isCurrentPlan: _currentMembershipType == 'Basic',
                   ),
                   
                   const SizedBox(height: 10),
@@ -137,6 +188,7 @@ class _MembershipsPageWidgetState extends State<MembershipsPageWidget> {
                       'Free booking modifications',
                     ],
                     color: const Color(0xFFFF6B00), // NARANJA FUERTE LLAMATIVO
+                    isCurrentPlan: _currentMembershipType == 'Premium',
                   ),
                   
                   const SizedBox(height: 10),
@@ -155,6 +207,7 @@ class _MembershipsPageWidgetState extends State<MembershipsPageWidget> {
                     ],
                     color: const Color(0xFFFFD700), // GOLD
                     isVIP: true,
+                    isCurrentPlan: _currentMembershipType == 'VIP',
                   ),
                   
                   const SizedBox(height: 40),

@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,6 +8,12 @@ const corsHeaders = {
 
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY') || 'sk_test_51SBkaB2aG6cmZRHQwkLRrfMl5vR2Id6KhpGGqlbXheXV9FKc21ORQVPEFssJ8OsjA5cYtsHnyRSNhrfGiBzSIoSm00Q1TX4TBI';
 const STRIPE_API_URL = 'https://api.stripe.com/v1';
+
+// Supabase Admin Client
+const supabaseAdmin = createClient(
+  Deno.env.get('SUPABASE_URL') ?? '',
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+);
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', {
@@ -1081,13 +1088,15 @@ async function cancelSubscription(data) {
 /**
  * 3. UPDATE SUBSCRIPTION (UPGRADE/DOWNGRADE)
  * Actualiza una suscripción existente a un nuevo precio
+ * SOLO COBRA LA DIFERENCIA PRORRATEADA - NO EL SIGUIENTE MES
  */
 async function updateSubscription(data) {
-  const { subscriptionId, newPriceId, prorate = true } = data;
-  console.log('🔄 [UPDATE SUBSCRIPTION] Updating:', subscriptionId, 'to price:', newPriceId);
+  const { subscriptionId, newPriceId, prorate = true, userId, newMembershipType } = data;
+  console.log('🔄 [UPDATE SUBSCRIPTION] Updating:', subscriptionId, 'to price:', newPriceId, 'type:', newMembershipType);
   
   try {
-    // Obtener suscripción actual
+    // 1. Obtener suscripción actual
+    console.log('🔍 [UPDATE SUBSCRIPTION] Fetching current subscription...');
     const getRes = await fetch(`${STRIPE_API_URL}/subscriptions/${subscriptionId}`, {
       method: 'GET',
       headers: {
@@ -1096,17 +1105,51 @@ async function updateSubscription(data) {
     });
     
     const currentSub = await getRes.json();
+    console.log('📋 [UPDATE SUBSCRIPTION] Current subscription:', {
+      id: currentSub.id,
+      status: currentSub.status,
+      current_period_end: currentSub.current_period_end
+    });
+    
     if (!getRes.ok) {
-      throw new Error('Subscription not found');
+      throw new Error(`Subscription not found: ${currentSub?.error?.message || 'Unknown error'}`);
     }
     
     const subscriptionItemId = currentSub.items.data[0].id;
     
-    // Actualizar el precio de la suscripción
+    // 2. PREVISUALIZAR FACTURA ANTES DE ACTUALIZAR
+    console.log('🔍 [UPDATE SUBSCRIPTION] Previewing invoice...');
+    const previewParams = new URLSearchParams({
+      'subscription': subscriptionId,
+      'subscription_items[0][id]': subscriptionItemId,
+      'subscription_items[0][price]': newPriceId,
+      'subscription_proration_behavior': 'create_prorations',
+      'subscription_proration_date': String(Math.floor(Date.now() / 1000))
+    });
+    
+    const previewRes = await fetch(`${STRIPE_API_URL}/invoices/upcoming?${previewParams.toString()}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${STRIPE_SECRET_KEY}`
+      }
+    });
+    
+    const preview = await previewRes.json();
+    console.log('📊 [UPDATE SUBSCRIPTION] Invoice preview:', {
+      total: preview.total,
+      amount_due: preview.amount_due,
+      lines: preview.lines?.data?.length
+    });
+    
+    // 3. Actualizar la suscripción - PRORRATEO CORRECTO SIN DOBLE COBRO
+    console.log('🔄 [UPDATE SUBSCRIPTION] Applying subscription update...');
+    const now = Math.floor(Date.now() / 1000);
     const body = {
       'items[0][id]': subscriptionItemId,
       'items[0][price]': newPriceId,
-      'proration_behavior': prorate ? 'create_prorations' : 'none'
+      'proration_behavior': 'always_invoice', // Crear prorrateo e INMEDIATAMENTE facturar la diferencia
+      'proration_date': String(now), // Desde ahora
+      'billing_cycle_anchor': 'unchanged' // Mantener ciclo original (no cambia la fecha del próximo cobro)
     };
     
     const res = await fetch(`${STRIPE_API_URL}/subscriptions/${subscriptionId}`, {
@@ -1119,16 +1162,65 @@ async function updateSubscription(data) {
     });
     
     const subscription = await res.json();
-    console.log('✅ [UPDATE SUBSCRIPTION] Updated:', subscription.id);
+    console.log('✅ [UPDATE SUBSCRIPTION] Updated in Stripe:', subscription.id);
     
     if (!res.ok) {
       throw new Error(subscription?.error?.message ?? 'Failed to update subscription');
     }
     
+    // 3b. Obtener el importe REAL cobrado desde la última factura creada por Stripe
+    let chargedCents = 0;
+    try {
+      const latest = subscription.latest_invoice;
+      const invoiceId = typeof latest === 'string' ? latest : latest?.id;
+      if (invoiceId) {
+        const invRes = await fetch(`${STRIPE_API_URL}/invoices/${invoiceId}`, {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${STRIPE_SECRET_KEY}` }
+        });
+        const invoice = await invRes.json();
+        console.log('🧾 [UPDATE SUBSCRIPTION] Latest invoice:', {
+          id: invoice.id,
+          total: invoice.total,
+          amount_due: invoice.amount_due,
+          amount_paid: invoice.amount_paid,
+          status: invoice.status
+        });
+        if (invRes.ok) {
+          chargedCents = invoice.amount_paid ?? invoice.amount_due ?? invoice.total ?? 0;
+        }
+      } else {
+        console.log('ℹ️ [UPDATE SUBSCRIPTION] No latest_invoice returned by Stripe.');
+      }
+    } catch (e) {
+      console.warn('⚠️ [UPDATE SUBSCRIPTION] Could not fetch latest invoice:', e);
+    }
+    
+    // 4. Actualizar en Supabase
+    if (userId && newMembershipType) {
+      console.log('💾 [UPDATE SUBSCRIPTION] Updating Supabase membership...');
+      const { error: dbError } = await supabaseAdmin
+        .from('memberships')
+        .update({
+          membership_type: newMembershipType,
+          updated_at: new Date().toISOString()
+        })
+        .eq('stripe_subscription_id', subscriptionId)
+        .eq('user_id', userId);
+      
+      if (dbError) {
+        console.error('❌ [UPDATE SUBSCRIPTION] Error updating Supabase:', dbError);
+      } else {
+        console.log('✅ [UPDATE SUBSCRIPTION] Supabase updated successfully');
+      }
+    }
+    
     return json({
       success: true,
       subscription: subscription,
-      newPrice: newPriceId
+      newPrice: newPriceId,
+      proratedAmount: (chargedCents || preview.amount_due || preview.total || 0) / 100,
+      needsRefresh: true
     });
   } catch (error) {
     console.error('❌ [UPDATE SUBSCRIPTION] Error:', error);

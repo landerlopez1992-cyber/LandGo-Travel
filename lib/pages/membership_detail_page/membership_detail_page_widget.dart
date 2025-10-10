@@ -950,9 +950,199 @@ class _MembershipDetailPageWidgetState extends State<MembershipDetailPageWidget>
     );
   }
 
+  // Calcular monto prorrateado para upgrades
+  double _calculateProratedAmount(String fromPlan, String toPlan) {
+    final prices = {
+      'Basic': 29.0,
+      'Premium': 49.0,
+      'VIP': 79.0,
+    };
+    
+    final currentPrice = prices[fromPlan] ?? 0.0;
+    final newPrice = prices[toPlan] ?? 0.0;
+    
+    return newPrice - currentPrice; // Diferencia simple
+  }
+
+  // Mostrar diálogo de confirmación con monto
+  Future<bool> _showUpgradeConfirmationDialog(String fromPlan, String toPlan, double amount) async {
+    return await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: const Color(0xFF2C2C2C),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: widget.color, width: 2),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icono
+              Icon(
+                Icons.arrow_circle_up_rounded,
+                color: widget.color,
+                size: 64,
+              ),
+              const SizedBox(height: 16),
+              
+              // Título
+              Text(
+                'Upgrade Confirmation',
+                style: GoogleFonts.outfit(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Detalles del upgrade
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1A1A1A),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  children: [
+                    _buildUpgradeRow('From:', fromPlan, Colors.white70),
+                    const SizedBox(height: 8),
+                    Icon(Icons.arrow_downward, color: widget.color, size: 20),
+                    const SizedBox(height: 8),
+                    _buildUpgradeRow('To:', toPlan, widget.color),
+                    const Divider(height: 24, color: Colors.white24),
+                    _buildUpgradeRow('Amount to Pay:', '\$$amount', widget.color, isBold: true),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Texto explicativo
+              Text(
+                'You will be charged the prorated difference for the remaining days of this billing cycle.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.outfit(
+                  color: Colors.white70,
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 24),
+              
+              // Botones
+              Row(
+                children: [
+                  // Cancelar
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      style: TextButton.styleFrom(
+                        backgroundColor: const Color(0xFF37474F),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Cancel',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  // Confirmar
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      style: TextButton.styleFrom(
+                        backgroundColor: widget.color,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Confirm',
+                        style: GoogleFonts.outfit(
+                          color: Colors.black,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    ) ?? false;
+  }
+
+  Widget _buildUpgradeRow(String label, String value, Color color, {bool isBold = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.outfit(
+            color: Colors.white70,
+            fontSize: 14,
+          ),
+        ),
+        Text(
+          value,
+          style: GoogleFonts.outfit(
+            color: color,
+            fontSize: isBold ? 18 : 14,
+            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ],
+    );
+  }
+
   void _proceedToPayment() async {
     try {
-      // 1. Verificar si hay tarjetas guardadas ANTES de crear suscripción
+      // 1. Verificar si ya tiene una suscripción activa
+      final currentMembership = await _checkCurrentMembership();
+      if (currentMembership != null) {
+        final currentType = currentMembership['membership_type'] as String? ?? 'Free';
+        
+        // Si es el mismo plan, mostrar "Already Subscribed"
+        if (currentType == widget.title) {
+          _showAlreadySubscribedDialog(currentMembership);
+          return;
+        }
+        
+        // Si es un downgrade, mostrar mensaje de no permitido
+        if (_isDowngrade(currentType, widget.title)) {
+          _showDowngradeNotAllowedDialog(currentType);
+          return;
+        }
+        
+        // Si es un upgrade, mostrar confirmación con monto ANTES de proceder
+        print('🔄 [UPGRADE] Upgrading from $currentType to ${widget.title}');
+        
+        // Calcular monto estimado (será reemplazado por el real de Stripe)
+        final estimatedAmount = _calculateProratedAmount(currentType, widget.title);
+        final confirmed = await _showUpgradeConfirmationDialog(currentType, widget.title, estimatedAmount);
+        
+        if (!confirmed) {
+          print('ℹ️ [UPGRADE] User cancelled upgrade');
+          return; // Usuario canceló
+        }
+      }
+
+      // 2. Verificar si hay tarjetas guardadas ANTES de crear suscripción
       final hasCards = await _checkSavedCards();
       
       if (!hasCards) {
@@ -960,7 +1150,7 @@ class _MembershipDetailPageWidgetState extends State<MembershipDetailPageWidget>
         return;
       }
 
-      // 2. Mostrar loading
+      // 3. Mostrar loading
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -980,7 +1170,7 @@ class _MembershipDetailPageWidgetState extends State<MembershipDetailPageWidget>
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Creating Subscription...',
+                  currentMembership != null ? 'Processing upgrade...' : 'Creating subscription...',
                   style: GoogleFonts.outfit(
                     color: Colors.white,
                     fontSize: 16,
@@ -993,34 +1183,88 @@ class _MembershipDetailPageWidgetState extends State<MembershipDetailPageWidget>
         ),
       );
 
-      // 3. Obtener Price ID
+      // 4. Obtener Price ID
       final priceId = StripeConfig.getPriceId(widget.title);
       
-      // 4. Crear suscripción
-      final result = await MembershipSubscriptionService.createSubscription(
-        membershipType: widget.title,
-        priceId: priceId,
-      );
+      print('📱 [PROCEED TO PAYMENT] Calling backend with priceId: $priceId');
+      
+      // 5. Si hay suscripción activa, hacer UPDATE, si no, CREATE
+      final result = currentMembership != null
+          ? await MembershipSubscriptionService.updateSubscription(
+              subscriptionId: currentMembership['stripe_subscription_id'] as String,
+              newPriceId: priceId,
+              newMembershipType: widget.title,
+            )
+          : await MembershipSubscriptionService.createSubscription(
+              membershipType: widget.title,
+              priceId: priceId,
+            );
+      
+      print('📱 [PROCEED TO PAYMENT] Backend response success: ${result['success']}');
 
-      // Cerrar loading
-      Navigator.pop(context);
+      // Cerrar loading de forma segura
+      if (mounted && Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
 
       if (result['success'] == true) {
-        // Navegar al flujo de pago de Stripe
-        await _processStripePayment(result);
+        // Si es un upgrade, verificar el monto real cobrado
+        if (currentMembership != null && result['needsRefresh'] == true) {
+          // Convertir a double de forma segura
+          final proratedValue = result['proratedAmount'];
+          final realAmount = proratedValue is int 
+              ? proratedValue.toDouble() 
+              : (proratedValue as double? ?? 0.0);
+          
+          print('💰 [UPGRADE SUCCESS] Real amount charged: \$$realAmount');
+          print('📊 [UPGRADE SUCCESS] Raw value: $proratedValue (${proratedValue.runtimeType})');
+          
+          // Mostrar diálogo final con monto real
+          await _showUpgradeSuccessDialog(realAmount);
+          
+          // Navegar de vuelta a memberships para que recargue
+          if (mounted && Navigator.canPop(context)) {
+            Navigator.pop(context); // Regresar a memberships
+          }
+        } else {
+          // Nueva suscripción, navegar al flujo de pago de Stripe
+          await _processStripePayment(result);
+        }
       } else {
         // Mostrar error normal
-        final errorMessage = result['error'] ?? 'Subscription creation failed';
+        final errorMessage = result['error'] ?? 'Subscription creation/update failed';
+        print('❌ [PAYMENT ERROR] Error message: $errorMessage');
         _showErrorDialog(errorMessage);
       }
     } catch (e) {
+      print('❌ [PAYMENT ERROR] Exception: $e');
+      
       // Cerrar loading si está abierto
-      if (Navigator.canPop(context)) {
+      if (mounted && Navigator.canPop(context)) {
         Navigator.pop(context);
       }
       
       // Mostrar error
       _showErrorDialog('Payment processing failed: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>?> _checkCurrentMembership() async {
+    try {
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      if (currentUser == null) return null;
+
+      final response = await Supabase.instance.client
+          .from('memberships')
+          .select('membership_type, status, stripe_subscription_id')
+          .eq('user_id', currentUser.id)
+          .eq('status', 'active')
+          .maybeSingle();
+
+      return response;
+    } catch (e) {
+      print('⚠️ Error checking current membership: $e');
+      return null;
     }
   }
 
@@ -1059,16 +1303,21 @@ class _MembershipDetailPageWidgetState extends State<MembershipDetailPageWidget>
 
   Future<void> _processStripePayment(Map<String, dynamic> subscriptionResult) async {
     try {
+      print('📱 [PROCESS PAYMENT] Starting with result: ${subscriptionResult.keys}');
+      
       final clientSecret = subscriptionResult['clientSecret'];
       final needsSubscriptionCreation = subscriptionResult['needsSubscriptionCreation'] == true;
       final priceId = subscriptionResult['priceId'];
       final paymentMethodId = subscriptionResult['paymentMethodId'];
       
       if (clientSecret == null) {
+        print('❌ [PROCESS PAYMENT] No client secret');
         _showErrorDialog('No payment intent received');
         return;
       }
 
+      print('📱 [PROCESS PAYMENT] Initializing payment sheet...');
+      
       // Inicializar Stripe Payment Sheet - MOSTRAR TARJETAS GUARDADAS
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
@@ -1095,72 +1344,247 @@ class _MembershipDetailPageWidgetState extends State<MembershipDetailPageWidget>
         ),
       );
 
+      print('📱 [PROCESS PAYMENT] Presenting payment sheet...');
+      
       // Mostrar Payment Sheet
       await Stripe.instance.presentPaymentSheet();
 
-      // Pago exitoso
-      String? subscriptionId;
+      print('✅ [PROCESS PAYMENT] Payment sheet completed successfully');
+
+      // Pago exitoso - SIEMPRE crear suscripción en Stripe
+      print('🔄 [PROCESS PAYMENT] Creating subscription after successful payment...');
+      final completeResult = await Supabase.instance.client.functions.invoke(
+        'stripe-payment',
+        body: {
+          'action': 'complete_subscription',
+          'customerId': subscriptionResult['customerId'],
+          'priceId': priceId,
+          'userId': Supabase.instance.client.auth.currentUser?.id,
+          'membershipType': widget.title,
+          'paymentMethodId': paymentMethodId,
+        },
+      );
       
-      // Si necesita crear suscripción, hacerlo ahora
-      if (needsSubscriptionCreation) {
-        print('🔄 Creating subscription after successful payment...');
-        final completeResult = await Supabase.instance.client.functions.invoke(
-          'stripe-payment',
-          body: {
-            'action': 'complete_subscription',
-            'customerId': subscriptionResult['customerId'],
-            'priceId': priceId,
-            'userId': Supabase.instance.client.auth.currentUser?.id,
-            'membershipType': widget.title,
-            'paymentMethodId': paymentMethodId,
-          },
-        );
-        
-        final completeData = completeResult.data as Map<String, dynamic>?;
-        if (completeData?['success'] == true) {
-          subscriptionId = completeData!['subscriptionId'] as String?;
-          print('✅ Subscription created: $subscriptionId');
-        }
-      } else {
-        subscriptionId = subscriptionResult['subscriptionId'] as String?;
+      final completeData = completeResult.data as Map<String, dynamic>?;
+      print('✅ [PROCESS PAYMENT] Complete subscription response: $completeData');
+      
+      if (completeData?['success'] != true) {
+        throw Exception(completeData?['error'] ?? 'Failed to create subscription');
       }
+      
+      final subscriptionId = completeData!['subscriptionId'] as String?;
+      print('✅ [PROCESS PAYMENT] Subscription created in Stripe: $subscriptionId');
 
       // Actualizar membresía en la base de datos
       if (subscriptionId != null) {
+        print('💾 [PROCESS PAYMENT] Updating membership in database...');
         await _updateMembershipInDatabase(subscriptionId);
+        print('✅ [PROCESS PAYMENT] Database updated successfully');
+      } else {
+        throw Exception('No subscription ID returned from Stripe');
       }
 
       // Mostrar éxito
-      _showSuccessDialog();
+      print('🎉 [PROCESS PAYMENT] Showing success dialog...');
+      if (mounted) {
+        _showSuccessDialog();
+      }
 
     } catch (e) {
+      print('❌ [PROCESS PAYMENT] Error: $e');
+      
       // Manejar errores de pago
       if (e.toString().contains('canceled') || e.toString().contains('cancelled')) {
+        print('ℹ️ [PROCESS PAYMENT] User cancelled payment');
         // Usuario canceló - no mostrar error
         return;
       }
-      _showErrorDialog('Payment failed: ${e.toString()}');
+      
+      if (mounted) {
+        _showErrorDialog('Payment failed: ${e.toString()}');
+      }
     }
   }
 
   Future<void> _updateMembershipInDatabase(String subscriptionId) async {
     try {
-      // Actualizar membresía en Supabase
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      if (currentUser == null) {
+        print('❌ No current user for membership update');
+        return;
+      }
+
+      print('🔄 [MEMBERSHIP] Creating/updating membership in database...');
+      print('   User ID: ${currentUser.id}');
+      print('   Subscription ID: $subscriptionId');
+      print('   Membership Type: ${widget.title}');
+
+      // Calcular fechas de período
+      final now = DateTime.now();
+      final nextMonth = DateTime(now.year, now.month + 1, now.day);
+      
+      // Usar upsert (INSERT o UPDATE) para crear o actualizar la membresía
       await Supabase.instance.client
           .from('memberships')
-          .update({
+          .upsert({
+            'user_id': currentUser.id,
             'membership_type': widget.title,
             'stripe_subscription_id': subscriptionId,
             'status': 'active',
-            'updated_at': DateTime.now().toIso8601String(),
-          })
-          .eq('user_id', Supabase.instance.client.auth.currentUser?.id ?? '');
+            'current_period_start': now.toIso8601String(),
+            'current_period_end': nextMonth.toIso8601String(),
+            'next_billing_date': nextMonth.toIso8601String(),
+            'created_at': now.toIso8601String(),
+            'updated_at': now.toIso8601String(),
+          });
 
-      print('✅ Membership updated in database: $subscriptionId');
+      print('✅ [MEMBERSHIP] Membership created/updated in database successfully');
     } catch (e) {
-      print('❌ Error updating membership: $e');
+      print('❌ [MEMBERSHIP] Error creating/updating membership: $e');
       // No mostrar error al usuario ya que el pago fue exitoso
     }
+  }
+
+  // Diálogo de éxito para UPGRADES con monto real
+  Future<void> _showUpgradeSuccessDialog(double realAmount) async {
+    return showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.9,
+          decoration: BoxDecoration(
+            color: const Color(0xFF2C2C2C),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: widget.color.withOpacity(0.5),
+              width: 2,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Success icon
+                Container(
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    color: widget.color.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.check_circle,
+                    color: widget.color,
+                    size: 36,
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Title
+                Text(
+                  'Upgrade Successful!',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Monto cobrado
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1A1A1A),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        'Amount Charged',
+                        style: GoogleFonts.outfit(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '\$${realAmount.toStringAsFixed(2)}',
+                        style: GoogleFonts.outfit(
+                          color: widget.color,
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Prorated difference for ${widget.title}',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.outfit(
+                          color: Colors.white54,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Message
+                Text(
+                  'Your membership has been upgraded successfully. You now have access to all ${widget.title} benefits!',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+                
+                const SizedBox(height: 24),
+                
+                // Continue button
+                Container(
+                  width: double.infinity,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: widget.color,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () {
+                        if (Navigator.canPop(context)) {
+                          Navigator.pop(context); // Cerrar success dialog
+                        }
+                      },
+                      child: Center(
+                        child: Text(
+                          'Continue',
+                          style: GoogleFonts.outfit(
+                            color: Colors.black,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   void _showSuccessDialog() {
@@ -1239,9 +1663,12 @@ class _MembershipDetailPageWidgetState extends State<MembershipDetailPageWidget>
                     child: InkWell(
                       borderRadius: BorderRadius.circular(12),
                       onTap: () {
-                        Navigator.pop(context);
-                        // Navegar a la pantalla principal
-                        context.goNamedAuth('MainPage', context.mounted);
+                        if (Navigator.canPop(context)) {
+                          Navigator.pop(context); // Cerrar success dialog
+                        }
+                        if (Navigator.canPop(context)) {
+                          Navigator.pop(context); // Regresar a memberships
+                        }
                       },
                       child: Center(
                         child: Text(
@@ -1294,6 +1721,207 @@ class _MembershipDetailPageWidgetState extends State<MembershipDetailPageWidget>
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  bool _isDowngrade(String currentType, String newType) {
+    final membershipOrder = ['Free', 'Basic', 'Premium', 'VIP'];
+    final currentIndex = membershipOrder.indexOf(currentType);
+    final newIndex = membershipOrder.indexOf(newType);
+    return newIndex < currentIndex;
+  }
+
+  void _showDowngradeNotAllowedDialog(String currentType) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.9,
+          decoration: BoxDecoration(
+            color: const Color(0xFF2C2C2C),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: Colors.orange.withOpacity(0.5),
+              width: 2,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Warning icon
+                Container(
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.warning,
+                    color: Colors.orange,
+                    size: 36,
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Title
+                Text(
+                  'Downgrade Not Available',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                
+                const SizedBox(height: 8),
+                
+                // Message
+                Text(
+                  'You are currently on $currentType membership. To downgrade, you must wait until the end of your billing cycle or cancel your current plan first.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+                
+                const SizedBox(height: 24),
+                
+                // OK button
+                Container(
+                  width: double.infinity,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.orange,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => Navigator.pop(context),
+                      child: Center(
+                        child: Text(
+                          'Got it',
+                          style: GoogleFonts.outfit(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showAlreadySubscribedDialog(Map<String, dynamic> currentMembership) {
+    final currentType = currentMembership['membership_type'] as String? ?? 'Unknown';
+    
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.9,
+          decoration: BoxDecoration(
+            color: const Color(0xFF2C2C2C),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: widget.color.withOpacity(0.5),
+              width: 2,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Check icon
+                Container(
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    color: widget.color.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.check_circle,
+                    color: widget.color,
+                    size: 36,
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Title
+                Text(
+                  'Already Subscribed!',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                
+                const SizedBox(height: 8),
+                
+                // Message
+                Text(
+                  'You are already subscribed to $currentType membership. If you want to upgrade or downgrade, please go back to the memberships page.',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+                
+                const SizedBox(height: 24),
+                
+                // OK button
+                Container(
+                  width: double.infinity,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: widget.color,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => Navigator.pop(context),
+                      child: Center(
+                        child: Text(
+                          'Got it',
+                          style: GoogleFonts.outfit(
+                            color: Colors.black,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -1438,6 +2066,8 @@ class _MembershipDetailPageWidgetState extends State<MembershipDetailPageWidget>
     );
   }
 }
+
+
 
 
 

@@ -48,7 +48,7 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
   // Valores reales del usuario para comparación
   String _realPhone = '+1 (555) 123-4567';
   String _realDateOfBirth = 'January 15, 1990';
-  String _realMembership = 'Premium Member';
+  String _realMembership = 'Free'; // Valor por defecto: Free
   
   // Variables para carga de imagen
   final ImagePicker _picker = ImagePicker();
@@ -75,8 +75,18 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Recargar datos financieros cuando el usuario regrese a la pantalla
-    _loadFinancialData();
+    
+    // SIEMPRE recargar datos cuando la pantalla se hace visible
+    print('🔄 MyProfilePage - didChangeDependencies called');
+    
+    // Usar Future.microtask para evitar problemas de setState durante build
+    Future.microtask(() {
+      if (mounted) {
+        print('🔄 Reloading user data and financial data...');
+        _loadFinancialData();
+        _loadUserData(); // Recargar membresía actualizada
+      }
+    });
   }
 
 
@@ -84,6 +94,28 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
   void dispose() {
     _model.dispose();
     super.dispose();
+  }
+
+  // Función para formatear el nombre de la membresía
+  String _formatMembershipName(String membershipType) {
+    if (membershipType.isEmpty || membershipType.toLowerCase() == 'free') {
+      return 'Free';
+    }
+    
+    // Normalizar el texto
+    String normalized = membershipType.trim().toLowerCase();
+    
+    // Detectar tipo de membresía y formatear
+    if (normalized.contains('basic')) {
+      return 'Basic - \$29/month';
+    } else if (normalized.contains('premium')) {
+      return 'Premium - \$49/month';
+    } else if (normalized.contains('vip')) {
+      return 'VIP - \$79/month';
+    } else {
+      // Si no coincide con ninguno, capitalizar la primera letra
+      return membershipType[0].toUpperCase() + membershipType.substring(1).toLowerCase();
+    }
   }
 
   // Método para cargar datos del usuario desde Supabase
@@ -180,12 +212,13 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
           
           // Cargar membresía real
           final membershipFromDB = response['membership_type'];
-          if (membershipFromDB != null && membershipFromDB.isNotEmpty && membershipFromDB.trim() != '') {
-            _realMembership = membershipFromDB;
+          if (membershipFromDB != null && membershipFromDB.isNotEmpty && membershipFromDB.trim() != '' && membershipFromDB.toLowerCase() != 'free') {
+            // Formatear nombre de membresía para mostrar
+            _realMembership = _formatMembershipName(membershipFromDB);
             print('Membership from database: $_realMembership');
           } else {
-            _realMembership = 'Premium Member'; // Valor por defecto
-            print('Using default membership: $_realMembership');
+            _realMembership = 'Free'; // Usuario sin membresía pagada
+            print('Using Free membership (no active subscription)');
           }
           
           print('Final user name: $_userName');
@@ -203,7 +236,7 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
           _userAvatarUrl = null;
           _realPhone = '+1 (555) 123-4567';
           _realDateOfBirth = 'January 15, 1990';
-          _realMembership = 'Premium Member';
+          _realMembership = 'Free'; // Usuario invitado no tiene membresía
         });
       }
     } catch (e) {
@@ -1944,8 +1977,171 @@ class _MyProfilePageWidgetState extends State<MyProfilePageWidget> {
         const SizedBox(height: 12),
         _buildInfoField('Date of Birth', _isEditMode ? _tempDateOfBirth : _realDateOfBirth, Icons.cake_outlined, 'date_of_birth'),
         const SizedBox(height: 12),
-        _buildInfoField('Membership', _isEditMode ? _tempMembership : _realMembership, Icons.diamond_outlined, 'membership'),
+        _buildMembershipField(), // Campo especial para Membership con colores
       ],
+    );
+  }
+
+  // Campo especial para Membership con colores y diseño premium
+  Widget _buildMembershipField() {
+    // Determinar colores según el tipo de membresía
+    Color cardColor;
+    Color iconBgColor;
+    Color iconColor;
+    Color textColor;
+    IconData membershipIcon;
+    bool hasGradient = false;
+    List<Color> gradientColors = [];
+    
+    String membershipLower = _realMembership.toLowerCase();
+    
+    if (membershipLower.contains('free')) {
+      cardColor = const Color(0xFF2C2C2C); // Gris oscuro
+      iconBgColor = const Color(0xFF4DD0E1); // TURQUESA AZUL (color oficial Free)
+      iconColor = Colors.black;
+      textColor = const Color(0xFF4DD0E1);
+      membershipIcon = Icons.card_membership_outlined;
+      hasGradient = true;
+      gradientColors = [
+        const Color(0xFF4DD0E1),
+        const Color(0xFF26C6DA),
+      ];
+    } else if (membershipLower.contains('basic')) {
+      cardColor = const Color(0xFF2C2C2C);
+      iconBgColor = const Color(0xFF00E676); // VERDE LLAMATIVO (color oficial Basic)
+      iconColor = Colors.black;
+      textColor = const Color(0xFF00E676);
+      membershipIcon = Icons.workspace_premium;
+      hasGradient = true;
+      gradientColors = [
+        const Color(0xFF00E676),
+        const Color(0xFF00C853),
+      ];
+    } else if (membershipLower.contains('premium')) {
+      cardColor = const Color(0xFF2C2C2C);
+      iconBgColor = const Color(0xFFFF6B00); // NARANJA FUERTE (color oficial Premium)
+      iconColor = Colors.white;
+      textColor = const Color(0xFFFF6B00);
+      membershipIcon = Icons.auto_awesome;
+      hasGradient = true;
+      gradientColors = [
+        const Color(0xFFFF6B00),
+        const Color(0xFFFF5722),
+      ];
+    } else if (membershipLower.contains('vip')) {
+      cardColor = const Color(0xFF2C2C2C);
+      iconBgColor = const Color(0xFFFFD700); // DORADO GOLD (color oficial VIP)
+      iconColor = Colors.black;
+      textColor = const Color(0xFFFFD700);
+      membershipIcon = Icons.diamond;
+      hasGradient = true;
+      gradientColors = [
+        const Color(0xFFFFD700),
+        const Color(0xFFFFC107),
+      ];
+    } else {
+      // Por defecto
+      cardColor = const Color(0xFF2C2C2C);
+      iconBgColor = const Color(0xFF4DD0E1);
+      iconColor = Colors.black;
+      textColor = Colors.white;
+      membershipIcon = Icons.card_membership;
+    }
+    
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: iconBgColor.withOpacity(0.3),
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        children: [
+          // Icono con gradiente o color sólido
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              gradient: hasGradient 
+                  ? LinearGradient(
+                      colors: gradientColors,
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
+                  : null,
+              color: hasGradient ? null : iconBgColor,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: iconBgColor.withOpacity(0.4),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(
+              membershipIcon,
+              color: iconColor,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Membership',
+                  style: GoogleFonts.outfit(
+                    color: Colors.white70,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _realMembership,
+                  style: GoogleFonts.outfit(
+                    color: textColor,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Badge decorativo
+          if (!membershipLower.contains('free'))
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: iconBgColor.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: iconBgColor.withOpacity(0.5),
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                membershipLower.contains('vip') 
+                    ? '👑 VIP'
+                    : membershipLower.contains('premium')
+                        ? '⭐ PRO'
+                        : '✨',
+                style: GoogleFonts.outfit(
+                  color: textColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+        ],
+      ),
     );
   }
 

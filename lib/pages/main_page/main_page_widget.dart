@@ -183,8 +183,8 @@ class _MainPageWidgetState extends State<MainPageWidget> {
           Container(
             width: 50,
             height: 50,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
               border: Border.all(color: const Color(0xFF4DD0E1), width: 2),
             ),
             child: ClipOval(
@@ -193,7 +193,7 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                       _userAvatarUrl!,
                       width: 50,
                       height: 50,
-                      fit: BoxFit.cover,
+                                                fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
                           color: const Color(0xFF2C2C2C),
@@ -204,9 +204,9 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                                 color: Colors.white,
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
+                                              ),
+                                            ),
+                                          ),
                         );
                       },
                     )
@@ -233,7 +233,7 @@ class _MainPageWidgetState extends State<MainPageWidget> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                                      Text(
                   'Hello,',
                   style: TextStyle(
                     color: Colors.white,
@@ -244,9 +244,9 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                 Text(
                   '$_userName 👋',
                   style: TextStyle(
-                    color: Colors.white,
+                                              color: Colors.white,
                     fontSize: 20,
-                    fontWeight: FontWeight.bold,
+                                              fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
@@ -270,9 +270,9 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                 Icons.notifications_outlined,
                 color: Colors.white,
                 size: 20,
-              ),
-            ),
-          ),
+                          ),
+                        ),
+                      ),
         ],
       ),
     );
@@ -328,11 +328,11 @@ class _MainPageWidgetState extends State<MainPageWidget> {
           return Container(
             width: 80,
             child: Column(
-              children: [
+                                  children: [
                 Container(
                   width: 60,
                   height: 60,
-                  decoration: BoxDecoration(
+                                        decoration: BoxDecoration(
                     color: Colors.grey[900],
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -347,7 +347,7 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                 Text(
                   category['name'] as String,
                   style: TextStyle(
-                    color: Colors.white,
+                                          color: Colors.white,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -393,10 +393,10 @@ class _MainPageWidgetState extends State<MainPageWidget> {
             child: Row(
               children: [
                 // Trip Image
-                Container(
+                                              Container(
                   width: 120,
                   height: 120,
-                                        decoration: BoxDecoration(
+                                                decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
                     image: DecorationImage(
                       image: NetworkImage('https://images.unsplash.com/photo-1571896349842-33c89424de2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w0NTYyMDF8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NTM5MzA2ODh8&ixlib=rb-4.1.0&q=80&w=1080'),
@@ -628,9 +628,9 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                   bottom: 0,
                   left: 0,
                   right: 0,
-                  child: Container(
+                                      child: Container(
                     padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
+                                        decoration: BoxDecoration(
                                     gradient: LinearGradient(
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
@@ -660,7 +660,7 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                                               Text(
                               'Bali',
                               style: TextStyle(
-                                                          color: Colors.white,
+                                                    color: Colors.white,
                                 fontSize: 14,
                                                   ),
                                                 ),
@@ -725,13 +725,13 @@ class _MainPageWidgetState extends State<MainPageWidget> {
   Widget _buildExistingButtonsGrid() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
-      child: Column(
+                                          child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
+                                            children: [
+                                              Text(
             'Quick Actions',
             style: TextStyle(
-              color: Colors.white,
+                                                          color: Colors.white,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -825,9 +825,9 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                 child: _buildNavItem(Icons.person, 'Profile', false),
               ),
             ],
-          ),
-        ),
-      ),
+                            ),
+                          ),
+                        ),
     );
   }
 
@@ -836,7 +836,7 @@ class _MainPageWidgetState extends State<MainPageWidget> {
     return Container(
       margin: const EdgeInsets.only(right: 12),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
+                            decoration: BoxDecoration(
         color: isActive ? const Color(0xFF4DD0E1) : Colors.grey[900],
         borderRadius: BorderRadius.circular(20),
       ),
@@ -892,7 +892,7 @@ class _MainPageWidgetState extends State<MainPageWidget> {
             right: 12,
                               child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
+                          children: [
                 Text(
                   title,
                   style: TextStyle(
@@ -906,7 +906,7 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                   children: [
                     Icon(Icons.star, color: Colors.amber, size: 12),
                     const SizedBox(width: 4),
-                                  Text(
+                                Text(
                       rating,
                       style: TextStyle(
                         color: Colors.white,
@@ -1039,11 +1039,11 @@ class _MainPageWidgetState extends State<MainPageWidget> {
                 color: const Color(0xFF4DD0E1),
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
-              ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
     );
   }
 

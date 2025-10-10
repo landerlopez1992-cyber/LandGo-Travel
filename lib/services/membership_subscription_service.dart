@@ -127,9 +127,15 @@ class MembershipSubscriptionService {
   static Future<Map<String, dynamic>> updateSubscription({
     required String subscriptionId,
     required String newPriceId,
+    required String newMembershipType,
     bool prorate = true,
   }) async {
-    print('🔄 [MembershipSubscriptionService] Updating subscription: $subscriptionId to $newPriceId');
+    print('🔄 [MembershipSubscriptionService] Updating subscription: $subscriptionId to $newPriceId ($newMembershipType)');
+    
+    final currentUser = SupaFlow.client.auth.currentUser;
+    if (currentUser == null) {
+      throw Exception('User not authenticated');
+    }
     
     try {
       final response = await SupaFlow.client.functions.invoke(
@@ -139,6 +145,8 @@ class MembershipSubscriptionService {
           'subscriptionId': subscriptionId,
           'newPriceId': newPriceId,
           'prorate': prorate,
+          'userId': currentUser.id,
+          'newMembershipType': newMembershipType,
         },
       );
       
