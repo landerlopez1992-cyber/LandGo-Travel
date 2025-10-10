@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter_stripe/flutter_stripe.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/components/back_button_widget.dart';
 import '/pages/membership_terms_page/membership_terms_page_widget.dart';
+import '/config/stripe_config.dart';
+import '/services/membership_subscription_service.dart';
 import 'membership_detail_page_model.dart';
 export 'membership_detail_page_model.dart';
 
@@ -37,6 +41,7 @@ class MembershipDetailPageWidget extends StatefulWidget {
 
 class _MembershipDetailPageWidgetState extends State<MembershipDetailPageWidget> {
   late MembershipDetailPageModel _model;
+  bool termsAccepted = false; // estado local para el checkbox del diálogo
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -624,27 +629,30 @@ class _MembershipDetailPageWidgetState extends State<MembershipDetailPageWidget>
   }
 
   void _showUpgradeDialog() {
+    bool dialogTermsAccepted = false; // Estado local del diálogo
+    
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        child: Container(
-          width: MediaQuery.of(context).size.width * 0.9,
-          decoration: BoxDecoration(
-            color: const Color(0xFF2C2C2C),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: widget.color.withOpacity(0.5),
-              width: 2,
+      builder: (context) => StatefulBuilder( // ← SOLUCIÓN: Usar StatefulBuilder
+        builder: (context, setDialogState) => Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            width: MediaQuery.of(context).size.width * 0.9,
+            decoration: BoxDecoration(
+              color: const Color(0xFF2C2C2C),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: widget.color.withOpacity(0.5),
+                width: 2,
+              ),
             ),
-          ),
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                   // Icon
                   Container(
                     width: 70,
@@ -775,7 +783,14 @@ class _MembershipDetailPageWidgetState extends State<MembershipDetailPageWidget>
                   const SizedBox(height: 24),
                   
                   // Checkbox de aceptación
-                  _buildAcceptanceCheckbox(),
+                  _buildAcceptanceCheckbox(
+                    value: dialogTermsAccepted,
+                    onChanged: (val) {
+                      setDialogState(() {
+                        dialogTermsAccepted = val;
+                      });
+                    },
+                  ),
                   
                   const SizedBox(height: 24),
                   
@@ -833,7 +848,7 @@ class _MembershipDetailPageWidgetState extends State<MembershipDetailPageWidget>
                             color: Colors.transparent,
                             child: InkWell(
                               borderRadius: BorderRadius.circular(12),
-                              onTap: _model.termsAccepted
+                              onTap: dialogTermsAccepted
                                   ? () {
                                       Navigator.pop(context);
                                       _proceedToPayment();
@@ -843,7 +858,7 @@ class _MembershipDetailPageWidgetState extends State<MembershipDetailPageWidget>
                                 child: Text(
                                   'I Accept',
                                   style: GoogleFonts.outfit(
-                                    color: _model.termsAccepted ? Colors.black : Colors.black38,
+                                    color: dialogTermsAccepted ? Colors.black : Colors.black38,
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -860,6 +875,7 @@ class _MembershipDetailPageWidgetState extends State<MembershipDetailPageWidget>
             ),
           ),
         ),
+        ), // Cierre de StatefulBuilder
       ),
     );
   }
@@ -890,80 +906,378 @@ class _MembershipDetailPageWidgetState extends State<MembershipDetailPageWidget>
     );
   }
 
-  Widget _buildAcceptanceCheckbox() {
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _model.termsAccepted = !_model.termsAccepted;
-        });
-      },
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: _model.termsAccepted
-              ? widget.color.withOpacity(0.1)
-              : Colors.white.withOpacity(0.05),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: _model.termsAccepted
-                ? widget.color
-                : Colors.white.withOpacity(0.2),
-            width: 2,
+  Widget _buildAcceptanceCheckbox({required bool value, required ValueChanged<bool> onChanged}) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: value
+            ? widget.color.withOpacity(0.1)
+            : Colors.white.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: value
+              ? widget.color
+              : Colors.white.withOpacity(0.2),
+          width: 2,
+        ),
+      ),
+      child: Row(
+        children: [
+          // Checkbox nativo de Flutter para asegurar la actualización visual
+          Checkbox(
+            value: value,
+            onChanged: (bool? value) {
+              onChanged(value ?? false);
+            },
+            activeColor: widget.color,
+            checkColor: Colors.black,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            visualDensity: const VisualDensity(horizontal: -2, vertical: -2),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'I have read and agree to the membership terms and conditions',
+              style: GoogleFonts.outfit(
+                color: Colors.white,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _proceedToPayment() async {
+    try {
+      // 1. Verificar si hay tarjetas guardadas ANTES de crear suscripción
+      final hasCards = await _checkSavedCards();
+      
+      if (!hasCards) {
+        _showAddCardDialog();
+        return;
+      }
+
+      // 2. Mostrar loading
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2C2C2C),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(widget.color),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Creating Subscription...',
+                  style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
-        child: Row(
-          children: [
-            Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                color: _model.termsAccepted ? widget.color : Colors.transparent,
-                borderRadius: BorderRadius.circular(6),
-                border: Border.all(
-                  color: widget.color,
-                  width: 2,
+      );
+
+      // 3. Obtener Price ID
+      final priceId = StripeConfig.getPriceId(widget.title);
+      
+      // 4. Crear suscripción
+      final result = await MembershipSubscriptionService.createSubscription(
+        membershipType: widget.title,
+        priceId: priceId,
+      );
+
+      // Cerrar loading
+      Navigator.pop(context);
+
+      if (result['success'] == true) {
+        // Navegar al flujo de pago de Stripe
+        await _processStripePayment(result);
+      } else {
+        // Mostrar error normal
+        final errorMessage = result['error'] ?? 'Subscription creation failed';
+        _showErrorDialog(errorMessage);
+      }
+    } catch (e) {
+      // Cerrar loading si está abierto
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+      
+      // Mostrar error
+      _showErrorDialog('Payment processing failed: $e');
+    }
+  }
+
+  Future<bool> _checkSavedCards() async {
+    try {
+      final currentUser = Supabase.instance.client.auth.currentUser;
+      if (currentUser == null) return false;
+
+      final profileResponse = await Supabase.instance.client
+          .from('profiles')
+          .select('stripe_customer_id')
+          .eq('id', currentUser.id)
+          .single();
+
+      final customerId = profileResponse['stripe_customer_id'];
+      if (customerId == null || customerId.isEmpty) return false;
+
+      // Verificar si hay tarjetas guardadas
+      final paymentMethodsResponse = await Supabase.instance.client.functions.invoke(
+        'stripe-payment',
+        body: {
+          'action': 'list_payment_methods',
+          'customerId': customerId,
+        },
+      );
+
+      final pmData = paymentMethodsResponse.data as Map<String, dynamic>?;
+      final paymentMethods = pmData?['paymentMethods'] as List<dynamic>?;
+      
+      return paymentMethods != null && paymentMethods.isNotEmpty;
+    } catch (e) {
+      print('⚠️ Error checking saved cards: $e');
+      return false;
+    }
+  }
+
+  Future<void> _processStripePayment(Map<String, dynamic> subscriptionResult) async {
+    try {
+      final clientSecret = subscriptionResult['clientSecret'];
+      final needsSubscriptionCreation = subscriptionResult['needsSubscriptionCreation'] == true;
+      final priceId = subscriptionResult['priceId'];
+      final paymentMethodId = subscriptionResult['paymentMethodId'];
+      
+      if (clientSecret == null) {
+        _showErrorDialog('No payment intent received');
+        return;
+      }
+
+      // Inicializar Stripe Payment Sheet - MOSTRAR TARJETAS GUARDADAS
+      await Stripe.instance.initPaymentSheet(
+        paymentSheetParameters: SetupPaymentSheetParameters(
+          paymentIntentClientSecret: clientSecret,
+          style: ThemeMode.dark,
+          merchantDisplayName: 'LandGo Travel',
+          customerId: subscriptionResult['customerId'],
+          customerEphemeralKeySecret: subscriptionResult['ephemeralKey'], // Necesario para mostrar tarjetas guardadas
+          allowsDelayedPaymentMethods: false, // Desactivar métodos BNPL
+          appearance: const PaymentSheetAppearance(
+            primaryButton: PaymentSheetPrimaryButtonAppearance(
+              colors: PaymentSheetPrimaryButtonTheme(
+                light: PaymentSheetPrimaryButtonThemeColors(
+                  background: Color(0xFF4DD0E1),
+                  text: Colors.black,
+                ),
+                dark: PaymentSheetPrimaryButtonThemeColors(
+                  background: Color(0xFF4DD0E1),
+                  text: Colors.black,
                 ),
               ),
-              child: _model.termsAccepted
-                  ? const Icon(
-                      Icons.check,
-                      color: Colors.black,
-                      size: 16,
-                    )
-                  : null,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'I have read and agree to the membership terms and conditions',
-                style: GoogleFonts.outfit(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
+          ),
+        ),
+      );
+
+      // Mostrar Payment Sheet
+      await Stripe.instance.presentPaymentSheet();
+
+      // Pago exitoso
+      String? subscriptionId;
+      
+      // Si necesita crear suscripción, hacerlo ahora
+      if (needsSubscriptionCreation) {
+        print('🔄 Creating subscription after successful payment...');
+        final completeResult = await Supabase.instance.client.functions.invoke(
+          'stripe-payment',
+          body: {
+            'action': 'complete_subscription',
+            'customerId': subscriptionResult['customerId'],
+            'priceId': priceId,
+            'userId': Supabase.instance.client.auth.currentUser?.id,
+            'membershipType': widget.title,
+            'paymentMethodId': paymentMethodId,
+          },
+        );
+        
+        final completeData = completeResult.data as Map<String, dynamic>?;
+        if (completeData?['success'] == true) {
+          subscriptionId = completeData!['subscriptionId'] as String?;
+          print('✅ Subscription created: $subscriptionId');
+        }
+      } else {
+        subscriptionId = subscriptionResult['subscriptionId'] as String?;
+      }
+
+      // Actualizar membresía en la base de datos
+      if (subscriptionId != null) {
+        await _updateMembershipInDatabase(subscriptionId);
+      }
+
+      // Mostrar éxito
+      _showSuccessDialog();
+
+    } catch (e) {
+      // Manejar errores de pago
+      if (e.toString().contains('canceled') || e.toString().contains('cancelled')) {
+        // Usuario canceló - no mostrar error
+        return;
+      }
+      _showErrorDialog('Payment failed: ${e.toString()}');
+    }
+  }
+
+  Future<void> _updateMembershipInDatabase(String subscriptionId) async {
+    try {
+      // Actualizar membresía en Supabase
+      await Supabase.instance.client
+          .from('memberships')
+          .update({
+            'membership_type': widget.title,
+            'stripe_subscription_id': subscriptionId,
+            'status': 'active',
+            'updated_at': DateTime.now().toIso8601String(),
+          })
+          .eq('user_id', Supabase.instance.client.auth.currentUser?.id ?? '');
+
+      print('✅ Membership updated in database: $subscriptionId');
+    } catch (e) {
+      print('❌ Error updating membership: $e');
+      // No mostrar error al usuario ya que el pago fue exitoso
+    }
+  }
+
+  void _showSuccessDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.9,
+          decoration: BoxDecoration(
+            color: const Color(0xFF2C2C2C),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: widget.color.withOpacity(0.5),
+              width: 2,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Success icon
+                Container(
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    color: widget.color.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.check_circle,
+                    color: widget.color,
+                    size: 36,
+                  ),
                 ),
-              ),
+                
+                const SizedBox(height: 16),
+                
+                // Title
+                Text(
+                  'Welcome to ${widget.title}!',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                
+                const SizedBox(height: 8),
+                
+                // Message
+                Text(
+                  'Your membership has been activated successfully. You now have access to all ${widget.title} benefits!',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+                
+                const SizedBox(height: 24),
+                
+                // Continue button
+                Container(
+                  width: double.infinity,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: widget.color,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () {
+                        Navigator.pop(context);
+                        // Navegar a la pantalla principal
+                        context.goNamedAuth('MainPage', context.mounted);
+                      },
+                      child: Center(
+                        child: Text(
+                          'Continue to App',
+                          style: GoogleFonts.outfit(
+                            color: Colors.black,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  void _proceedToPayment() {
-    // TODO: Implementar flujo de pago de membresía
+  void _showErrorDialog(String error) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF2C2C2C),
         title: Text(
-          'Payment Processing',
+          'Payment Failed',
           style: GoogleFonts.outfit(
             color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
         ),
         content: Text(
-          'Membership payment processing will be implemented soon!\n\nYou will be charged ${widget.price}${widget.period} and gain immediate access to ${widget.title} benefits.',
+          error,
           style: GoogleFonts.outfit(
             color: Colors.white70,
           ),
@@ -975,7 +1289,7 @@ class _MembershipDetailPageWidgetState extends State<MembershipDetailPageWidget>
               'OK',
               style: GoogleFonts.outfit(
                 color: widget.color,
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),
@@ -983,5 +1297,148 @@ class _MembershipDetailPageWidgetState extends State<MembershipDetailPageWidget>
       ),
     );
   }
+
+  void _showAddCardDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Container(
+          width: MediaQuery.of(context).size.width * 0.9,
+          decoration: BoxDecoration(
+            color: const Color(0xFF2C2C2C),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: widget.color.withOpacity(0.5),
+              width: 2,
+            ),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Card icon
+                Container(
+                  width: 70,
+                  height: 70,
+                  decoration: BoxDecoration(
+                    color: widget.color.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.credit_card,
+                    color: widget.color,
+                    size: 36,
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Title
+                Text(
+                  'Payment Method Required',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                
+                const SizedBox(height: 8),
+                
+                // Message
+                Text(
+                  'You need to add a debit/credit card before subscribing to ${widget.title} membership. Would you like to add a card now?',
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+                
+                const SizedBox(height: 24),
+                
+                // Buttons
+                Row(
+                  children: [
+                    // Cancel button
+                    Expanded(
+                      child: Container(
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: Colors.transparent,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.white24,
+                            width: 1,
+                          ),
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () => Navigator.pop(context),
+                            child: Center(
+                              child: Text(
+                                'Cancel',
+                                style: GoogleFonts.outfit(
+                                  color: Colors.white54,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    
+                    const SizedBox(width: 12),
+                    
+                    // Add Card button
+                    Expanded(
+                      child: Container(
+                        height: 50,
+                        decoration: BoxDecoration(
+                          color: widget.color,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(12),
+                            onTap: () {
+                              Navigator.pop(context); // Cerrar diálogo
+                              // Navegar a Payment Methods
+                              Navigator.pushNamed(context, '/paymentMethodsPage');
+                            },
+                            child: Center(
+                              child: Text(
+                                'Add Card',
+                                style: GoogleFonts.outfit(
+                                  color: Colors.black,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
+
+
+
 

@@ -436,8 +436,22 @@ class _MembershipsPageWidgetState extends State<MembershipsPageWidget> {
                       child: InkWell(
                         borderRadius: BorderRadius.circular(12),
                         onTap: () {
-                          // TODO: Implement membership upgrade
-                          _showUpgradeDialog(title, price);
+                          // Navegar a la página de detalles para el upgrade real
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => MembershipDetailPageWidget(
+                                title: title,
+                                price: price,
+                                period: '/month',
+                                benefits: benefits,
+                                color: color,
+                                isCurrentPlan: false,
+                                isPopular: isPopular,
+                                isVIP: isVIP,
+                              ),
+                            ),
+                          );
                         },
                         child: Center(
                           child: Text(

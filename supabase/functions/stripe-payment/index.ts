@@ -58,6 +58,17 @@ serve(async (req) => {
         return await createCashAppSession(data);
       case 'confirm_cashapp_payment':
         return await confirmCashAppPayment(data);
+      // 🆕 STRIPE SUBSCRIPTIONS (MEMBERSHIPS)
+      case 'create_subscription':
+        return await createSubscription(data);
+      case 'cancel_subscription':
+        return await cancelSubscription(data);
+      case 'update_subscription':
+        return await updateSubscription(data);
+      case 'get_subscription':
+        return await getSubscription(data);
+      case 'complete_subscription':
+        return await completeSubscription(data);
       case 'test_edge_function':
         return await testEdgeFunction();
       default:
@@ -884,6 +895,336 @@ async function confirmCashAppPayment(data) {
     amount: (result.amount ?? 0) / 100,
     metadata: result.metadata
   });
+}
+
+/* ========== STRIPE SUBSCRIPTIONS (MEMBERSHIPS) ========== */
+
+/**
+ * 1. CREATE SUBSCRIPTION - FLUJO SIMPLIFICADO
+ * Crea suscripción Y genera PaymentIntent para el primer pago
+ */
+async function createSubscription(data) {
+  const { customerId, priceId, userId, membershipType, paymentMethodId } = data;
+  console.log('💳 [CREATE SUBSCRIPTION] Creating subscription:', {
+    customerId, priceId, userId, membershipType, paymentMethodId
+  });
+  
+  try {
+    // 1. Obtener precio para calcular monto del primer pago
+    const priceRes = await fetch(`${STRIPE_API_URL}/prices/${priceId}`, {
+      method: 'GET',
+      headers: { 'Authorization': `Bearer ${STRIPE_SECRET_KEY}` }
+    });
+    const price = await priceRes.json();
+    if (!priceRes.ok) throw new Error('Price not found');
+    
+    const amount = price.unit_amount; // En centavos
+    console.log('💰 [CREATE SUBSCRIPTION] First payment amount:', amount);
+    
+    // 2. Obtener o establecer payment method por defecto
+    let defaultPaymentMethod = paymentMethodId;
+
+    if (!defaultPaymentMethod) {
+      console.log('🔍 [CREATE SUBSCRIPTION] Getting default payment method...');
+      const customerRes = await fetch(`${STRIPE_API_URL}/customers/${customerId}`, {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${STRIPE_SECRET_KEY}` }
+      });
+      const customer = await customerRes.json();
+      defaultPaymentMethod = customer.invoice_settings?.default_payment_method || customer.default_source;
+
+      if (!defaultPaymentMethod) {
+        const pmRes = await fetch(`${STRIPE_API_URL}/payment_methods?customer=${customerId}&type=card&limit=1`, {
+          method: 'GET',
+          headers: { 'Authorization': `Bearer ${STRIPE_SECRET_KEY}` }
+        });
+        const pmList = await pmRes.json();
+        defaultPaymentMethod = pmList?.data?.[0]?.id;
+        
+        if (defaultPaymentMethod) {
+          await fetch(`${STRIPE_API_URL}/customers/${customerId}`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+              'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: new URLSearchParams({
+              'invoice_settings[default_payment_method]': defaultPaymentMethod
+            })
+          });
+          console.log('✅ [CREATE SUBSCRIPTION] Default PM set:', defaultPaymentMethod);
+        }
+      }
+    }
+    
+    if (!defaultPaymentMethod) {
+      return json({
+        success: false,
+        error: 'No payment method found. Please add a card in Payment Methods first.'
+      });
+    }
+    
+    // 3. Crear PaymentIntent para el primer pago - SOLO TARJETAS
+    const piBody = {
+      'amount': String(amount),
+      'currency': 'usd',
+      'customer': customerId,
+      'payment_method': defaultPaymentMethod,
+      'payment_method_types[]': 'card', // SOLO TARJETAS
+      'setup_future_usage': 'off_session',
+      'metadata[user_id]': userId ?? '',
+      'metadata[membership_type]': membershipType ?? '',
+      'metadata[subscription_price_id]': priceId,
+      'description': `${membershipType} Membership - First Payment`
+    };
+    
+    const piRes = await fetch(`${STRIPE_API_URL}/payment_intents`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams(piBody)
+    });
+    
+    const paymentIntent = await piRes.json();
+    if (!piRes.ok) throw new Error(paymentIntent?.error?.message ?? 'Failed to create PaymentIntent');
+    
+    console.log('✅ [CREATE SUBSCRIPTION] PaymentIntent created:', paymentIntent.id);
+    console.log('🔍 [CREATE SUBSCRIPTION] Client Secret:', paymentIntent.client_secret);
+    
+    // 4. Crear Ephemeral Key para mostrar tarjetas guardadas
+    const ephemeralKeyRes = await fetch(`${STRIPE_API_URL}/ephemeral_keys`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Stripe-Version': '2024-11-20.acacia' // Versión de API de Stripe
+      },
+      body: new URLSearchParams({
+        'customer': customerId
+      })
+    });
+    
+    const ephemeralKey = await ephemeralKeyRes.json();
+    if (!ephemeralKeyRes.ok) {
+      console.log('⚠️ [CREATE SUBSCRIPTION] Could not create ephemeral key:', ephemeralKey?.error);
+    }
+    
+    console.log('✅ [CREATE SUBSCRIPTION] Ephemeral Key created:', ephemeralKey.id);
+    
+    // 5. Retornar info para que Flutter maneje el pago
+    return json({
+      success: true,
+      paymentIntentId: paymentIntent.id,
+      clientSecret: paymentIntent.client_secret,
+      customerId: customerId,
+      ephemeralKey: ephemeralKey.secret,
+      priceId: priceId,
+      amount: amount / 100,
+      paymentMethodId: defaultPaymentMethod,
+      needsSubscriptionCreation: true // Flag para crear suscripción después del pago
+    });
+  } catch (error) {
+    console.error('❌ [CREATE SUBSCRIPTION] Error:', error);
+    return json({
+      success: false,
+      error: String(error?.message ?? error)
+    }, 400);
+  }
+}
+
+/**
+ * 2. CANCEL SUBSCRIPTION
+ * Cancela una suscripción en Stripe
+ */
+async function cancelSubscription(data) {
+  const { subscriptionId, cancelAtPeriodEnd = true } = data;
+  console.log('🚫 [CANCEL SUBSCRIPTION] Canceling:', subscriptionId, 'at period end?', cancelAtPeriodEnd);
+  
+  try {
+    const body = {
+      'cancel_at_period_end': String(cancelAtPeriodEnd)
+    };
+    
+    const res = await fetch(`${STRIPE_API_URL}/subscriptions/${subscriptionId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams(body)
+    });
+    
+    const subscription = await res.json();
+    console.log('✅ [CANCEL SUBSCRIPTION] Cancelled:', subscription.id);
+    
+    if (!res.ok) {
+      throw new Error(subscription?.error?.message ?? 'Failed to cancel subscription');
+    }
+    
+    return json({
+      success: true,
+      subscription: subscription,
+      cancelAtPeriodEnd: subscription.cancel_at_period_end,
+      currentPeriodEnd: subscription.current_period_end
+    });
+  } catch (error) {
+    console.error('❌ [CANCEL SUBSCRIPTION] Error:', error);
+    return json({
+      success: false,
+      error: String(error?.message ?? error)
+    }, 400);
+  }
+}
+
+/**
+ * 3. UPDATE SUBSCRIPTION (UPGRADE/DOWNGRADE)
+ * Actualiza una suscripción existente a un nuevo precio
+ */
+async function updateSubscription(data) {
+  const { subscriptionId, newPriceId, prorate = true } = data;
+  console.log('🔄 [UPDATE SUBSCRIPTION] Updating:', subscriptionId, 'to price:', newPriceId);
+  
+  try {
+    // Obtener suscripción actual
+    const getRes = await fetch(`${STRIPE_API_URL}/subscriptions/${subscriptionId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${STRIPE_SECRET_KEY}`
+      }
+    });
+    
+    const currentSub = await getRes.json();
+    if (!getRes.ok) {
+      throw new Error('Subscription not found');
+    }
+    
+    const subscriptionItemId = currentSub.items.data[0].id;
+    
+    // Actualizar el precio de la suscripción
+    const body = {
+      'items[0][id]': subscriptionItemId,
+      'items[0][price]': newPriceId,
+      'proration_behavior': prorate ? 'create_prorations' : 'none'
+    };
+    
+    const res = await fetch(`${STRIPE_API_URL}/subscriptions/${subscriptionId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams(body)
+    });
+    
+    const subscription = await res.json();
+    console.log('✅ [UPDATE SUBSCRIPTION] Updated:', subscription.id);
+    
+    if (!res.ok) {
+      throw new Error(subscription?.error?.message ?? 'Failed to update subscription');
+    }
+    
+    return json({
+      success: true,
+      subscription: subscription,
+      newPrice: newPriceId
+    });
+  } catch (error) {
+    console.error('❌ [UPDATE SUBSCRIPTION] Error:', error);
+    return json({
+      success: false,
+      error: String(error?.message ?? error)
+    }, 400);
+  }
+}
+
+/**
+ * 4. GET SUBSCRIPTION
+ * Obtiene información de una suscripción existente
+ */
+async function getSubscription(data) {
+  const { subscriptionId } = data;
+  console.log('📋 [GET SUBSCRIPTION] Getting:', subscriptionId);
+  
+  try {
+    const res = await fetch(`${STRIPE_API_URL}/subscriptions/${subscriptionId}?expand[]=latest_invoice`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${STRIPE_SECRET_KEY}`
+      }
+    });
+    
+    const subscription = await res.json();
+    console.log('✅ [GET SUBSCRIPTION] Retrieved:', subscription.id);
+    
+    if (!res.ok) {
+      throw new Error(subscription?.error?.message ?? 'Subscription not found');
+    }
+    
+    return json({
+      success: true,
+      subscription: subscription,
+      status: subscription.status,
+      currentPeriodStart: subscription.current_period_start,
+      currentPeriodEnd: subscription.current_period_end,
+      cancelAtPeriodEnd: subscription.cancel_at_period_end
+    });
+  } catch (error) {
+    console.error('❌ [GET SUBSCRIPTION] Error:', error);
+    return json({
+      success: false,
+      error: String(error?.message ?? error)
+    }, 400);
+  }
+}
+
+/**
+ * 5. COMPLETE SUBSCRIPTION
+ * Crea la suscripción después de un pago exitoso
+ */
+async function completeSubscription(data) {
+  const { customerId, priceId, userId, membershipType, paymentMethodId } = data;
+  console.log('✅ [COMPLETE SUBSCRIPTION] Creating subscription after successful payment:', {
+    customerId, priceId, membershipType
+  });
+  
+  try {
+    const body = {
+      'customer': customerId,
+      'items[0][price]': priceId,
+      'default_payment_method': paymentMethodId,
+      'metadata[user_id]': userId ?? '',
+      'metadata[membership_type]': membershipType ?? ''
+    };
+    
+    const res = await fetch(`${STRIPE_API_URL}/subscriptions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams(body)
+    });
+    
+    const subscription = await res.json();
+    if (!res.ok) throw new Error(subscription?.error?.message ?? 'Failed to create subscription');
+    
+    console.log('✅ [COMPLETE SUBSCRIPTION] Subscription created:', subscription.id);
+    
+    return json({
+      success: true,
+      subscription: subscription,
+      subscriptionId: subscription.id,
+      status: subscription.status
+    });
+  } catch (error) {
+    console.error('❌ [COMPLETE SUBSCRIPTION] Error:', error);
+    return json({
+      success: false,
+      error: String(error?.message ?? error)
+    }, 400);
+  }
 }
 
 /* ========== TEST ========== */

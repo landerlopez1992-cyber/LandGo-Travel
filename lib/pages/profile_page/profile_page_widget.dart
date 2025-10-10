@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/backend/supabase/supabase.dart';
 import 'profile_page_model.dart';
+import '/pages/my_profile_page/cancel_membership_mixin.dart';
 export 'profile_page_model.dart';
 
 class ProfilePageWidget extends StatefulWidget {
@@ -15,7 +16,7 @@ class ProfilePageWidget extends StatefulWidget {
   State<ProfilePageWidget> createState() => _ProfilePageWidgetState();
 }
 
-class _ProfilePageWidgetState extends State<ProfilePageWidget> {
+class _ProfilePageWidgetState extends State<ProfilePageWidget> with CancelMembershipMixin {
   late ProfilePageModel _model;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
@@ -338,6 +339,7 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
                         _buildMenuItem(Icons.person_outline, 'My profile'),
                         _buildMenuItem(Icons.favorite_outline, 'My favorites'),
                         _buildMenuItem(Icons.credit_card_outlined, 'Payment Methods'),
+                        _buildMenuItem(Icons.cancel_outlined, 'Cancel Membership'),
                         _buildMenuItem(Icons.people_outline, 'My Referrals'),
                         _buildMenuItem(Icons.chat_outlined, 'Support Chat'),
                         _buildMenuItem(Icons.settings_outlined, 'Settings'),
@@ -484,6 +486,12 @@ class _ProfilePageWidgetState extends State<ProfilePageWidget> {
               await Future.delayed(Duration(milliseconds: 100));
               if (mounted) {
                 context.pushNamed('PaymentMethodsPage'); // CONECTAR A PAYMENT METHODS
+              }
+            } else if (title == 'Cancel Membership') {
+              print('Cancel Membership menu item tapped');
+              await Future.delayed(Duration(milliseconds: 100));
+              if (mounted) {
+                handleCancelMembership(); // LLAMAR AL MIXIN
               }
             } else if (title == 'My Referrals') {
               print('My Referrals menu item tapped');
