@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/components/back_button_widget.dart';
+import '/pages/membership_detail_page/membership_detail_page_widget.dart';
 import 'memberships_page_model.dart';
 export 'memberships_page_model.dart';
 
@@ -96,10 +97,10 @@ class _MembershipsPageWidgetState extends State<MembershipsPageWidget> {
                     price: '\$0',
                     period: '/month',
                     benefits: [
-                      'Standard Duffel prices',
-                      '0% cashback',
-                      'Access to all destinations',
-                      'Basic customer support',
+                      'Standard prices (no discounts)',
+                      '0% cashback on bookings',
+                      'Access to all flights & hotels',
+                      'Standard customer support',
                     ],
                     color: const Color(0xFF4DD0E1), // TURQUESA AZUL EXISTENTE
                     isCurrentPlan: true,
@@ -113,10 +114,10 @@ class _MembershipsPageWidgetState extends State<MembershipsPageWidget> {
                     price: '\$29',
                     period: '/month',
                     benefits: [
-                      '3% cashback on every booking',
-                      'Reduced booking fees',
+                      '3% cashback on completed bookings',
                       'Priority customer support',
-                      'Exclusive travel deals',
+                      'Earn referral points (3 levels)',
+                      'Personalized booking assistance',
                     ],
                     color: const Color(0xFF00E676), // VERDE LLAMATIVO FUERTE
                     isPopular: true,
@@ -130,11 +131,10 @@ class _MembershipsPageWidgetState extends State<MembershipsPageWidget> {
                     price: '\$49',
                     period: '/month',
                     benefits: [
-                      '5% cashback on every booking',
-                      'Lowest booking fees',
-                      'Premium customer support 24/7',
-                      'Early access to flash sales',
-                      'Free cancellation protection',
+                      '5% cashback on completed bookings',
+                      'Priority customer support 24/7',
+                      'Higher referral commissions',
+                      'Free booking modifications',
                     ],
                     color: const Color(0xFFFF6B00), // NARANJA FUERTE LLAMATIVO
                   ),
@@ -147,12 +147,11 @@ class _MembershipsPageWidgetState extends State<MembershipsPageWidget> {
                     price: '\$79',
                     period: '/month',
                     benefits: [
-                      '8% cashback on every booking',
-                      'No booking fees',
-                      'Dedicated VIP concierge',
-                      'Exclusive luxury travel packages',
-                      'Free trip insurance',
-                      'Lounge access worldwide',
+                      '8% cashback on completed bookings',
+                      'Dedicated personal travel assistant',
+                      'Maximum referral commissions',
+                      'Unlimited booking modifications',
+                      'Exclusive VIP promotions',
                     ],
                     color: const Color(0xFFFFD700), // GOLD
                     isVIP: true,
@@ -487,15 +486,15 @@ class _MembershipsPageWidgetState extends State<MembershipsPageWidget> {
           _buildBenefitRow(
             icon: Icons.account_balance_wallet,
             title: 'Earn More Cashback',
-            description: 'Get up to 8% cashback on every booking with VIP membership',
+            description: 'Get up to 8% cashback on every completed booking with VIP',
           ),
           
           const SizedBox(height: 12),
           
           _buildBenefitRow(
-            icon: Icons.savings,
-            title: 'Save on Fees',
-            description: 'Premium and VIP members pay significantly lower booking fees',
+            icon: Icons.people,
+            title: 'Referral Program',
+            description: 'Earn commissions by referring friends (3-level pyramid system)',
           ),
           
           const SizedBox(height: 12),
@@ -503,15 +502,15 @@ class _MembershipsPageWidgetState extends State<MembershipsPageWidget> {
           _buildBenefitRow(
             icon: Icons.support_agent,
             title: 'Priority Support',
-            description: 'Get help faster with dedicated support for paid members',
+            description: 'Get faster responses and dedicated booking assistance',
           ),
           
           const SizedBox(height: 12),
           
           _buildBenefitRow(
-            icon: Icons.flight_takeoff,
-            title: 'Exclusive Deals',
-            description: 'Access members-only travel packages and flash sales',
+            icon: Icons.edit_calendar,
+            title: 'Booking Flexibility',
+            description: 'Priority handling for booking changes and modifications',
           ),
         ],
       ),

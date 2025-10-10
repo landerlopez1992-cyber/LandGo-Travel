@@ -4,6 +4,7 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/components/back_button_widget.dart';
 import '/auth/supabase_auth/auth_util.dart';
 import '/backend/supabase/supabase.dart';
+import '/pages/terms_of_use_page/terms_of_use_page_widget.dart';
 import 'settings_page_model.dart';
 export 'settings_page_model.dart';
 
@@ -244,12 +245,17 @@ class _SettingsPageWidgetState extends State<SettingsPageWidget> {
         
         const SizedBox(height: 16),
         
-        // Terms & conditions
+        // Terms of Use
         _buildSettingsItem(
-          icon: Icons.shield_outlined,
-          title: 'Terms & conditions',
+          icon: Icons.gavel,
+          title: 'Terms of Use',
           onTap: () {
-            context.pushNamed('TermsConditionsPage');
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const TermsOfUsePageWidget(),
+              ),
+            );
           },
         ),
         
